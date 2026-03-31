@@ -1,0 +1,43 @@
+services:
+
+  puzzlebot: #main service(launches the bringup launch)
+    build:
+      context: .. #root of project
+      dockerfile: docker/main/Dockerfile
+
+    container_name: puzzlebot
+
+    network_mode: host
+
+    environment: 
+      - ROS_DOMAIN_ID=100
+      - DISPLAY=${DISPLAY} #in case needing GUI
+      - PULSE_SERVER=unix:/run/user/1000/pulse/native
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - QT_X11_NO_MITSHM=1          # both for using ui
+      - NVIDIA_DRIVER_CAPABILITIES=all  
+      - OLLAMA_KEEP_ALIVE=120    
+
+    devices:
+      - /dev/snd:/dev/snd
+
+    group_add:
+      - audio 
+    deploy:
+      resources:
+        reservations:
+          devices: 
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    volumes:
+      - ../src:/ws/src
+      - /tmp/.X11-unix:/tmp/.X11-unix  # GUI
+
+    
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+

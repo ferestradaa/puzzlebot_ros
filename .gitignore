@@ -1,0 +1,11 @@
+build/
+install/
+log/
+*.pyc
+__pycache__/
+.vscode/
+isaac_sim/puzzlebot_description/urdf/puzzlebot
+*.gv
+*.pdf
+*.zip
+
