@@ -1,0 +1,27 @@
+robot:
+ wheel_radius: 0.044
+ wheel_base: 0.19
+
+usd:
+ stage_path: "../worlds/warehouse_f.usd"
+ robot_path: "/World/robot/"
+
+joints:
+  left:  "/World/robot/puzzlebot_v2/joints/base_to_left_wheel"
+  right: "/World/robot/puzzlebot_v2/joints/base_to_right_wheel"
+
+ros2:
+ topics: 
+  cmd_vel: "/cmd_vel"
+  odom: "/odom"
+  scan: "/scan"
+  image: /camera/image_raw
+
+sensors:
+ lidar:
+  frequency: 10.0
+
+ camera:
+  width: 640
+  height: 480
+  frequency: 15
