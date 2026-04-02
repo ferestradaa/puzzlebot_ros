@@ -21,24 +21,22 @@ def generate_launch_description():
 
         )
 
-    robot_st_pub = Node(
-            package = 'robot_state_publisher', 
-            executable = 'robot_state_publisher', 
-            name = 'robot_state_publisher', 
-            output = 'screen', 
-            parameters = [{
-            'robot_description': robot_description, 
-            'use_sim_time' : use_sim_time,
-            }]
-        )
-
-
-    robot_st_pu_gui = Node(
-            package='joint_state_publisher_gui',
-            executable='joint_state_publisher_gui',
-            name='joint_state_publisher_gui',
-            output='screen',
-        )
+    js_pub_sim =  Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        remappings=[('joint_states', '/joint_states_sim')],
+        parameters=[{'robot_description': robot_description}])
+                    # 'frame_prefix': 'sim/'}] use it when youve got world 
+    
+    '''
+    js_pub_real =  Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        namespace='real',
+        remappings=[('joint_states', '/joint_states_sim')],
+        parameters=[{'robot_description': robot_description}]
+    )
+    '''
 
 
     rviz = Node(
@@ -52,7 +50,7 @@ def generate_launch_description():
 
 
     return LaunchDescription([
-            args, robot_st_pub, robot_st_pu_gui, rviz,
+            args, js_pub_sim, rviz,
         ])
 
 
