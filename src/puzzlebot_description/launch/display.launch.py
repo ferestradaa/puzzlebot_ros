@@ -24,7 +24,7 @@ def generate_launch_description():
     js_pub_sim =  Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        remappings=[('joint_states', '/joint_states_sim')],
+        remappings=[('joint_states', '/joint_states')],
         parameters=[{'robot_description': robot_description}])
                     # 'frame_prefix': 'sim/'}] use it when youve got world 
     
