@@ -5,6 +5,7 @@ log/
 __pycache__/
 .vscode/
 isaac_sim/puzzlebot_description/urdf/puzzlebot/
+isaac_sim/simulation
 *.gv
 *.pdf
 *.zip

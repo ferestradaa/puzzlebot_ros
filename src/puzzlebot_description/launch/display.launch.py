@@ -10,8 +10,8 @@ def generate_launch_description():
     
     pkg_share = get_package_share_directory('puzzlebot_description')
 
-    urdf_file = os.path.join(pkg_share, 'urdf', 'puzzlebot.urdf.xacro')
-    use_sim_time = LaunchConfiguration('use_sim_time', default = 'false')
+    urdf_file = os.path.join(pkg_share, 'urdf', 'puzzlebot.urdf.xacro') #loads xacro.urdf file that describes the whole robot
+    use_sim_time = LaunchConfiguration('use_sim_time', default = 'false') 
     robot_description = Command(['xacro ', urdf_file])
 
     args = DeclareLaunchArgument(
@@ -21,10 +21,10 @@ def generate_launch_description():
 
         )
 
-    js_pub_sim =  Node(
+    js_pub_sim =  Node( #uses ros2 robot state publiher node for publishing joint states
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        remappings=[('joint_states', '/joint_states')],
+        remappings=[('joint_states', '/joint_states')], #change the topic  in case using simulated joint states (not now)
         parameters=[{'robot_description': robot_description}])
                     # 'frame_prefix': 'sim/'}] use it when youve got world 
     
@@ -39,7 +39,7 @@ def generate_launch_description():
     '''
 
 
-    rviz = Node(
+    rviz = Node( #for vialuzation, launch rviz too
             package='rviz2',
             executable='rviz2',
             name='rviz2',

@@ -1,4 +1,3 @@
-
 /*
 To find odom:
 
@@ -12,13 +11,13 @@ which is v = (v_L + v_R)/2
 which is w = (v_R - v_L) / L
 
 4. How much distance the robot has moved, basically d = v * dt
-which is distance_from_center = v * dt AND distance_theta = w *dt
+which is d_trans = v_robot * dt AND d_rot = w_robot *dt
 
 5. Now, to where the robot has moved? 
 which is: 
-    x = d_c * cos (theta + d_theta/2)
-    y = d_c *sin (theta + d_theta/2)
-    theta = theta + d_theta
+    x = d_trans * cos (theta + d_rot/2)
+    y = d_trans * sin (theta + d_rot/2)
+    theta = theta + d_rot
 
 
 6. Normalize angle between -pi, pi
@@ -37,7 +36,7 @@ class OdometryNode : public rclcpp::Node{
         OdometryNode() : Node("odometry"),
             r_(0.05), L_(0.19),
             x_(0.0), y_(0.0), theta_(0.0),
-            left_vel_(0.0), right_vel_(0.0),
+            wheel_vel_left_rads_(0.0), wheel_vel_right_rads_(0.0),
             last_time_(this->get_clock()->now()){
 
 
@@ -49,7 +48,7 @@ class OdometryNode : public rclcpp::Node{
         encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelEncR", 10, 
         std::bind(&OdometryNode::encoderR_callback, this, std::placeholders::_1));
 
-        timer_ = this ->create_wall_timer(std::chrono::milliseconds(50), //timer for publishing joint states
+        timer_ = this ->create_wall_timer(std::chrono::milliseconds(50), 
                 std::bind(&OdometryNode::publish_odometry, this)); 
 
 
@@ -58,11 +57,11 @@ class OdometryNode : public rclcpp::Node{
     }
     private:
         void encoderL_callback(const std_msgs::msg::Float32::SharedPtr msg){
-            left_vel_ = msg -> data; 
+            wheel_vel_left_rads_ = msg -> data; 
         }
 
         void encoderR_callback(const std_msgs::msg::Float32::SharedPtr msg){
-            right_vel_ = msg -> data; 
+            wheel_vel_right_rads_ = msg -> data; 
         }
 
         void get_odom(){
@@ -71,20 +70,20 @@ class OdometryNode : public rclcpp::Node{
             last_time_ = now; 
             if (dt <= 0.0 || dt > 1.0) return; //avoid invalid dt 
 
-            double vL = left_vel_ * r_;
-            double vR = right_vel_ *r_; 
+            double vL = wheel_vel_left_rads_ * r_; //lineal velocity for each wheel
+            double vR = wheel_vel_right_rads_ * r_; 
 
-            double v_robot = (vR + vL) / 2.0; 
-            double omega_robot = (vR - vL) / L_; 
+            double v_robot = (vR + vL) / 2.0;  //lineal velocity for the robot
+            double w_robot = (vR - vL) / L_;  //angular velocity for the whole robot
             
-            double d_c = v_robot * dt; 
-            double d_theta = omega_robot * dt; 
+            double d_translation = v_robot * dt; //distance instead of velocity
+            double d_rot = w_robot * dt; //angular distance instead of velocity
 
-            x_ += d_c * std::cos(theta_ + d_theta / 2.0); 
-            y_ += d_c * std::sin(theta_ + d_theta / 2.0); 
-            theta_ += d_theta; 
+            x_ += d_translation * std::cos(theta_ + d_rot / 2.0); // x pos of the robot
+            y_ += d_translation * std::sin(theta_ + d_rot / 2.0);  // y pos of the robot
+            theta_ += d_rot; //orientation
 
-            theta_ = std::atan2(std::sin(theta_), std::cos(theta_));    
+            theta_ = std::atan2(std::sin(theta_), std::cos(theta_)); 
 
         }
 
@@ -102,9 +101,8 @@ class OdometryNode : public rclcpp::Node{
             msg.pose.pose.orientation.w = std::cos(theta_ / 2.0);
             msg.pose.pose.orientation.z = std::sin(theta_ / 2.0);
 
-
-            msg.twist.twist.linear.x  = (right_vel_ + left_vel_) / 2.0 * r_;
-            msg.twist.twist.angular.z = (right_vel_ - left_vel_) / L_ * r_;
+            msg.twist.twist.linear.x  = (wheel_vel_left_rads_ + wheel_vel_right_rads_) / 2.0 * r_;
+            msg.twist.twist.angular.z = (wheel_vel_right_rads_ - wheel_vel_left_rads_) / L_ * r_;
 
             odom_pub_ -> publish(msg); 
         }
@@ -117,7 +115,7 @@ class OdometryNode : public rclcpp::Node{
         rclcpp::TimerBase::SharedPtr timer_;
 
         const double r_, L_;
-        double left_vel_, right_vel_, x_, y_, theta_; 
+        double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_; 
         
 }; 
 
