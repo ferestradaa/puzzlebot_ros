@@ -1,4 +1,4 @@
-# Puzzlebot Navigation Stack
+# TE3003B: Integration of Robotics and Intelligent Systems
 
 Fernando Estrada Silva A01736094 
 ---
