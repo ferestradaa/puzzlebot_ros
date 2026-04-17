@@ -48,7 +48,7 @@ puzz_ws/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-user>/puzz_ws.git
+git clone https://github.com/ferestrada/puzzlebot_ros.git
 cd puzz_ws
 ```
 
