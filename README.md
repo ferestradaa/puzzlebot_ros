@@ -71,6 +71,8 @@ docker exec puzzlebot bash
 
 ## Isaac Sim Integration
 
+Install the simulator and import the usd file.
+
 
 
 ### Running the simulation
