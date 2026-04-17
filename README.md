@@ -6,9 +6,9 @@ Fernando Estrada Silva A01736094
 
 ## Overview
 
-This workspace contains the full ROS2 navigation stack for a Puzzlebot differential drive robot equipped with an RPLIDAR S2E and a camera for ArUco marker detection. The system implements:
+This workspace contains the full ROS2 navigation stack for Puzzlebot differential drive robot (NVIDIA Jetson Nano 2GB)
 
-- **EKF-SLAM** with ArUco landmarks (no Nav2)
+- **EKF-SLAM** with ArUco landmarks 
 - **Occupancy grid mapping** from raw LiDAR scans
 - **Differential drive odometry** 
 - **Sim-to-real transfer** via Isaac Sim
@@ -29,12 +29,10 @@ puzz_ws/
 │   ├── Dockerfile
 │   └── docker-compose.yml
 ├── isaac_sim/          # Isaac Sim assets, USD scenes, OmniGraph configs
-│   ├── scenes/
-│   ├── urdf/
-│   └── omnigraph/
+│   ├── assets/
+│   └── worlds/
 ├── jetson/             # Jetson Nano deployment scripts and configs
 │   ├── setup.sh
-│   └── inference/
 ├── params/             # YAML parameter (empty now)
 
 └── src/                # ROS2 source packages
