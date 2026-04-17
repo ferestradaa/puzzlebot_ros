@@ -1,26 +1,8 @@
 # Puzzlebot Navigation Stack
 
-> Autonomous differential drive robot with LiDAR-based SLAM, ArUco landmark detection, and full ROS2 navigation — implemented from scratch without Nav2.
-
+Fernando Estrada Silva A01736094 
 ---
 
-## Table of Contents
-
-- [Overview](#overview)
-- [System Architecture](#system-architecture)
-- [Repository Structure](#repository-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Docker Setup](#docker-setup)
-- [Isaac Sim Integration](#isaac-sim-integration)
-- [Jetson Nano Deployment](#jetson-nano-deployment)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Package Reference](#package-reference)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
-
----
 
 ## Overview
 
@@ -28,12 +10,9 @@ This workspace contains the full ROS2 navigation stack for a Puzzlebot different
 
 - **EKF-SLAM** with ArUco landmarks (no Nav2)
 - **Occupancy grid mapping** from raw LiDAR scans
-- **Differential drive odometry** in C++
-- **Sim-to-real transfer** via Isaac Sim digital twin
+- **Differential drive odometry** 
+- **Sim-to-real transfer** via Isaac Sim
 
-**Hardware:** Puzzlebot + RPLIDAR S2E + Camera  
-**Software:** ROS2 Humble | Isaac Sim 4.5 / 5.1 | Ubuntu 22.04  
-**GPU:** NVIDIA RTX 5090 (Blackwell, sm_120)
 
 ---
 
@@ -46,11 +25,9 @@ This workspace contains the full ROS2 navigation stack for a Puzzlebot different
 
 ```
 puzz_ws/
-├── build/              # Colcon build artifacts (auto-generated)
-├── docker/             # Docker Compose configs and Dockerfiles
+├── docker/             # Docker Compose for cloninng and testing this repo
 │   ├── Dockerfile
 │   └── docker-compose.yml
-├── install/            # Colcon install space (auto-generated)
 ├── isaac_sim/          # Isaac Sim assets, USD scenes, OmniGraph configs
 │   ├── scenes/
 │   ├── urdf/
@@ -58,13 +35,10 @@ puzz_ws/
 ├── jetson/             # Jetson Nano deployment scripts and configs
 │   ├── setup.sh
 │   └── inference/
-├── log/                # Colcon and ROS2 launch logs (auto-generated)
-├── params/             # YAML parameter files for all nodes
-│   ├── slam_params.yaml
-│   ├── ekf_params.yaml
-│   └── control_params.yaml
+├── params/             # YAML parameter (empty now)
+
 └── src/                # ROS2 source packages
-    ├── puzzlebot_slam/
+    ├── puzzlebot_navigation/
     ├── puzzlebot_control/
     └── puzzlebot_description/
 ```
@@ -80,28 +54,6 @@ git clone https://github.com/<your-user>/puzz_ws.git
 cd puzz_ws
 ```
 
-### 2. Install ROS2 dependencies
-
-```bash
-rosdep update
-rosdep install --from-paths src --ignore-src -r -y
-```
-
-### 3. Build the workspace
-
-```bash
-colcon build --symlink-install
-source install/setup.bash
-```
-
-### 4. (Optional) Add to `.bashrc`
-
-```bash
-echo "source ~/puzz_ws/install/setup.bash" >> ~/.bashrc
-```
-
----
-
 ## Docker Setup
 
 The Docker environment provides a reproducible ROS2 Humble container with all dependencies.
@@ -116,12 +68,12 @@ docker compose build
 docker compose up -d
 
 # Attach to container
-docker exec -it puzzlebot_ros2 bash
+docker exec puzzlebot bash
 ```
 
 ## Isaac Sim Integration
 
-Simulation assets and OmniGraph configurations for the Puzzlebot digital twin.
+
 
 ### Running the simulation
 
@@ -131,29 +83,18 @@ Simulation assets and OmniGraph configurations for the Puzzlebot digital twin.
 ## Jetson Nano Deployment
 
 
-**Inference pipeline:** TensorRT-optimized policy → ROS2 `/cmd_vel` publisher
-
-See [`jetson/README.md`](jetson/README.md) for detailed deployment instructions.
-
----
 
 ## Usage
 
-### Launch full SLAM stack (real robot)
+### Puzzlebot Description
 
 ```bash
-ros2 launch puzzlebot_slam slam_launch.py
+ros2 launch puzzlebot_description display.py
 ```
 
-### Launch with simulation (Isaac Sim must be running)
+### Launch Odometry
 
 ```bash
-ros2 launch puzzlebot_slam slam_sim_launch.py
-```
-
-### Launch controller only
-
-```bash
-ros2 launch puzzlebot_control control_launch.py
+ros2 run puzzlebot_control odometry
 ```
 
