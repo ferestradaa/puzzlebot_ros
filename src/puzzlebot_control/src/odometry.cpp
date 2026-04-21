@@ -30,7 +30,12 @@ which is:
 #include <nav_msgs/msg/odometry.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <cmath>
+
+#include <apriltag_msgs/msg/april_tag_detection.hpp>
+#include <apriltag_msgs/msg/april_tag_detection_array.hpp>
+
 #include <kalman_filter.hpp>
+#include <math_utils.hpp>
 
 class OdometryNode : public rclcpp::Node{
     public:
@@ -48,15 +53,16 @@ class OdometryNode : public rclcpp::Node{
         std::bind(&OdometryNode::encoderR_callback, this, std::placeholders::_1));
 
 
-        aruco_sub = this -> create_subscription<std_msgs::msg::Float32>("/VelEncR", 10, 
-        std::bind(&OdometryNode::encoderR_callback, this, std::placeholders::_1));
-
-
+        aruco_sub = this -> create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>("/detections", 10, //this has to be aruco detection in 
+        std::bind(&OdometryNode::aruco_callback, this, std::placeholders::_1)); 
 
         timer_ = this ->create_wall_timer(std::chrono::milliseconds(50), 
                 std::bind(&OdometryNode::publish_odometry, this)); 
 
         odom_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
+
+        tf_buffer_ = tf2_ros::Buffer(this->get_clock());
+        tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
 
         kalman_ = std::make_unique<ExtendedKalmanFilter>(r_, L_);
 
@@ -74,26 +80,45 @@ class OdometryNode : public rclcpp::Node{
             wheel_vel_right_rads_ = msg -> data; 
         }
 
-        void aruco_callback(const aruco_msgs::msg::MarkerArray::SharedPtr msg){
+        void aruco_callback(const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg){
+            std::vector<Eigen::Vector3d> detected_positions; //list for xyyaw detected landmarks
+            std::vector<Eigen::Vector3d> fixed_positions; //list for xyyaw known landmakrs in map
 
-            for (const auto& marker :msg-> markers){
-                auto iterator = landmark_map_.find(marker.id) //find() looks for the key in the map and returns where it is
-                if (iterator == landmark_map.end()){ // if not, iterator is end() == NULL
-                    continue; 
-                auto landmark = it ->second; //landmark has the value if found
+            for (const auto& marker :msg->detections){ //using every detection in frame
 
-                
+                auto iterator = landmark_map_.find(marker.id); //find() looks for the key in the map and returns where it is
+                if (iterator == landmark_map_.end()){ // if not, iterator is end() == NULL
+                    continue; }
+                auto landmark = iterator->second; //landmark has the value if found
+                std::string frame = "tag_" + std::to_string(marker.id); //creates frame with detected landamark for tf
 
-                }
-                
+                try {
+                    auto tf = tf_buffer_.lookupTransform(
+                        "camera_color_optical_frame",
+                        frame, //used the detected frame
+                        tf2::TimePointZero
+                    );
+
+                    double x_detected = tf.transform.translation.x;
+                    double y_detected = tf.transform.translation.y;
+                    double yaw_detected = math_utils::getYaw({ //yaw in robot base link
+                                tf.transform.orientation.x,
+                                tf.transform.orientation.y,
+                                tf.transform.orientation.z,
+                                tf.transform.orientation.w
+                    });
+
+                    fixed_positions.push_back(landmark); //once both lists have been validated, push them back
+                    detected_positions.push_back(Eigen::Vector3d(x_detected, y_detected, yaw_detected));
+
+                } catch (tf2::TransformException &ex) {
+                    continue; }
             }
 
-            }
-
-            
-
+            kalman_.update(fixed_positions, detected_positions); //the filter recieves both lists
 
         }
+
 
 
 
@@ -122,8 +147,6 @@ class OdometryNode : public rclcpp::Node{
 
         }
 
-        void 
-
 
 
 
@@ -137,13 +160,17 @@ class OdometryNode : public rclcpp::Node{
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encl_sub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encr_sub_; 
+        rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr aruco_sub; 
         rclcpp::Time last_time_; 
         rclcpp::TimerBase::SharedPtr timer_;
+
+        tf2_ros::Buffer tf_buffer_;
+        std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+
         std::unique_ptr<ExtendedKalmanFilter> kalman_; 
 
         const double r_, L_;
         double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_; 
-        aruco_msgs::msg::MarkerArray last_aruco_; 
         
 }; 
 

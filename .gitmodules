@@ -1,0 +1,12 @@
+[submodule "src/src/puzzlebot_apriltag"]
+	path = src/src/puzzlebot_apriltag
+	url = https://github.com/christianrauch/apriltag_ros.git
+[submodule "src/puzzlebot_vision"]
+	path = src/puzzlebot_vision
+	url = https://github.com/christianrauch/apriltag_ros.git
+[submodule "src/puzzlebot_interfaces/msg"]
+	path = src/puzzlebot_interfaces/msg
+	url = https://github.com/christianrauch/apriltag_msgs.git
+[submodule "src/apriltag_msgs"]
+	path = src/apriltag_msgs
+	url = https://github.com/christianrauch/apriltag_msgs.git

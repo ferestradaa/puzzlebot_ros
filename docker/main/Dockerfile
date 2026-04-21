@@ -53,8 +53,8 @@ RUN pip3 install --no-cache-dir \
 
 
 #install requieremnts directlty into syustem, this container has its own requirements
-COPY requirements/main.txt /tmp/requirements.txt
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
+#COPY requirements/main.txt /tmp/requirements.txt
+#RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
 COPY docker/main/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

@@ -21,9 +21,12 @@ services:
 
     devices:
       - /dev/snd:/dev/snd
+      - /dev/video0:/dev/video0 
+      - /dev/video0:/dev/video1 
 
     group_add:
       - audio 
+      - video 
     deploy:
       resources:
         reservations:
