@@ -178,8 +178,7 @@
 
 
 <!-- camera -->
-  <link name="${prefix}camera">
-
+  <link name="${prefix}camera_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 ${PI}"/>
       <geometry>
@@ -198,29 +197,36 @@
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="${camera_mass}"/>
-      <!--
-        Inercias calculadas con la geometría real de la caja.
-      -->
       <xacro:box_inertia
         m="${camera_mass}"
         x="${camera_length}"
         y="${camera_width}"
         z="${camera_height}"/>
     </inertial>
-
   </link>
 
   <joint name="${prefix}chassis_to_camera" type="fixed">
     <parent link="${prefix}chassis"/>
-    <child  link="${prefix}camera"/>
+    <child  link="${prefix}camera_link"/>
     <origin xyz="${camera_x} ${camera_y} ${camera_z}"
-            rpy="${PI/2} ${PI} ${PI/2}"/>
+            rpy="0 0 0"/>
+  </joint>
+
+
+<!-- optical frame -->
+  <link name="${prefix}camera_color_optical_frame"/>
+  
+  <joint name="${prefix}optical_frame" type="fixed">
+    <parent link="${prefix}camera_link"/>
+    <child  link="${prefix}camera_color_optical_frame"/>
+    <origin xyz="0.02 0 0"
+            rpy="-${PI/2} ${PI} -${PI/2}"/>
   </joint>
 
 
 
   <!-- lidar -->
-  <link name="${prefix}lidar">
+  <link name="${prefix}lidar_link">
 
     <visual>
       <origin xyz="0.07 -0.013 -0.04" rpy="${PI/2} 0 0"/>
@@ -250,7 +256,7 @@
 
   <joint name="${prefix}chassis_to_lidar" type="fixed">
     <parent link="${prefix}chassis"/>
-    <child  link="${prefix}lidar"/>
+    <child  link="${prefix}lidar_link"/>
     <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 ${PI}"/>
   </joint>
 

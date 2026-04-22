@@ -16,7 +16,7 @@ def generate_launch_description():
 
     rviz_arg = DeclareLaunchArgument(
         'rviz',
-        default_value='false'
+        default_value='true'
     )
 
     use_sim = LaunchConfiguration('use_sim')
@@ -56,5 +56,5 @@ def generate_launch_description():
         rviz_arg,
         desc_launch,
         control_launch,
-        vision_launch
+        #vision_launch
     ])

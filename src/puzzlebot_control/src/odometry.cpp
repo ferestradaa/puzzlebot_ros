@@ -33,6 +33,7 @@ which is:
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2/exceptions.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <apriltag_msgs/msg/april_tag_detection.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
@@ -72,8 +73,8 @@ class OdometryNode : public rclcpp::Node{
         RCLCPP_INFO(this->get_logger(), "Reading encoder velocities");
         
     }
-    private:
 
+    private:
         void encoderL_callback(const std_msgs::msg::Float32::SharedPtr msg){
             wheel_vel_left_rads_ = msg -> data; 
         }
@@ -83,8 +84,8 @@ class OdometryNode : public rclcpp::Node{
         }
 
         void aruco_callback(const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg){
-            std::vector<Eigen::Vector3d> detected_positions; //list for xyyaw detected landmarks
-            std::vector<Eigen::Vector3d> fixed_positions; //list for xyyaw known landmakrs in map
+            std::vector<Eigen::Vector2d> detected_positions; //list for xyyaw detected landmarks
+            std::vector<Eigen::Vector2d> fixed_positions; //list for xyyaw known landmakrs in map
 
             for (const auto& marker :msg->detections){ //using every detection in frame
 
@@ -113,15 +114,17 @@ class OdometryNode : public rclcpp::Node{
                     double yaw_detected = math_utils::getYaw(q);
 
                     fixed_positions.push_back(landmark); //once both lists have been validated, push them back
-                    detected_positions.push_back(Eigen::Vector3d(x_detected, y_detected, yaw_detected));
+                    detected_positions.push_back(Eigen::Vector2d(x_detected, y_detected));
 
                 } catch (tf2::TransformException &ex) {
                     continue; }
             }
-
-            //kalman_->update(fixed_positions, detected_positions); //the filter recieves both lists
-            kalman_->update(fixed_positions);
-
+                for (size_t i = 0; i < fixed_positions.size(); i++){
+                    kalman_->update(
+                        fixed_positions[i],    // xy pf world landmark 
+                        detected_positions[i]  // xy of runtime detection
+                    );
+                }
         }
 
 
@@ -172,7 +175,7 @@ class OdometryNode : public rclcpp::Node{
 
         std::unordered_map<int, Eigen::Vector2d> landmark_map_; 
 
-        tf2_ros::Buffer tf_buffer_;
+        tf2_ros::Buffer tf_buffer_{this->get_clock()};
         std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
         std::unique_ptr<ExtendedKalmanFilter> kalman_; 
