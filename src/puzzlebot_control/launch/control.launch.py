@@ -36,7 +36,7 @@ def generate_launch_description():
 
 
     return LaunchDescription([
-            js_pub, encoders_sim, sim_arg
+            js_pub, encoders_sim, odom, sim_arg
         ])
 
 

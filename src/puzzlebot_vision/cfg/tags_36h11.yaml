@@ -20,6 +20,6 @@
 
         # optional list of tags
         tag:
-            ids: [1, 9, 14]            # tag ID
-            frames: [camera, apriltag, apriltag]  # optional frame name
-            sizes: [0.10, 0.10, 0.10]   # optional tag-specific edge size
+            ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]            # tag ID
+            frames: [apriltag0, apriltag1, apriltag2, apriltag3, apriltag4, apriltag5, apriltag6, apriltag7, apriltag8, apriltag9, apriltag10]  # optional frame name
+            sizes: [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10]   # optional tag-specific edge size

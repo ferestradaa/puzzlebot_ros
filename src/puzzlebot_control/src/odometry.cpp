@@ -93,7 +93,7 @@ class OdometryNode : public rclcpp::Node{
                 if (iterator == landmark_map_.end()){ // if not, iterator is end() == NULL
                     continue; }
                 auto landmark = iterator->second; //landmark has the value if found
-                std::string frame = "tag_" + std::to_string(marker.id); //creates frame with detected landamark for tf
+                std::string frame = "apriltag" + std::to_string(marker.id); //creates frame with detected landamark for tf
 
                 try {
                     auto tf = tf_buffer_.lookupTransform(
@@ -160,10 +160,39 @@ class OdometryNode : public rclcpp::Node{
 
 
         void publish_odometry(){
-            get_odom(); 
+            get_odom();
+
+            Eigen::Vector3d state = kalman_->getState();
+            Eigen::Matrix3d cov   = kalman_->getCovariance();
+
             nav_msgs::msg::Odometry msg;
-            odom_pub_ -> publish(msg); 
-        }
+            msg.header.stamp    = this->get_clock()->now();
+            msg.header.frame_id = "odom";
+            msg.child_frame_id  = "base_link";
+
+            msg.pose.pose.position.x = state(0);
+            msg.pose.pose.position.y = state(1);
+            msg.pose.pose.position.z = 0.0;
+
+            // orientación: theta -> quaternion
+            tf2::Quaternion q;
+            q.setRPY(0.0, 0.0, state(2));
+            msg.pose.pose.orientation = tf2::toMsg(q);
+
+            // covarianza de pose (6x6: x,y,z,roll,pitch,yaw)
+            // solo llenamos los términos que el EKF conoce
+            msg.pose.covariance[0]  = cov(0,0); // x-x
+            msg.pose.covariance[1]  = cov(0,1); // x-y
+            msg.pose.covariance[5]  = cov(0,2); // x-yaw
+            msg.pose.covariance[6]  = cov(1,0); // y-x
+            msg.pose.covariance[7]  = cov(1,1); // y-y
+            msg.pose.covariance[11] = cov(1,2); // y-yaw
+            msg.pose.covariance[30] = cov(2,0); // yaw-x
+            msg.pose.covariance[31] = cov(2,1); // yaw-y
+            msg.pose.covariance[35] = cov(2,2); // yaw-yaw
+
+            odom_pub_->publish(msg);
+}
 
 
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; 

@@ -56,5 +56,5 @@ def generate_launch_description():
         rviz_arg,
         desc_launch,
         control_launch,
-        #vision_launch
+        vision_launch
     ])

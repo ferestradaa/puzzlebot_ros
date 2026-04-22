@@ -15,10 +15,12 @@ find_package(apriltag_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
 
 
 add_executable(joint_state_pub src/joint_state_pub.cpp)
-#add_executable(odometry src/odometry.cpp)
+add_executable(odometry src/odometry.cpp)
 add_executable(sim_encoders src/sim_encoders.cpp)
 
 ament_target_dependencies(joint_state_pub
@@ -28,14 +30,15 @@ std_msgs
 )
 
 
-#ament_target_dependencies(odometry
-#rclcpp
-#nav_msgs
-#std_msgs
-#apriltag_msgs
-#tf2
-#tf2_ros
-#)
+ament_target_dependencies(odometry
+rclcpp
+nav_msgs
+std_msgs
+tf2_geometry_msgs
+apriltag_msgs
+tf2
+tf2_ros
+)
 
 
 ament_target_dependencies(sim_encoders
@@ -44,15 +47,15 @@ sensor_msgs
 std_msgs
 )
 
-#target_include_directories(odometry PUBLIC
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#  $<INSTALL_INTERFACE:include>
-#)
+target_include_directories(odometry PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 
-#target_link_libraries(odometry Eigen3::Eigen)
+target_link_libraries(odometry Eigen3::Eigen)
 
 
-install(TARGETS joint_state_pub sim_encoders
+install(TARGETS joint_state_pub sim_encoders odometry
   DESTINATION lib/${PROJECT_NAME}
 )
 
