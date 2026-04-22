@@ -30,12 +30,15 @@ which is:
 #include <nav_msgs/msg/odometry.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <cmath>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2/exceptions.h>
 
 #include <apriltag_msgs/msg/april_tag_detection.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 
-#include <kalman_filter.hpp>
-#include <math_utils.hpp>
+#include "puzzlebot_control/kalman_filter.hpp"
+#include "puzzlebot_control/math_utils.hpp"
 
 class OdometryNode : public rclcpp::Node{
     public:
@@ -61,7 +64,6 @@ class OdometryNode : public rclcpp::Node{
 
         odom_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
 
-        tf_buffer_ = tf2_ros::Buffer(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
 
         kalman_ = std::make_unique<ExtendedKalmanFilter>(r_, L_);
@@ -101,12 +103,14 @@ class OdometryNode : public rclcpp::Node{
 
                     double x_detected = tf.transform.translation.x;
                     double y_detected = tf.transform.translation.y;
-                    double yaw_detected = math_utils::getYaw({ //yaw in robot base link
-                                tf.transform.orientation.x,
-                                tf.transform.orientation.y,
-                                tf.transform.orientation.z,
-                                tf.transform.orientation.w
-                    });
+                    math_utils::Quaternion q{
+                        tf.transform.rotation.x,
+                        tf.transform.rotation.y,
+                        tf.transform.rotation.z,
+                        tf.transform.rotation.w
+                    };
+
+                    double yaw_detected = math_utils::getYaw(q);
 
                     fixed_positions.push_back(landmark); //once both lists have been validated, push them back
                     detected_positions.push_back(Eigen::Vector3d(x_detected, y_detected, yaw_detected));
@@ -115,7 +119,8 @@ class OdometryNode : public rclcpp::Node{
                     continue; }
             }
 
-            kalman_.update(fixed_positions, detected_positions); //the filter recieves both lists
+            //kalman_->update(fixed_positions, detected_positions); //the filter recieves both lists
+            kalman_->update(fixed_positions);
 
         }
 
@@ -143,7 +148,7 @@ class OdometryNode : public rclcpp::Node{
             //theta_ += d_rot; //orientation
             //theta_ = std::atan2(std::sin(theta_), std::cos(theta_)); 
 
-            kalman_.predict(vL, vR, wheel_vel_left_rads_, wheel_vel_right_rads_, dt) //call kalman prediction uses lineal vel and angular vel
+            kalman_->predict(vL, vR, wheel_vel_left_rads_, wheel_vel_right_rads_, dt); //call kalman prediction uses lineal vel and angular vel
 
         }
 
@@ -153,6 +158,7 @@ class OdometryNode : public rclcpp::Node{
 
         void publish_odometry(){
             get_odom(); 
+            nav_msgs::msg::Odometry msg;
             odom_pub_ -> publish(msg); 
         }
 
@@ -163,6 +169,8 @@ class OdometryNode : public rclcpp::Node{
         rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr aruco_sub; 
         rclcpp::Time last_time_; 
         rclcpp::TimerBase::SharedPtr timer_;
+
+        std::unordered_map<int, Eigen::Vector2d> landmark_map_; 
 
         tf2_ros::Buffer tf_buffer_;
         std::shared_ptr<tf2_ros::TransformListener> tf_listener_;

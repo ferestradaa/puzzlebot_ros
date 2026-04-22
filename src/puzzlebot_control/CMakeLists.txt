@@ -11,10 +11,15 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(apriltag_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 
 add_executable(joint_state_pub src/joint_state_pub.cpp)
-add_executable(odometry src/odometry.cpp)
+#add_executable(odometry src/odometry.cpp)
+add_executable(sim_encoders src/sim_encoders.cpp)
 
 ament_target_dependencies(joint_state_pub
 rclcpp
@@ -22,14 +27,37 @@ sensor_msgs
 std_msgs
 )
 
-ament_target_dependencies(odometry
+
+#ament_target_dependencies(odometry
+#rclcpp
+#nav_msgs
+#std_msgs
+#apriltag_msgs
+#tf2
+#tf2_ros
+#)
+
+
+ament_target_dependencies(sim_encoders
 rclcpp
-nav_msgs
+sensor_msgs
 std_msgs
 )
 
-install(TARGETS joint_state_pub odometry
+#target_include_directories(odometry PUBLIC
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#  $<INSTALL_INTERFACE:include>
+#)
+
+#target_link_libraries(odometry Eigen3::Eigen)
+
+
+install(TARGETS joint_state_pub sim_encoders
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 # uncomment the following section in order to fill in
