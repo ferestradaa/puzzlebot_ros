@@ -37,7 +37,6 @@ Visualization Manager:
       Visual Enabled: true
       Collision Enabled: false
       Alpha: 1.0
-      # Si las meshes no cargan, ponlo en URDF para ver solo geometría primitiva
       Description Source: Topic
 
     - Class: rviz_default_plugins/TF
@@ -49,6 +48,44 @@ Visualization Manager:
       Frame Timeout: 15
       Marker Scale: 0.3
       Update Interval: 0
+
+    - Class: rviz_default_plugins/Image
+      Name: Camera
+      Enabled: true
+      Topic:
+        Value: /camera/image_raw
+      Reliability Policy: Best Effort
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Depth: 5
+
+    - Class: rviz_default_plugins/Odometry
+      Name: Odometry
+      Enabled: true
+      Topic:
+        Value: /odom_raw
+      Reliability Policy: Best Effort
+      Shape: Arrow
+      Keep: 100
+      Position Tolerance: 0.1
+      Angle Tolerance: 0.1
+      Covariance:
+        Position: true
+        Orientation: true
+
+    - Class: rviz_default_plugins/Odometry
+      Name: Odometry
+      Enabled: true
+      Topic:
+        Value: /odom
+      Reliability Policy: Best Effort
+      Shape: Arrow
+      Keep: 100
+      Position Tolerance: 0.1
+      Angle Tolerance: 0.1
+      Covariance:
+        Position: true
+        Orientation: true
 
 
   Tools:

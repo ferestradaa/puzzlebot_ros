@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <random>
 
 class WheelVelPublisher : public rclcpp::Node
 {
@@ -22,6 +23,11 @@ public:
     pub_left_  = this->create_publisher<std_msgs::msg::Float32>("VelEncL", 10);
     pub_right_ = this->create_publisher<std_msgs::msg::Float32>("VelEncR", 10);
 
+    this->declare_parameter<double>("noise_std", 0.1); // rad/s
+    noise_std_ = this->get_parameter("noise_std").as_double();
+
+    noise_dist_ = std::normal_distribution<double>(0.0, noise_std_);
+
     RCLCPP_INFO(this->get_logger(),
       "WheelVelPublisher started. Listening for joints: '%s' (L) | '%s' (R)",
       left_joint_name_.c_str(), right_joint_name_.c_str());
@@ -39,12 +45,16 @@ private:
 
     for (size_t i = 0; i < msg->name.size(); ++i) {
       if (msg->name[i] == left_joint_name_) {
+        
         std_msgs::msg::Float32 vel_msg;
-        vel_msg.data = static_cast<float>(msg->velocity[i]);
+        double noisy = msg->velocity[i] + noise_dist_(gen_);
+        vel_msg.data = static_cast<float>(noisy);
         pub_left_->publish(vel_msg);
+
       } else if (msg->name[i] == right_joint_name_) {
         std_msgs::msg::Float32 vel_msg;
-        vel_msg.data = static_cast<float>(msg->velocity[i]);
+        double noisy = msg->velocity[i] + noise_dist_(gen_);
+        vel_msg.data = static_cast<float>(noisy);
         pub_right_->publish(vel_msg);
       }
     }
@@ -56,6 +66,11 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_left_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_right_;
+
+  std::default_random_engine gen_;
+  std::normal_distribution<double> noise_dist_;
+
+  double noise_std_;
 };
 
 int main(int argc, char * argv[])

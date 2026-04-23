@@ -16,6 +16,7 @@ find_package(Eigen3 REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 
 
@@ -38,6 +39,7 @@ tf2_geometry_msgs
 apriltag_msgs
 tf2
 tf2_ros
+ament_index_cpp
 )
 
 
@@ -52,7 +54,7 @@ target_include_directories(odometry PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(odometry Eigen3::Eigen)
+target_link_libraries(odometry yaml-cpp Eigen3::Eigen)
 
 
 install(TARGETS joint_state_pub sim_encoders odometry
@@ -61,6 +63,10 @@ install(TARGETS joint_state_pub sim_encoders odometry
 
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
 )
 
 # uncomment the following section in order to fill in

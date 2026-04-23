@@ -41,6 +41,10 @@ which is:
 #include "puzzlebot_control/kalman_filter.hpp"
 #include "puzzlebot_control/math_utils.hpp"
 
+#include <yaml-cpp/yaml.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
+
 class OdometryNode : public rclcpp::Node{
     public:
         OdometryNode() : Node("odometry"),
@@ -65,10 +69,17 @@ class OdometryNode : public rclcpp::Node{
 
         odom_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
 
+        odom_raw_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom_raw", 10);
+
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
 
         kalman_ = std::make_unique<ExtendedKalmanFilter>(r_, L_);
 
+        std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_control");
+        std::string map_path;
+        this->declare_parameter("landmark_map_path", pkg_path + "/config/fixed_apriltags.yaml");
+        this->get_parameter("landmark_map_path", map_path);
+        loadLandmarkMap(map_path);
 
         RCLCPP_INFO(this->get_logger(), "Reading encoder velocities");
         
@@ -139,34 +150,31 @@ class OdometryNode : public rclcpp::Node{
             double vL = wheel_vel_left_rads_ * r_; //lineal velocity for each wheel
             double vR = wheel_vel_right_rads_ * r_; 
 
-            //double v_robot = (vR + vL) / 2.0;  //lineal velocity for the robot (part of twist message)
-            //double w_robot = (vR - vL) / L_;  //angular velocity for the whole robot (part of twist message)
+            double v_robot = (vR + vL) / 2.0;  //lineal velocity for the robot (part of twist message)
+            double w_robot = (vR - vL) / L_;  //angular velocity for the whole robot (part of twist message)
             
-            //double d_translation = v_robot * dt; //distance instead of velocity
-            //double d_rot = w_robot * dt; //angular distance instead of velocity
+            double d_translation = v_robot * dt; //distance instead of velocity
+            double d_rot = w_robot * dt; //angular distance instead of velocity
 
 
-            //x_ += d_translation * std::cos(theta_ + d_rot / 2.0); // x pos of the robot
-            //y_ += d_translation * std::sin(theta_ + d_rot / 2.0);  // y pos of the robot
-            //theta_ += d_rot; //orientation
-            //theta_ = std::atan2(std::sin(theta_), std::cos(theta_)); 
+            x_ += d_translation * std::cos(theta_ + d_rot / 2.0); // x pos of the robot
+            y_ += d_translation * std::sin(theta_ + d_rot / 2.0);  // y pos of the robot
+            theta_ += d_rot; //orientation
+            theta_ = std::atan2(std::sin(theta_), std::cos(theta_)); 
 
             kalman_->predict(vL, vR, wheel_vel_left_rads_, wheel_vel_right_rads_, dt); //call kalman prediction uses lineal vel and angular vel
 
         }
 
-
-
-
-
         void publish_odometry(){
             get_odom();
+            auto stamp = this->get_clock()->now();
 
             Eigen::Vector3d state = kalman_->getState();
             Eigen::Matrix3d cov   = kalman_->getCovariance();
 
             nav_msgs::msg::Odometry msg;
-            msg.header.stamp    = this->get_clock()->now();
+            msg.header.stamp    = stamp; 
             msg.header.frame_id = "odom";
             msg.child_frame_id  = "base_link";
 
@@ -192,10 +200,34 @@ class OdometryNode : public rclcpp::Node{
             msg.pose.covariance[35] = cov(2,2); // yaw-yaw
 
             odom_pub_->publish(msg);
-}
+
+            nav_msgs::msg::Odometry raw_msg;
+            raw_msg.header.stamp    = stamp; 
+            raw_msg.header.frame_id = "odom";
+            raw_msg.child_frame_id  = "base_link";
+            raw_msg.pose.pose.position.x = x_;
+            raw_msg.pose.pose.position.y = y_;
+            tf2::Quaternion q_raw;
+            q_raw.setRPY(0.0, 0.0, theta_);
+            raw_msg.pose.pose.orientation = tf2::toMsg(q_raw);
+            odom_raw_pub_->publish(raw_msg);
+        }
+
+
+        void loadLandmarkMap(const std::string& path)
+        {
+            YAML::Node config = YAML::LoadFile(path);
+            for (auto it = config["landmarks"].begin(); it != config["landmarks"].end(); ++it) {
+                int id = it->first.as<int>();
+                auto v = it->second.as<std::vector<double>>();
+                landmark_map_[id] = Eigen::Vector2d(v[0], v[1]);
+            }
+            RCLCPP_INFO(this->get_logger(), "Loaded %zu landmarks", landmark_map_.size());
+        }
 
 
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; 
+        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_raw_pub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encl_sub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encr_sub_; 
         rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr aruco_sub; 
