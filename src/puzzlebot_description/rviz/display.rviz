@@ -66,6 +66,10 @@ Visualization Manager:
         Value: /odom_raw
       Reliability Policy: Best Effort
       Shape: Arrow
+      Shaft Length: 0.1
+      Shaft Radius: 0.01
+      Head Length: 0.05
+      Head Radius: 0.02
       Keep: 100
       Position Tolerance: 0.1
       Angle Tolerance: 0.1

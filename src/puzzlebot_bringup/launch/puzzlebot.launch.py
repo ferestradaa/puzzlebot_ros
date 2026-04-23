@@ -48,7 +48,10 @@ def generate_launch_description():
     vision_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(vision, 'launch', 'vision.launch.py')
-        )
+        ), 
+        launch_arguments={
+            'use_sim': use_sim,
+        }.items()
     )
 
     return LaunchDescription([

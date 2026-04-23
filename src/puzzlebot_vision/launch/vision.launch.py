@@ -4,7 +4,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node 
-from launch.conditions import UnlessCondition
+from launch.conditions import IfCondition
 
 
 def generate_launch_description():
@@ -32,7 +32,14 @@ def generate_launch_description():
         parameters=[apriltag_config],
     )
 
+    camera_noise = Node(   
+        package='puzzlebot_vision',
+        executable='camera_noise_node',
+        condition=IfCondition(use_sim) #only activated if use sim is set
+    )
+
     return LaunchDescription([
         sim_arg,
-        apriltag_node
+        apriltag_node, 
+        camera_noise
     ])

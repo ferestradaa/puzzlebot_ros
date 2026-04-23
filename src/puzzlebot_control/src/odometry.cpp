@@ -108,7 +108,7 @@ class OdometryNode : public rclcpp::Node{
 
                 try {
                     auto tf = tf_buffer_.lookupTransform(
-                        "camera_color_optical_frame",
+                        "base_link",
                         frame, //used the detected frame
                         tf2::TimePointZero
                     );

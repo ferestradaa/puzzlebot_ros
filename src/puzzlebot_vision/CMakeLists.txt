@@ -160,4 +160,18 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+add_executable(camera_noise_node
+    src/camera_noise.cpp
+)
+target_link_libraries(camera_noise_node
+  PRIVATE
+    ${sensor_msgs_TARGETS}
+    cv_bridge::cv_bridge
+    rclcpp::rclcpp
+    opencv_core
+    opencv_imgproc
+)
+install(TARGETS camera_noise_node
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
 ament_package()
