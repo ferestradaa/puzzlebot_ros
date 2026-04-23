@@ -34,6 +34,9 @@ which is:
 #include <tf2_ros/transform_listener.h>
 #include <tf2/exceptions.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <rclcpp/timer.hpp>
 
 #include <apriltag_msgs/msg/april_tag_detection.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
@@ -51,7 +54,7 @@ class OdometryNode : public rclcpp::Node{
             r_(0.05), L_(0.19),
             x_(0.0), y_(0.0), theta_(0.0),
             wheel_vel_left_rads_(0.0), wheel_vel_right_rads_(0.0),
-            last_time_(this->get_clock()->now()){
+            last_time_(rclcpp::Time(0, 0, this->get_clock()->get_clock_type())){
 
 
         encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelEncL", 10,
@@ -64,16 +67,22 @@ class OdometryNode : public rclcpp::Node{
         aruco_sub = this -> create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>("/detections", 10, //this has to be aruco detection in 
         std::bind(&OdometryNode::aruco_callback, this, std::placeholders::_1)); 
 
-        timer_ = this ->create_wall_timer(std::chrono::milliseconds(50), 
-                std::bind(&OdometryNode::publish_odometry, this)); 
+        timer_ = rclcpp::create_timer(
+            this,
+            this->get_clock(),
+            rclcpp::Duration::from_seconds(0.05),
+            std::bind(&OdometryNode::publish_odometry, this));
 
         odom_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
 
         odom_raw_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom_raw", 10);
 
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
+        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-        kalman_ = std::make_unique<ExtendedKalmanFilter>(r_, L_);
+        Eigen::Matrix3d P0 = Eigen::Matrix3d::Identity() * 0.001;
+
+        kalman_ = std::make_unique<ExtendedKalmanFilter>(r_, L_, Eigen::Vector3d::Zero(), P0);
 
         std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_control");
         std::string map_path;
@@ -98,6 +107,9 @@ class OdometryNode : public rclcpp::Node{
             std::vector<Eigen::Vector2d> detected_positions; //list for xyyaw detected landmarks
             std::vector<Eigen::Vector2d> fixed_positions; //list for xyyaw known landmakrs in map
 
+            rclcpp::Time detection_time = msg->header.stamp;
+
+
             for (const auto& marker :msg->detections){ //using every detection in frame
 
                 auto iterator = landmark_map_.find(marker.id); //find() looks for the key in the map and returns where it is
@@ -110,7 +122,8 @@ class OdometryNode : public rclcpp::Node{
                     auto tf = tf_buffer_.lookupTransform(
                         "base_link",
                         frame, //used the detected frame
-                        tf2::TimePointZero
+                        tf2::TimePointZero,
+                        tf2::durationFromSec(0.1)
                     );
 
                     double x_detected = tf.transform.translation.x;
@@ -136,13 +149,13 @@ class OdometryNode : public rclcpp::Node{
                         detected_positions[i]  // xy of runtime detection
                     );
                 }
+                
         }
 
 
 
 
-        void get_odom(){
-            rclcpp::Time now = this ->get_clock()->now(); 
+        void get_odom(const rclcpp::Time& now){
             double dt = (now - last_time_).seconds();
             last_time_ = now; 
             if (dt <= 0.0 || dt > 1.0) return; //avoid invalid dt 
@@ -167,8 +180,9 @@ class OdometryNode : public rclcpp::Node{
         }
 
         void publish_odometry(){
-            get_odom();
+
             auto stamp = this->get_clock()->now();
+            get_odom(stamp);
 
             Eigen::Vector3d state = kalman_->getState();
             Eigen::Matrix3d cov   = kalman_->getCovariance();
@@ -176,7 +190,7 @@ class OdometryNode : public rclcpp::Node{
             nav_msgs::msg::Odometry msg;
             msg.header.stamp    = stamp; 
             msg.header.frame_id = "odom";
-            msg.child_frame_id  = "base_link";
+            msg.child_frame_id  = "base_footprint";
 
             msg.pose.pose.position.x = state(0);
             msg.pose.pose.position.y = state(1);
@@ -204,13 +218,25 @@ class OdometryNode : public rclcpp::Node{
             nav_msgs::msg::Odometry raw_msg;
             raw_msg.header.stamp    = stamp; 
             raw_msg.header.frame_id = "odom";
-            raw_msg.child_frame_id  = "base_link";
+            raw_msg.child_frame_id  = "base_footprint";
             raw_msg.pose.pose.position.x = x_;
             raw_msg.pose.pose.position.y = y_;
             tf2::Quaternion q_raw;
             q_raw.setRPY(0.0, 0.0, theta_);
             raw_msg.pose.pose.orientation = tf2::toMsg(q_raw);
             odom_raw_pub_->publish(raw_msg);
+
+
+            geometry_msgs::msg::TransformStamped tf_msg;
+            tf_msg.header.stamp    = stamp;
+            tf_msg.header.frame_id = "odom";
+            tf_msg.child_frame_id  = "base_footprint";
+            tf_msg.transform.translation.x = state(0);       // raw, no EKF
+            tf_msg.transform.translation.y = state(1);
+            tf_msg.transform.translation.z = 0.0;
+            tf_msg.transform.rotation = tf2::toMsg(q);  // q_raw ya existe arriba
+
+            tf_broadcaster_->sendTransform(tf_msg);
         }
 
 
@@ -238,6 +264,7 @@ class OdometryNode : public rclcpp::Node{
 
         tf2_ros::Buffer tf_buffer_{this->get_clock()};
         std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
         std::unique_ptr<ExtendedKalmanFilter> kalman_; 
 

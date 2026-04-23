@@ -52,7 +52,7 @@ class ExtendedKalmanFilter{
             double theta_prev = mu_(2);
             double v = (vR + vL) / 2.0; //lineal pos of the robot
             double omega = (vR - vL) / L_; 
-            double theta_mid = theta_prev + omega / 2.0; //mean of initial angle and new angle
+            double theta_mid = theta_prev + omega * dt / 2.0; //mean of initial angle and new angle
 
             F_ << 1, 0, -v *std::sin(theta_mid) * dt, //jacobian of motion model
                  0, 1,  v * std::cos(theta_mid) * dt, 
@@ -88,6 +88,11 @@ class ExtendedKalmanFilter{
             //consideres yaw orientation (it is noise and probablu instroduces more noise
             //rather than improving the filter)
 
+            std::cout << "=== EKF UPDATE ===" << std::endl;
+            std::cout << "mu antes: " << mu_.transpose() << std::endl;
+            std::cout << "landmark_world: " << landmark_world.transpose() << std::endl;
+            std::cout << "z_detected (base_link): " << z_detected.transpose() << std::endl;
+
             double xL = landmark_world(0);
             double yL = landmark_world(1);
             double delta_x = xL - mu_(0); //xL is x detection of landmark same as yL
@@ -98,10 +103,14 @@ class ExtendedKalmanFilter{
             h_mu << std::cos(mu_(2)) * delta_x + std::sin(mu_(2)) * delta_y, // z_pred
                       - std::sin(mu_(2)) * delta_x + std::cos(mu_(2)) *delta_y; 
 
+            std::cout << "h_mu (prediccion): " << h_mu.transpose() << std::endl;
+
             Eigen::Vector2d y;
             y << z_detected(0) - h_mu(0), //inovation (xy landmark runtime detection - zpred)
                  z_detected(1) - h_mu(1); 
-            
+
+            std::cout << "innovacion y: " << y.transpose() << std::endl;
+                        
             Eigen::Matrix<double, 2, 3> H;
             H << -std::cos(mu_(2)),     -std::sin(mu_(2)),  -delta_x * std::sin(mu_(2)) + delta_y * std::cos(mu_(2)), //jacobian
                   std::sin(mu_(2)),     -std::cos(mu_(2)),  -delta_x * std::cos(mu_(2)) - delta_y * std::sin(mu_(2)); //change betwwen state and suposed state (aruco fixed pos)
@@ -118,7 +127,8 @@ class ExtendedKalmanFilter{
 
             Eigen::Matrix3d I_KH = Eigen::Matrix3d::Identity() - K * H;
             P_ = I_KH * P_ * I_KH.transpose() + K * R_ * K.transpose();
-                 
+            std::cout << "mu despues: " << mu_.transpose() << std::endl;
+            std::cout << "==================" << std::endl;
         }
 
         Eigen::Vector3d getState()      const { return mu_; }

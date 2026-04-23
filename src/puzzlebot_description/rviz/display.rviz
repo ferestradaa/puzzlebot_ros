@@ -70,7 +70,7 @@ Visualization Manager:
       Shaft Radius: 0.01
       Head Length: 0.05
       Head Radius: 0.02
-      Keep: 100
+      Keep: 1000
       Position Tolerance: 0.1
       Angle Tolerance: 0.1
       Covariance:
@@ -84,7 +84,11 @@ Visualization Manager:
         Value: /odom
       Reliability Policy: Best Effort
       Shape: Arrow
-      Keep: 100
+      Color:
+        R: 0
+        G: 255
+        B: 0
+      Keep: 1000
       Position Tolerance: 0.1
       Angle Tolerance: 0.1
       Covariance:

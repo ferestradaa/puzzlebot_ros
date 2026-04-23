@@ -6,6 +6,8 @@ from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node 
 from launch.conditions import IfCondition
 from launch.conditions import UnlessCondition
+from launch_ros.actions import SetParameter
+
 
 
 def generate_launch_description():
@@ -16,6 +18,9 @@ def generate_launch_description():
             'use_sim', 
             default_value = 'true', 
         )
+    
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='false')
     
     js_pub = Node(
         package='puzzlebot_control', 
@@ -36,7 +41,12 @@ def generate_launch_description():
 
 
     return LaunchDescription([
-            js_pub, encoders_sim, sim_arg
+            use_sim_time_arg,
+            sim_arg,
+            SetParameter(name='use_sim_time', value=use_sim_time),
+            js_pub,
+            encoders_sim,
+            odom
         ])
 
 

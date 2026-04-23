@@ -5,6 +5,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, Command 
 from launch_ros.actions import Node 
 from launch.conditions import IfCondition
+from launch_ros.actions import SetParameter
 
 
 def generate_launch_description():
@@ -14,6 +15,11 @@ def generate_launch_description():
     urdf_file = os.path.join(pkg_share, 'urdf', 'puzzlebot.urdf.xacro') #loads xacro.urdf file that describes the whole robot
     robot_description = Command(['xacro ', urdf_file])
     rviz = LaunchConfiguration('rviz')
+
+    
+    use_sim_time = LaunchConfiguration('use_sim_time')
+
+    use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='false')
 
     rviz_arg = DeclareLaunchArgument(
             'rviz', 
@@ -27,7 +33,7 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_description}])
                     # 'frame_prefix': 'sim/'}] use it when youve got world 
     
-    rviz = Node( #for vialuzation, launch rviz too
+    rviz_node = Node( #for vialuzation, launch rviz too
             package='rviz2',
             executable='rviz2',
             name='rviz2',
@@ -37,7 +43,11 @@ def generate_launch_description():
         )
         
     return LaunchDescription([
-            rviz_arg, rs_pub, rviz,
+            use_sim_time_arg,
+            SetParameter(name='use_sim_time', value=use_sim_time),
+            rviz_arg, 
+            rs_pub,
+            rviz_node,
         ])
 
 
