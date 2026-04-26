@@ -14,7 +14,6 @@ services:
       - DISPLAY=${DISPLAY} #in case needing GUI
       - PULSE_SERVER=unix:/run/user/1000/pulse/native
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-      - QT_X11_NO_MITSHM=1          # both for using ui
       - NVIDIA_VISIBLE_DEVICES=all   
       - NVIDIA_DRIVER_CAPABILITIES=all     
       - LIBGL_ALWAYS_SOFTWARE=0 

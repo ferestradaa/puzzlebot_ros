@@ -51,7 +51,7 @@ which is:
 class OdometryNode : public rclcpp::Node{
     public:
         OdometryNode() : Node("odometry"),
-            r_(0.05), L_(0.19),
+            r_(0.044), L_(0.19),
             x_(0.0), y_(0.0), theta_(0.0),
             wheel_vel_left_rads_(0.0), wheel_vel_right_rads_(0.0),
             last_time_(rclcpp::Time(0, 0, this->get_clock()->get_clock_type())){
@@ -70,7 +70,7 @@ class OdometryNode : public rclcpp::Node{
         timer_ = rclcpp::create_timer(
             this,
             this->get_clock(),
-            rclcpp::Duration::from_seconds(0.05),
+            rclcpp::Duration::from_seconds(0.025),//before it was at 0.05
             std::bind(&OdometryNode::publish_odometry, this));
 
         odom_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom", 10);

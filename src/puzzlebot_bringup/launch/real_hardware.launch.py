@@ -1,0 +1,76 @@
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import SetParameter
+from launch_ros.actions import Node
+
+def generate_launch_description():
+
+    description = get_package_share_directory('puzzlebot_description')
+    control     = get_package_share_directory('puzzlebot_control')
+    vision      = get_package_share_directory('puzzlebot_vision')
+
+    use_sim      = LaunchConfiguration('use_sim')
+    rviz         = LaunchConfiguration('rviz')
+    use_sim_time = LaunchConfiguration('use_sim_time')
+
+    use_sim_arg      = DeclareLaunchArgument('use_sim',      default_value='true')  
+    rviz_arg         = DeclareLaunchArgument('rviz',         default_value='true')
+    use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='true')  
+
+
+    micro_ros_agent = Node(
+        package='micro_ros_agent',
+        executable='micro_ros_agent',
+        name='micro_ros_agent',
+        arguments=["serial", "-D", "/dev/ttyUSB1"],
+        parameters=[],
+        output='screen'
+    )
+
+    puzzlebot_cam = Node(
+        package='ros_deep_learning',
+        executable='video_source',
+        name='video_source',
+        output='screen',
+        parameters=[{
+            'resource': 'csi://0',
+            'width': 640,
+            'height': 480,
+            'codec': 'unknown',
+            'loop': 0,
+            'latency': 100,
+        }], 
+        remappings=[
+            ('/video_source/raw', '/camera/image_raw'),
+        ]
+    )
+
+    lidar = Node(
+    package='sllidar_ros2',
+    executable='sllidar_node',
+    name='sllidar_node',
+    parameters=[{
+        'channel_type': 'serial',
+        'serial_port': '/dev/ttyUSB0',
+        'serial_baudrate': 115200,
+        'frame_id': 'laser',
+        'inverted': False,
+        'angle_compensate': True,
+        'scan_mode': 'Sensitivity',
+    }],
+    output='screen'
+)  
+
+    return LaunchDescription([
+        use_sim_arg, 
+        rviz_arg, 
+        micro_ros_agent, 
+        puzzlebot_cam, 
+        lidar, 
+        
+    ])
+

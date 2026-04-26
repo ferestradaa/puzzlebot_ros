@@ -30,7 +30,8 @@ def generate_launch_description():
         package='robot_state_publisher',
         executable='robot_state_publisher',
         remappings=[('joint_states', '/joint_states')], #change the topic  in case using simulated joint states (not now)
-        parameters=[{'robot_description': robot_description}])
+        parameters=[{'robot_description': robot_description,
+                     'use_sim_time': use_sim_time,}])
                     # 'frame_prefix': 'sim/'}] use it when youve got world 
     
     rviz_node = Node( #for vialuzation, launch rviz too

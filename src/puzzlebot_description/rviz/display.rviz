@@ -1,21 +1,34 @@
 Panels:
   - Class: rviz_common/Displays
+    Help Height: 138
     Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Status1
+        - /RobotModel1
+        - /RobotModel1/Status1
+        - /Camera1
+        - /Odometry2
+        - /Odometry2/Shape1
+      Splitter Ratio: 0.5
+    Tree Height: 320
   - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
     Name: Views
-
+    Splitter Ratio: 0.5
 Visualization Manager:
   Class: ""
   Displays:
-
-    - Class: rviz_default_plugins/Grid
-      Name: Grid
-      Enabled: true
-      Cell Size: 0.1
+    - Alpha: 0.5
+      Cell Size: 0.10000000149011612
+      Class: rviz_default_plugins/Grid
       Color: 160; 160; 164
+      Enabled: true
       Line Style:
-        Line Width: 0.03
+        Line Width: 0.029999999329447746
         Value: Lines
+      Name: Grid
       Normal Cell Count: 0
       Offset:
         X: 0
@@ -24,78 +37,268 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 20
       Reference Frame: <Fixed Frame>
-
-    - Class: rviz_default_plugins/RobotModel
-      Name: RobotModel
-      Enabled: true
+      Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
       Description Topic:
         Depth: 5
         Durability Policy: Transient Local
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /robot_description
-      Visual Enabled: true
-      Collision Enabled: false
-      Alpha: 1.0
-      Description Source: Topic
-
-    - Class: rviz_default_plugins/TF
-      Name: TF
       Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        base_footprint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        camera_color_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        camera_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        caster_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        chassis:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lidar_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Mass Properties:
+        Inertia: false
+        Mass: false
+      Name: RobotModel
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+        apriltag0:
+          Value: true
+        apriltag1:
+          Value: true
+        apriltag2:
+          Value: true
+        apriltag3:
+          Value: true
+        apriltag4:
+          Value: true
+        base_footprint:
+          Value: true
+        base_link:
+          Value: true
+        camera_color_optical_frame:
+          Value: true
+        camera_link:
+          Value: true
+        caster_wheel:
+          Value: true
+        chassis:
+          Value: true
+        left_wheel:
+          Value: true
+        lidar_link:
+          Value: true
+        odom:
+          Value: true
+        right_wheel:
+          Value: true
+      Marker Scale: 0.30000001192092896
+      Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: false
-      Frame Timeout: 15
-      Marker Scale: 0.3
+      Tree:
+        odom:
+          base_footprint:
+            base_link:
+              chassis:
+                camera_link:
+                  camera_color_optical_frame:
+                    {}
+                caster_wheel:
+                  {}
+                lidar_link:
+                  {}
       Update Interval: 0
-
+      Value: true
     - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
       Name: Camera
-      Enabled: true
+      Normalize Range: true
       Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
         Value: /camera/image_raw
-      Reliability Policy: Best Effort
-      Durability Policy: Volatile
-      History Policy: Keep Last
-      Depth: 5
+      Value: true
+    - Angle Tolerance: 0.10000000149011612
 
-    - Class: rviz_default_plugins/Odometry
-      Name: Odometry
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
       Enabled: true
+      Keep: 1000
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 255; 25; 0
+        Head Length: 0.30000001192092896
+        Head Radius: 0.10000000149011612
+        Shaft Length: 1
+        Shaft Radius: 0.05000000074505806
+        Value: Arrow
       Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
         Value: /odom_raw
-      Reliability Policy: Best Effort
-      Shape: Arrow
-      Shaft Length: 0.1
-      Shaft Radius: 0.01
-      Head Length: 0.05
-      Head Radius: 0.02
-      Keep: 1000
-      Position Tolerance: 0.1
-      Angle Tolerance: 0.1
-      Covariance:
-        Position: true
-        Orientation: true
+      Value: true
+    - Angle Tolerance: 0.10000000149011612
 
-    - Class: rviz_default_plugins/Odometry
-      Name: Odometry
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
       Enabled: true
-      Topic:
-        Value: /odom
-      Reliability Policy: Best Effort
-      Shape: Arrow
-      Color:
-        R: 0
-        G: 255
-        B: 0
       Keep: 1000
-      Position Tolerance: 0.1
-      Angle Tolerance: 0.1
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 0; 255; 0
+        Head Length: 0.30000001192092896
+        Head Radius: 0.019999999552965164
+        Shaft Length: 1
+        Shaft Radius: 0.019999999552965164
+        Value: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: sim/odom
+      Value: true
+    - Angle Tolerance: 0.10000000149011612
+
+      Class: rviz_default_plugins/Odometry
       Covariance:
-        Position: true
-        Orientation: true
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Keep: 1000
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 0; 0; 200
+        Head Length: 0.30000001192092896
+        Head Radius: 0.019999999552965164
+        Shaft Length: 1
+        Shaft Radius: 0.019999999552965164
+        Value: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /odom
+      Value: true
 
-
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: odom
+    Frame Rate: 30
+  Name: root
   Tools:
     - Class: rviz_default_plugins/Interact
       Hide Inactive Objects: true
@@ -129,10 +332,44 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /clicked_point
-
-  Enabled: true
-
-  Global Options:
-    Background Color: 48; 48; 48
-    Fixed Frame: base_link
-    Frame Rate: 30
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 5.832812309265137
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.825398325920105
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz_default_plugins)
+      Yaw: 5.925399303436279
+    Saved: ~
+Window Geometry:
+  Camera:
+    collapsed: false
+  Displays:
+    collapsed: false
+  Height: 1264
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd0000000100000000000002d80000045efc0200000003fb0000000c00430061006d0065007200610100000069000000670000004500fffffffb000000100044006900730070006c00610079007301000000dc0000022e0000017800fffffffb0000000a005600690065007700730100000316000001b10000012300ffffff000004010000045e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Views:
+    collapsed: false
+  Width: 1765
+  X: 244
+  Y: 178

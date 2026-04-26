@@ -47,13 +47,13 @@ private:
       if (msg->name[i] == left_joint_name_) {
         
         std_msgs::msg::Float32 vel_msg;
-        double noisy = msg->velocity[i] + noise_dist_(gen_);
+        double noisy = msg->velocity[i] ;//+ noise_dist_(gen_);
         vel_msg.data = static_cast<float>(noisy);
         pub_left_->publish(vel_msg);
 
       } else if (msg->name[i] == right_joint_name_) {
         std_msgs::msg::Float32 vel_msg;
-        double noisy = msg->velocity[i] + noise_dist_(gen_);
+        double noisy = msg->velocity[i]; //+ noise_dist_(gen_);
         vel_msg.data = static_cast<float>(noisy);
         pub_right_->publish(vel_msg);
       }
