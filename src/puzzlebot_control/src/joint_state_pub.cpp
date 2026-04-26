@@ -1,18 +1,20 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <rclcpp/qos.hpp>
 
 class EncoderNode : public rclcpp::Node{
     public:
         EncoderNode(): Node("joint_state_pub"){
 
+        auto qos = rclcpp::QoS(rclcpp::KeepLast(10)).best_effort();
 
         js_pub_ = this-> create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
-        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelocityEncL", 10,
+        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelocityEncL", qos,
             std::bind(&EncoderNode::encoderL_callback, this, std::placeholders::_1));
 
-        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelocityEncR", 10, 
+        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelocityEncR", qos, 
         std::bind(&EncoderNode::encoderR_callback, this, std::placeholders::_1));
 
         timer_ = this ->create_wall_timer(std::chrono::milliseconds(50), //timer for publishing joint states

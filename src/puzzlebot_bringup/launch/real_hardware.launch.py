@@ -11,6 +11,8 @@ def generate_launch_description():
 
 
     description = get_package_share_directory('puzzlebot_description')
+    control     = get_package_share_directory('puzzlebot_control')
+    vision      = get_package_share_directory('puzzlebot_vision')
 
     use_sim      = LaunchConfiguration('use_sim')
     rviz         = LaunchConfiguration('rviz')
@@ -75,6 +77,19 @@ def generate_launch_description():
         launch_arguments={'rviz': rviz, 'use_sim_time': use_sim_time}.items()
     )
 
+
+    control_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(control, 'launch', 'control.launch.py')),
+        launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
+    )
+    
+    vision_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(vision, 'launch', 'vision.launch.py')),
+        launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
+    )
+
     return LaunchDescription([
         use_sim_arg,
         rviz_arg,
@@ -83,6 +98,8 @@ def generate_launch_description():
         puzzlebot_cam,
         lidar,
         desc_launch,
+        control_launch, 
+        vision_launch,
 
     ])
 
