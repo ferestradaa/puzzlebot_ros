@@ -10,14 +10,15 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
 
+    description = get_package_share_directory('puzzlebot_description')
 
     use_sim      = LaunchConfiguration('use_sim')
     rviz         = LaunchConfiguration('rviz')
     use_sim_time = LaunchConfiguration('use_sim_time')
 
-    use_sim_arg      = DeclareLaunchArgument('use_sim',      default_value='true')  
-    rviz_arg         = DeclareLaunchArgument('rviz',         default_value='true')
-    use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='true')  
+    use_sim_arg      = DeclareLaunchArgument('use_sim',      default_value='false')
+    rviz_arg         = DeclareLaunchArgument('rviz',         default_value='false')
+    use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='false')
 
 
     micro_ros_agent = Node(
@@ -29,8 +30,8 @@ def generate_launch_description():
         remappings=[
             ('/VelocityEncL', '/VelEncL'),
             ('/VelocityEncR', '/VelEncR'),
-        ]
-        
+        ],
+
         output='screen'
     )
 
@@ -46,7 +47,7 @@ def generate_launch_description():
             'codec': 'unknown',
             'loop': 0,
             'latency': 100,
-        }], 
+        }],
         remappings=[
             ('/video_source/raw', '/camera/image_raw'),
         ]
@@ -66,14 +67,22 @@ def generate_launch_description():
         'scan_mode': 'Sensitivity',
     }],
     output='screen'
-)  
+)
+
+    desc_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(description, 'launch', 'display.launch.py')),
+        launch_arguments={'rviz': rviz, 'use_sim_time': use_sim_time}.items()
+    )
 
     return LaunchDescription([
-        use_sim_arg, 
-        rviz_arg, 
-        micro_ros_agent, 
-        puzzlebot_cam, 
-        lidar, 
-        
+        use_sim_arg,
+        rviz_arg,
+        use_sim_time_arg,
+        micro_ros_agent,
+        puzzlebot_cam,
+        lidar,
+        desc_launch,
+
     ])
 

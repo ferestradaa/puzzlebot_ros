@@ -9,10 +9,10 @@ class EncoderNode : public rclcpp::Node{
 
         js_pub_ = this-> create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
-        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelEncL", 10,
+        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelocityEncL", 10,
             std::bind(&EncoderNode::encoderL_callback, this, std::placeholders::_1));
 
-        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelEncR", 10, 
+        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelocityEncR", 10, 
         std::bind(&EncoderNode::encoderR_callback, this, std::placeholders::_1));
 
         timer_ = this ->create_wall_timer(std::chrono::milliseconds(50), //timer for publishing joint states
