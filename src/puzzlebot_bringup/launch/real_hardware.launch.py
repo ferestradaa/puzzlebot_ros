@@ -24,7 +24,7 @@ def generate_launch_description():
         package='micro_ros_agent',
         executable='micro_ros_agent',
         name='micro_ros_agent',
-        arguments=["serial", "-D", "/dev/ttyUSB1"],
+        arguments=["serial", "-D", "/dev/ttyHACKER"],
         parameters=[],
         output='screen'
     )
@@ -53,7 +53,7 @@ def generate_launch_description():
     name='sllidar_node',
     parameters=[{
         'channel_type': 'serial',
-        'serial_port': '/dev/ttyUSB0',
+        'serial_port': '/dev/ttyLIDAR',
         'serial_baudrate': 115200,
         'frame_id': 'laser',
         'inverted': False,
