@@ -4,7 +4,14 @@
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <opencv2/core/mat.hpp>
+#ifdef TF2_HAS_CONVERT_HPP
 #include <tf2/convert.hpp>
+#else
+#include <tf2/convert.h>
+#endif
+
+
+
 
 template<>
 void tf2::convert(const Eigen::Quaterniond& eigen_quat, geometry_msgs::msg::Quaternion& msg_quat)

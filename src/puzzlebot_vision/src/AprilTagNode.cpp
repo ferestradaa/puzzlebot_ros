@@ -12,7 +12,13 @@
 #include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
+
+#ifdef TF2_ROS_HAS_BROADCASTER_HPP
 #include <tf2_ros/transform_broadcaster.hpp>
+#else
+#include <tf2_ros/transform_broadcaster.h>
+#endif
+
 
 // apriltag
 #include "tag_functions.hpp"

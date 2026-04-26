@@ -44,6 +44,26 @@ find_package(Threads REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core calib3d)
 find_package(apriltag 3.2 REQUIRED)
 
+
+# detect tf2 convert header name (Ubuntu 22 uses .hpp, Ubuntu 20 uses .h)
+include(CheckIncludeFileCXX)
+get_target_property(TF2_INCLUDE_DIRS tf2::tf2 INTERFACE_INCLUDE_DIRECTORIES)
+set(CMAKE_REQUIRED_INCLUDES ${TF2_INCLUDE_DIRS})
+check_include_file_cxx("tf2/convert.hpp" TF2_HAS_CONVERT_HPP)
+if(TF2_HAS_CONVERT_HPP)
+    add_compile_definitions(TF2_HAS_CONVERT_HPP)
+endif()
+
+
+get_target_property(TF2_ROS_INCLUDE_DIRS tf2_ros::tf2_ros INTERFACE_INCLUDE_DIRECTORIES)
+set(CMAKE_REQUIRED_INCLUDES ${TF2_ROS_INCLUDE_DIRS})
+check_include_file_cxx("tf2_ros/transform_broadcaster.hpp" TF2_ROS_HAS_BROADCASTER_HPP)
+if(TF2_ROS_HAS_BROADCASTER_HPP)
+    add_compile_definitions(TF2_ROS_HAS_BROADCASTER_HPP)
+endif()
+
+
+
 if(cv_bridge_VERSION VERSION_GREATER_EQUAL 3.3.0)
     add_compile_definitions(cv_bridge_HPP)
 endif()

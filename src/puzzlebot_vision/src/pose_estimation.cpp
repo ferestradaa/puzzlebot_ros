@@ -3,7 +3,11 @@
 #include <apriltag/apriltag_pose.h>
 #include <apriltag/common/homography.h>
 #include <opencv2/calib3d.hpp>
+#ifdef TF2_HAS_CONVERT_HPP
 #include <tf2/convert.hpp>
+#else
+#include <tf2/convert.h>
+#endif
 
 
 geometry_msgs::msg::Transform
