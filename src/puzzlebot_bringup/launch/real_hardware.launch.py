@@ -9,9 +9,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
-    description = get_package_share_directory('puzzlebot_description')
-    control     = get_package_share_directory('puzzlebot_control')
-    vision      = get_package_share_directory('puzzlebot_vision')
+
 
     use_sim      = LaunchConfiguration('use_sim')
     rviz         = LaunchConfiguration('rviz')
