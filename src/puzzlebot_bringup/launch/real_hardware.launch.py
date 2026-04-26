@@ -26,6 +26,11 @@ def generate_launch_description():
         name='micro_ros_agent',
         arguments=["serial", "-D", "/dev/ttyHACKER"],
         parameters=[],
+        remappings=[
+            ('/VelocityEncL', '/VelEncL'),
+            ('/VelocityEncR', '/VelEncR'),
+        ]
+        
         output='screen'
     )
 
