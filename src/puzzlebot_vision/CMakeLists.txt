@@ -43,6 +43,7 @@ find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(Threads REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core calib3d)
 find_package(apriltag 3.2 REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 
 # detect tf2 convert header name (Ubuntu 22 uses .hpp, Ubuntu 20 uses .h)
@@ -109,7 +110,6 @@ set_property(TARGET conversion PROPERTY
     POSITION_INDEPENDENT_CODE ON
 )
 
-
 # pose estimation methods
 add_library(pose_estimation STATIC
     src/pose_estimation.cpp
@@ -126,7 +126,6 @@ target_link_libraries(pose_estimation
 set_property(TARGET pose_estimation PROPERTY
     POSITION_INDEPENDENT_CODE ON
 )
-
 
 # composable node
 add_library(AprilTagNode SHARED
@@ -183,6 +182,15 @@ endif()
 add_executable(camera_noise_node
     src/camera_noise.cpp
 )
+
+add_executable(camera_info_publisher
+    src/camera_info.cpp
+)
+
+add_executable(frame_id_stamper
+    src/frame_id_stamper.cpp
+)
+
 target_link_libraries(camera_noise_node
   PRIVATE
     ${sensor_msgs_TARGETS}
@@ -191,7 +199,35 @@ target_link_libraries(camera_noise_node
     opencv_core
     opencv_imgproc
 )
-install(TARGETS camera_noise_node
+
+target_link_libraries(frame_id_stamper
+  PRIVATE
+    ${sensor_msgs_TARGETS}
+    cv_bridge::cv_bridge
+    rclcpp::rclcpp
+    opencv_core
+    opencv_imgproc
+)
+
+
+target_link_libraries(camera_info_publisher 
+  PUBLIC
+    ${sensor_msgs_TARGETS}
+    cv_bridge::cv_bridge
+    rclcpp::rclcpp
+    opencv_core
+    opencv_imgproc
+    Eigen3::Eigen
+    yaml-cpp
+)
+
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
+
+
+
+
+
 ament_package()
