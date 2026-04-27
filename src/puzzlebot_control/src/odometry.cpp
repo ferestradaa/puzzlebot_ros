@@ -57,10 +57,10 @@ class OdometryNode : public rclcpp::Node{
             last_time_(rclcpp::Time(0, 0, this->get_clock()->get_clock_type())){
 
 
-        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelEncL", 10,
+        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncL", 10,
             std::bind(&OdometryNode::encoderL_callback, this, std::placeholders::_1));
 
-        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelEncR", 10, 
+        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncR", 10, 
         std::bind(&OdometryNode::encoderR_callback, this, std::placeholders::_1));
 
 
@@ -86,7 +86,8 @@ class OdometryNode : public rclcpp::Node{
 
         std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_control");
         std::string map_path;
-        this->declare_parameter("landmark_map_path", pkg_path + "/config/fixed_apriltags.yaml");
+        //this->declare_parameter("landmark_map_path", pkg_path + "/config/fixed_apriltags.yaml");
+        this->declare_parameter("landmark_map_path", pkg_path + "/config/real_fixed.yaml");
         this->get_parameter("landmark_map_path", map_path);
         loadLandmarkMap(map_path);
 
