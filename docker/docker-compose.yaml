@@ -10,10 +10,12 @@ services:
     network_mode: host
 
     environment: 
-      - ROS_DOMAIN_ID=100
+      #- ROS_DOMAIN_ID=100
+      - ROS_DOMAIN_ID=0 #when using jetson 
       - DISPLAY=${DISPLAY} #in case needing GUI
       - PULSE_SERVER=unix:/run/user/1000/pulse/native
-      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
       - NVIDIA_VISIBLE_DEVICES=all   
       - NVIDIA_DRIVER_CAPABILITIES=all     
       - LIBGL_ALWAYS_SOFTWARE=0 

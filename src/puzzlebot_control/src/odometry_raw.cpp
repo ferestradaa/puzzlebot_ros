@@ -23,10 +23,10 @@ class OdometryNode : public rclcpp::Node{
             last_time_(rclcpp::Time(0, 0, this->get_clock()->get_clock_type())){
 
 
-        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelEncL", 10,
+        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncL", 10,
             std::bind(&OdometryNode::encoderL_callback, this, std::placeholders::_1));
 
-        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelEncR", 10, 
+        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncR", 10, 
         std::bind(&OdometryNode::encoderR_callback, this, std::placeholders::_1));
 
         timer_ = rclcpp::create_timer(
@@ -55,8 +55,12 @@ class OdometryNode : public rclcpp::Node{
 
 
         void get_odom(const rclcpp::Time& now){
+            if (last_time_.nanoseconds() == 0) {
+                last_time_ = now;
+                return;
+            }
             double dt = (now - last_time_).seconds();
-            last_time_ = now; 
+            last_time_ = now;
             if (dt <= 0.0 || dt > 1.0) return; //avoid invalid dt 
 
             double vL = wheel_vel_left_rads_ * r_; //lineal velocity for each wheel
@@ -110,7 +114,6 @@ class OdometryNode : public rclcpp::Node{
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_raw_pub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encl_sub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encr_sub_; 
-        rclcpp::Time last_time_; 
         rclcpp::TimerBase::SharedPtr timer_;
 
 
@@ -118,8 +121,9 @@ class OdometryNode : public rclcpp::Node{
         std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
+        rclcpp::Time last_time_; 
         const double r_, L_;
-        double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_; 
+        double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_;
         
 }; 
 

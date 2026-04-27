@@ -8,6 +8,8 @@ from launch.conditions import IfCondition
 from launch.conditions import UnlessCondition
 from launch_ros.actions import SetParameter
 
+from launch.substitutions import LaunchConfiguration, Command, PythonExpression
+
 
 
 def generate_launch_description():
@@ -40,6 +42,13 @@ def generate_launch_description():
         executable='odometry', #valid for sim or real
     )
 
+    odom_raw = Node(
+        package='puzzlebot_control', 
+        executable='odometry_raw',
+    )
+
+    
+
 
     return LaunchDescription([
             use_sim_time_arg,
@@ -47,7 +56,8 @@ def generate_launch_description():
             SetParameter(name='use_sim_time', value=use_sim_time),
             js_pub,
             encoders_sim,
-            odom
+            #odom,
+            odom_raw,
         ])
 
 
