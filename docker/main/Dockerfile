@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-rmw-cyclonedds-cpp \
     ros-humble-ros2-control \
     ros-humble-control-msgs \
+    ros-humble-slam-toolbox \
+    ros-humble-teleop-twist-keyboard \  
  && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init 2>/dev/null || true && rosdep update
