@@ -22,7 +22,9 @@ find_package(ament_index_cpp REQUIRED)
 
 add_executable(joint_state_pub src/joint_state_pub.cpp)
 add_executable(odometry src/odometry.cpp)
+add_executable(odometry_raw src/odometry_raw.cpp)
 add_executable(sim_encoders src/sim_encoders.cpp)
+
 
 ament_target_dependencies(joint_state_pub
 rclcpp
@@ -37,6 +39,16 @@ nav_msgs
 std_msgs
 tf2_geometry_msgs
 apriltag_msgs
+tf2
+tf2_ros
+ament_index_cpp
+)
+
+ament_target_dependencies(odometry
+rclcpp
+nav_msgs
+std_msgs
+tf2_geometry_msgs
 tf2
 tf2_ros
 ament_index_cpp

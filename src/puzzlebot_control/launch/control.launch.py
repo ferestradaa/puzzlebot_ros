@@ -16,11 +16,18 @@ def generate_launch_description():
 
     sim_arg = DeclareLaunchArgument(
             'use_sim', 
-            default_value = 'true', 
+            default_value = 'false', 
         )
     
     use_sim_time = LaunchConfiguration('use_sim_time')
     use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='false')
+
+
+    encoders_sim = Node( #this node manually publishes the simulated angular velocity of wheels reading js
+        package='puzzlebot_control', 
+        executable='sim_encoders', 
+        condition=IfCondition(use_sim) #only activated if use sim is set
+    )
     
     js_pub = Node(
         package='puzzlebot_control', 
@@ -28,12 +35,6 @@ def generate_launch_description():
         condition=UnlessCondition(use_sim) #unless because isaac sim alredady publushes js
     )   
     
-    encoders_sim = Node( #this node manually publishes the simulated angular velocity of wheels reading js
-        package='puzzlebot_control', 
-        executable='sim_encoders', 
-        condition=IfCondition(use_sim) #only activated if use sim is set
-    )
-
     odom = Node(
         package='puzzlebot_control', 
         executable='odometry', #valid for sim or real

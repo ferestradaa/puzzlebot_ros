@@ -15,7 +15,7 @@ def generate_launch_description():
 
     sim_arg = DeclareLaunchArgument(
         'use_sim', 
-        default_value='true'
+        default_value='false'
     )
 
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -32,7 +32,7 @@ def generate_launch_description():
         package='puzzlebot_vision',
         executable='apriltag_node',
         remappings=[
-            ('image_rect', '/camera/image_raw'),
+            ('image_rect', '/camera/image_rect'),
             ('camera_info', '/camera/camera_info'),
         ],
         parameters=[apriltag_config],

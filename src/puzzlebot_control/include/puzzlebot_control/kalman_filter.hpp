@@ -50,7 +50,7 @@ class ExtendedKalmanFilter{
         void predict(double vL, double vR, double rvR, double rvL, double dt){ 
 
             double theta_prev = mu_(2);
-            double v = (vR + vL) / 2.0; //lineal pos of the robot
+            double v = (vR + vL) / 2.0; //lineal vel of the robot
             double omega = (vR - vL) / L_; 
             double theta_mid = theta_prev + omega * dt / 2.0; //mean of initial angle and new angle
 
@@ -59,7 +59,7 @@ class ExtendedKalmanFilter{
                  0, 0,  1; 
 
             W_ << dt * r_ / 2.0 * std::cos(theta_mid), dt * r_ / 2.0 * std::cos(theta_mid),  //jacobian of input noise 
-                  dt * r_ / 2.0 * std::sin(theta_mid), dt * r_ / 2.0 * std::sin(theta_mid), 
+                  dt * r_ / 2.0 * std::sin(theta_mid), dt * r_ / 2.0 * std::sin(theta_mid), //of wheels
                   dt * r_ / L_,                    -dt * r_ / L_; 
             
 
@@ -75,7 +75,7 @@ class ExtendedKalmanFilter{
     
             Q_ = W_ * M_ * W_.transpose(); // Noise of process
 
-            P_ = F_ * P_ * F_.transpose() + Q_; //covarianza of state 
+            P_ = F_ * P_ * F_.transpose() + Q_; //covarianza of state: uses the jacobian of model and initial covariance 
             
         }
 

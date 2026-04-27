@@ -7,6 +7,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import SetParameter
 
 def generate_launch_description():
+
     description = get_package_share_directory('puzzlebot_description')
     control     = get_package_share_directory('puzzlebot_control')
     vision      = get_package_share_directory('puzzlebot_vision')
@@ -18,6 +19,7 @@ def generate_launch_description():
     use_sim_arg      = DeclareLaunchArgument('use_sim',      default_value='true')  
     rviz_arg         = DeclareLaunchArgument('rviz',         default_value='true')
     use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='true')  
+
 
     desc_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -34,6 +36,8 @@ def generate_launch_description():
             os.path.join(vision, 'launch', 'vision.launch.py')),
         launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
     )
+
+    
 
     return LaunchDescription([
         use_sim_arg,
