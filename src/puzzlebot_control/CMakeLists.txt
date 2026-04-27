@@ -44,7 +44,7 @@ tf2_ros
 ament_index_cpp
 )
 
-ament_target_dependencies(odometry
+ament_target_dependencies(odometry_raw
 rclcpp
 nav_msgs
 std_msgs
@@ -69,7 +69,7 @@ target_include_directories(odometry PUBLIC
 target_link_libraries(odometry yaml-cpp Eigen3::Eigen)
 
 
-install(TARGETS joint_state_pub sim_encoders odometry
+install(TARGETS joint_state_pub sim_encoders odometry odometry_raw
   DESTINATION lib/${PROJECT_NAME}
 )
 

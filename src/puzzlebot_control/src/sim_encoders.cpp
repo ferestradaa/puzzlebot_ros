@@ -20,8 +20,8 @@ public:
       "/joint_states", 10,
       std::bind(&WheelVelPublisher::jointStateCallback, this, std::placeholders::_1));
 
-    pub_left_  = this->create_publisher<std_msgs::msg::Float32>("VelEncL", 10);
-    pub_right_ = this->create_publisher<std_msgs::msg::Float32>("VelEncR", 10);
+    pub_left_  = this->create_publisher<std_msgs::msg::Float32>("VelocityEncL", 10);
+    pub_right_ = this->create_publisher<std_msgs::msg::Float32>("VelocityEncR", 10);
 
     this->declare_parameter<double>("noise_std", 0.1); // rad/s
     noise_std_ = this->get_parameter("noise_std").as_double();

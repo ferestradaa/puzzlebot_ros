@@ -12,7 +12,6 @@
 #include <rclcpp/timer.hpp>
 
 
-#include "puzzlebot_control/math_utils.hpp"
 
 
 class OdometryNode : public rclcpp::Node{
@@ -75,8 +74,6 @@ class OdometryNode : public rclcpp::Node{
             theta_ += d_rot; //orientation
             theta_ = std::atan2(std::sin(theta_), std::cos(theta_)); 
 
-            kalman_->predict(vL, vR, wheel_vel_left_rads_, wheel_vel_right_rads_, dt); //call kalman prediction uses lineal vel and angular vel
-
         }
 
         void publish_odometry(){
@@ -100,10 +97,10 @@ class OdometryNode : public rclcpp::Node{
             tf_msg.header.stamp    = stamp;
             tf_msg.header.frame_id = "odom";
             tf_msg.child_frame_id  = "base_footprint";
-            tf_msg.transform.translation.x = state(0);       // raw, no EKF
-            tf_msg.transform.translation.y = state(1);
+            tf_msg.transform.translation.x = x_;       // raw, no EKF
+            tf_msg.transform.translation.y = y_;
             tf_msg.transform.translation.z = 0.0;
-            tf_msg.transform.rotation = tf2::toMsg(q);  // q_raw ya existe arriba
+            tf_msg.transform.rotation = tf2::toMsg(q_raw);  // q_raw ya existe arriba
 
             tf_broadcaster_->sendTransform(tf_msg);
         }
