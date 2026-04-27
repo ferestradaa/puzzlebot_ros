@@ -44,10 +44,25 @@ def generate_launch_description():
         condition=IfCondition(use_sim) #only activated if use sim is set
     )
 
+    camera_info = Node(
+        package = 'puzzlebot_vision',
+        executable = 'camera_info_publisher', 
+
+    )
+
+    fid_stamper = Node(
+        package = 'puzzlebot_vision',
+        executable = 'frame_id_stamper', 
+        
+    )
+
     return LaunchDescription([
         use_sim_time_arg,
         sim_arg,
         SetParameter(name='use_sim_time', value=use_sim_time),
         apriltag_node, 
-        camera_noise
+        camera_noise, 
+        camera_info,
+        fid_stamper,  
+
     ])
