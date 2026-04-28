@@ -56,8 +56,8 @@ def generate_launch_description():
             SetParameter(name='use_sim_time', value=use_sim_time),
             js_pub,
             encoders_sim,
-            odom,
-            #odom_raw,
+            #odom,
+            odom_raw,
         ])
 
 
