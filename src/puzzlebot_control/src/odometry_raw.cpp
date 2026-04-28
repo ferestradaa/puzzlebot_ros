@@ -17,16 +17,17 @@
 class OdometryNode : public rclcpp::Node{
     public:
         OdometryNode() : Node("odometry_raw"),
-            r_(0.044), L_(0.19),
+            r_(0.051), L_(0.19),
             x_(0.0), y_(0.0), theta_(0.0),
             wheel_vel_left_rads_(0.0), wheel_vel_right_rads_(0.0),
             last_time_(rclcpp::Time(0, 0, this->get_clock()->get_clock_type())){
 
+        auto qos = rclcpp::QoS(rclcpp::KeepLast(10)).best_effort();
 
-        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncL", 10,
+        encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncL", qos,
             std::bind(&OdometryNode::encoderL_callback, this, std::placeholders::_1));
 
-        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncR", 10, 
+        encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncR", qos, 
         std::bind(&OdometryNode::encoderR_callback, this, std::placeholders::_1));
 
         timer_ = rclcpp::create_timer(

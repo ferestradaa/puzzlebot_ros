@@ -11,7 +11,7 @@
   <xacro:property name="chassis_mass"   value="0.710"/>
 
 
-  <xacro:property name="wheel_radius"    value="0.044"/>
+  <xacro:property name="wheel_radius"    value="0.051"/>
   <xacro:property name="wheel_thickness" value="0.01"/>
   <xacro:property name="wheel_mass"      value="0.03"/>
 

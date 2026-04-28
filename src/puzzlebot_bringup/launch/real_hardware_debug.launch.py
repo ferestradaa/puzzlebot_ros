@@ -85,7 +85,7 @@ def generate_launch_description():
     )
     
 
-
+#   uses no vision 
     return LaunchDescription([
         use_sim_arg,
         rviz_arg,
