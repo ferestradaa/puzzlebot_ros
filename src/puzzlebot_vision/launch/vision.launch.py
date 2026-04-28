@@ -6,6 +6,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node 
 from launch.conditions import IfCondition
 from launch_ros.actions import SetParameter
+from launch.conditions import UnlessCondition
 
 
 
@@ -46,13 +47,16 @@ def generate_launch_description():
 
     camera_info = Node(
         package = 'puzzlebot_vision',
-        executable = 'camera_info_publisher', 
+        executable = 'camera_info_publisher',
+        condition =UnlessCondition(use_sim) 
 
     )
 
     fid_stamper = Node(
         package = 'puzzlebot_vision',
         executable = 'frame_id_stamper', 
+        condition =UnlessCondition(use_sim)
+        
         
     )
 
