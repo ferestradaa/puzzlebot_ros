@@ -17,8 +17,9 @@ services:
       #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
       - NVIDIA_VISIBLE_DEVICES=all   
-      - NVIDIA_DRIVER_CAPABILITIES=all     
+      - NVIDIA_DRIVER_CAPABILITIES=all      
       - LIBGL_ALWAYS_SOFTWARE=0 
+      - FASTRTPS_DEFAULT_PROFILES_FILE=/ws/fastdds_no_shm.xml
 
     devices:
       - /dev/snd:/dev/snd
@@ -38,6 +39,7 @@ services:
 
     volumes:
       - ../src:/ws/src
+      - ./fastdds_no_shm.xml:/ws/fastdds_no_shm.xml
       - /tmp/.X11-unix:/tmp/.X11-unix  # GUI
 
     
