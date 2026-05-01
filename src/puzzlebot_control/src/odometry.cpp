@@ -251,7 +251,7 @@ class OdometryNode : public rclcpp::Node{
                 landmark_map_[id] = Eigen::Vector2d(v[0], v[1]);
             }
             RCLCPP_INFO(this->get_logger(), "Loaded %zu landmarks", landmark_map_.size());
-        }
+        }   
 
 
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; 

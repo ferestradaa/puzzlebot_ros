@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(puzzlebot_control)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -24,6 +26,9 @@ add_executable(joint_state_pub src/joint_state_pub.cpp)
 add_executable(odometry src/odometry.cpp)
 add_executable(odometry_raw src/odometry_raw.cpp)
 add_executable(sim_encoders src/sim_encoders.cpp)
+add_executable(pure_pursuit_node src/pure_pursuit_node.cpp
+                                 src/pure_pursuit.cpp)
+
 
 
 ament_target_dependencies(joint_state_pub
@@ -54,6 +59,16 @@ tf2_ros
 ament_index_cpp
 )
 
+ament_target_dependencies(pure_pursuit_node
+rclcpp
+nav_msgs
+std_msgs
+tf2_geometry_msgs
+tf2
+tf2_ros
+ament_index_cpp
+)
+
 
 ament_target_dependencies(sim_encoders
 rclcpp
@@ -66,10 +81,15 @@ target_include_directories(odometry PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(pure_pursuit_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 target_link_libraries(odometry yaml-cpp Eigen3::Eigen)
 
 
-install(TARGETS joint_state_pub sim_encoders odometry odometry_raw
+install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
