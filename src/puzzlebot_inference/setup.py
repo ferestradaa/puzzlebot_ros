@@ -24,6 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'pallet_detection_cpu = puzzlebot_inference.pallet_detection_cpu:main',
+            'pallet_detection_gpu = puzzlebot_inference.pallet_detection_gpu:main',
         ],
     },
 )

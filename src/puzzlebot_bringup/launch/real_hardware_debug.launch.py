@@ -44,8 +44,8 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'resource': 'csi://0',
-            'width': 640,
-            'height': 360,
+            'width': 320,
+            'height': 240,
             'codec': 'unknown',
             'loop': 0,
             'latency': 100,

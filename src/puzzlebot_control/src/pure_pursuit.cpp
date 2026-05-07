@@ -1,46 +1,31 @@
+//this is not a ros2 node, is pure pursuit raw algorithm
+
 #include "puzzlebot_control/pure_pursuit_controller.hpp"
 #include <algorithm>
-// ════════════════════════════════════════════════════════════════════════════
-//  NOTA SOBRE SINTAXIS: scope resolution operator  "::"
-//  Cuando defines fuera de la clase métodos que declaraste dentro,
-//  necesitas decirle al compilador "este compute() es el de PurePursuitController,
-//  no una función global". Eso se hace con  NombreClase::nombreMetodo().
-// ════════════════════════════════════════════════════════════════════════════
 
-
-// ── Constructor ──────────────────────────────────────────────────────────────
-// La lista de inicialización  ": p_(p)"  inicializa el miembro p_ con el
-// parámetro p ANTES de que el cuerpo del constructor corra.
-// Es más eficiente que asignar dentro del cuerpo porque evita una construcción
-// default + asignación. Para tipos simples no importa, pero es buen hábito.
 PurePursuitController::PurePursuitController(const Params& p)
     : p_(p)                    // copia los parámetros al miembro p_
-    , closest_idx_(0)          // empezamos desde el primer segmento
+    , closest_idx_(0)          // start from first watpoint (segmento)
     , goal_reached_(false)
     , cross_track_error_(0.0)
     , current_ld_(p.ld_min)
     , v_prev_(0.0)
 {
-    // Nada más que hacer — los miembros se inicializaron arriba.
 }
 
 
-// ── setPath ──────────────────────────────────────────────────────────────────
-void PurePursuitController::setPath(const std::vector<Point2D>& path)
-{
-    // Lanzamos excepción si el path no tiene sentido.
-    // std::invalid_argument es la excepción estándar para parámetros inválidos.
+void PurePursuitController::setPath(const std::vector<Point2D>& path){
+
     if (path.size() < 2) {
         throw std::invalid_argument(
-            "[PurePursuit] El path necesita al menos 2 waypoints.");
+            "[PurePursuit] Path needs at least 2 segments.");
     }
-
-    path_ = path;   // Aquí sí copiamos — la clase necesita su propia copia.
-    reset();        // Reinicia el estado interno para el nuevo path.
+o y
+    path_ = path;  //if len > 2, copy the objetct for the class
+    reset();        // reset everythinh
 }
 
 
-// ── reset ────────────────────────────────────────────────────────────────────
 void PurePursuitController::reset()
 {
     closest_idx_      = 0;
@@ -48,48 +33,31 @@ void PurePursuitController::reset()
     cross_track_error_= 0.0;
     current_ld_       = p_.ld_min;
     v_prev_           = 0.0;
-    lookahead_point_  = Point2D{};   // Point2D{} construye con x=0, y=0 (valores default)
+    lookahead_point_  = Point2D{};  //{} sets xy as 0
 }
 
 
-// ════════════════════════════════════════════════════════════════════════════
-//  compute() — EL CORAZÓN DEL CONTROLADOR
-//  Se llama en cada tick (típicamente en el callback de odometría).
-//  Orquesta todos los submétodos en el orden correcto del algoritmo.
-// ════════════════════════════════════════════════════════════════════════════
-ControlOutput PurePursuitController::compute(const RobotState& state)
-{
-    // ── Guardas de seguridad ──────────────────────────────────────────────────
-    // Si no hay path o ya llegamos, detenemos el robot inmediatamente.
-    // Retornar early (return anticipado) es más limpio que anidar todo en un if.
-    if (path_.empty() || goal_reached_) {
+ControlOutput PurePursuitController::compute(const RobotState& state){
+
+    if (path_.empty() || goal_reached_) { //if path empty or goal reached stop
         return ControlOutput{0.0, 0.0};
     }
 
-    // ── PASO 1: ¿Llegamos a la meta? ─────────────────────────────────────────
-    // Comprobamos distancia al ÚLTIMO waypoint del path.
-    // std::hypot(dx, dy) calcula sqrt(dx² + dy²) de forma numéricamente estable.
-    const Point2D& goal = path_.back();   // .back() = último elemento del vector
-    const double dist_to_goal = std::hypot(goal.x - state.x, goal.y - state.y);
+    const Point2D& goal = path_.back();   // save last waypoint
+    const double dist_to_goal = std::hypot(goal.x - state.x, goal.y - state.y); //distance to goal (hypot)
 
-    if (dist_to_goal < p_.goal_tol) {
+    if (dist_to_goal < p_.goal_tol) { //if distance to goal close enough as goal tolerance, stop
         goal_reached_ = true;
         return ControlOutput{0.0, 0.0};
     }
 
-    // ── PASO 2: Avanzar el índice del segmento activo ─────────────────────────
-    // Esto evita que el algoritmo "vuelva atrás" si el robot se desvía.
-    updateClosestIdx(state);
+    updateClosestIdx(state); //move to next index (waypoint)
 
-    // ── PASO 3: Calcular Ld adaptativo ───────────────────────────────────────
     // Ld = ld_k * v_actual + ld_min
-    // Cuanta más velocidad, más lejos miramos → más estabilidad.
-    current_ld_ = computeLd(state.v);
+    current_ld_ = computeLd(state.v); //ld adaptative
 
-    // ── PASO 4: Encontrar el lookahead point ─────────────────────────────────
-    // Buscamos la intersección del círculo de radio Ld con los segmentos del path.
-    // std::optional<Point2D>: puede tener un valor o estar vacío.
-    std::optional<Point2D> lp = findLookahead(state, current_ld_);
+    //find el lookahead point
+    std::optional<Point2D> lp = findLookahead(state, current_ld_); // intersección del círculo de radio Ld con los segmentos del path.
 
     // Si no hay intersección (robot muy desviado, path terminando), usamos
     // el último waypoint como fallback para no quedarnos sin comando.
@@ -97,210 +65,165 @@ ControlOutput PurePursuitController::compute(const RobotState& state)
         lp = goal;
     }
 
-    // Guardamos para debug/visualización
-    // .value() extrae el Point2D de dentro del optional (ya sabemos que tiene valor)
-    lookahead_point_ = lp.value();
+    lookahead_point_ = lp.value(); //save lookahead for debug
 
-    // ── PASO 5: Transformar lookahead point al marco del robot ────────────────
-    // Necesitamos saber dónde está el punto desde la perspectiva del robot,
-    // no en coordenadas globales.
-    //
+    //transform lookahead point to robot frame
     // dx_g, dy_g: vector global del robot al lookahead point
     const double dx_g = lookahead_point_.x - state.x;
     const double dy_g = lookahead_point_.y - state.y;
 
-    // Rotación inversa por -theta (marco local del robot):
-    //   x_local =  cos(θ)*dx + sin(θ)*dy   ← componente "adelante"
-    //   y_local = -sin(θ)*dx + cos(θ)*dy   ← componente "izquierda"
+    // rotacion inversa por -theta (local robot frame):
+    //   x_local =  cos(θ)*dx + sin(θ)*dy   - forward
+    //   y_local = -sin(θ)*dx + cos(θ)*dy   - left
     //
-    // No necesitamos x_local para el cálculo (solo y_local importa en Pure Pursuit),
-    // pero lo dejamos comentado para referencia.
+
+    //only y_local is needed for algoriith
     // const double x_local =  std::cos(state.theta)*dx_g + std::sin(state.theta)*dy_g;
     const double y_local = -std::sin(state.theta)*dx_g + std::cos(state.theta)*dy_g;
 
-    // ── PASO 6: Calcular curvatura κ ──────────────────────────────────────────
-    // Esta es LA ecuación de Pure Pursuit:
+    //compute k curvature for knowing how much to twist kappa
     //   κ = 2 * y_local / Ld²
-    //
-    // Intuición:
-    //   y_local = 0  → punto justo enfrente → κ = 0 → va recto
-    //   y_local > 0  → punto a la izquierda → κ > 0 → gira izquierda
-    //   y_local < 0  → punto a la derecha   → κ < 0 → gira derecha
+
+    //   y_local = 0 means the look ahead point is in front (go straight)
+    //   y_local > 0  turn left
+    //   y_local < 0  turn right
     const double kappa = (2.0 * y_local) / (current_ld_ * current_ld_);
 
-    // ── PASO 7: Cross-track error y corrección ────────────────────────────────
-    // Pure Pursuit no tiene corrección explícita de posición.
-    // Agregamos un término proporcional al error lateral para recuperar desviaciones.
-    //
     //   ω_total = ω_pure_pursuit + k_ct * e_lateral
-    //
-    // Si el robot está a la izquierda del segmento (e > 0) → necesita girar derecha → Δω < 0
-    // Si está a la derecha (e < 0) → necesita girar izquierda → Δω > 0
-    // Por eso el signo es NEGATIVO: restamos k * error
+
     cross_track_error_ = computeCrossTrackError(state);
     const double omega_correction = -p_.k_crosstrack * cross_track_error_;
 
-    // ── PASO 8: Velocidad lineal adaptativa ───────────────────────────────────
-    // Curvatura alta → frenar. Cerca de la meta → frenar.
-    // También aplicamos rampa de aceleración para no dar saltos bruscos.
-    const double v_desired = computeVelocity(kappa, state);
+    const double v_desired = computeVelocity(kappa, state); //lineal vel adaptative depending on curve and goal distance
 
-    // ── PASO 9: Ensamblar comando final ───────────────────────────────────────
-    // ω = curvatura * v  +  corrección_lateral
-    //
+    // w = curvature * v  +  lateral correction
     // La ω de Pure Pursuit viene de:  ω = κ * v
-    // (derivación: si el radio del arco es R = 1/κ, y v = ω * R → ω = v/R = v*κ)
     const double omega = kappa * v_desired + omega_correction;
 
     return ControlOutput{v_desired, omega};
 }
 
 
-// ════════════════════════════════════════════════════════════════════════════
-//  SUBMÉTODOS PRIVADOS
-// ════════════════════════════════════════════════════════════════════════════
 
-// ── computeLd ────────────────────────────────────────────────────────────────
-// 'const' al final de la firma: este método NO modifica ningún miembro.
-// El compilador lo garantiza y puede hacer optimizaciones adicionales.
-double PurePursuitController::computeLd(double v) const
+double PurePursuitController::computeLd(double v) const //computeLd 
 {
-    // Clamp mínimo: aunque v = 0, siempre miramos al menos ld_min hacia adelante.
-    return p_.ld_k * std::abs(v) + p_.ld_min;
+    return p_.ld_k * std::abs(v) + p_.ld_min; //even if lineal vel is 0, lookahead minimum
 }
 
 
-// ── updateClosestIdx ─────────────────────────────────────────────────────────
-// Avanza closest_idx_ mientras el waypoint siguiente esté más cerca que el actual.
+// Avanza closest_idx_ mientras el waypoint siguiente este mas cerca que el actual.
 // Esto hace que el algoritmo siempre progrese hacia adelante en el path,
-// nunca regrese aunque el robot se desvíe lateralmente.
+// nunca regrese aunque el robot se desvee lateralmente.
 void PurePursuitController::updateClosestIdx(const RobotState& state)
 {
-    // static_cast<int>: conversión explícita de size_t (sin signo) a int (con signo).
-    // Necesaria para comparar con closest_idx_ que es int.
-    // Sin el cast, el compilador puede advertir sobre comparar tipos distintos.
-    const int n = static_cast<int>(path_.size());
+    const int n = static_cast<int>(path_.size()); //get size of path
 
-    // Avanzamos mientras el SIGUIENTE waypoint esté más cerca que el actual.
-    // Condición: closest_idx_ + 1 < n  evita salirse del vector.
     while (closest_idx_ + 1 < n) {
-        const double d_current = std::hypot(
-            path_[closest_idx_].x - state.x,
+        const double d_current = std::hypot( //compute distance between current state and next waypopint
+            path_[closest_idx_].x - state.x, //closest indx is path elements iteration
             path_[closest_idx_].y - state.y);
 
-        const double d_next = std::hypot(
+        const double d_next = std::hypot( //distance between current state and next waypoint 
             path_[closest_idx_ + 1].x - state.x,
             path_[closest_idx_ + 1].y - state.y);
 
-        if (d_next < d_current) {
-            ++closest_idx_;   // ++i es ligeramente más eficiente que i++ para enteros
+        if (d_next < d_current) { //if distance for next wp, the robot goes forward (avoid going backwards)
+            ++closest_idx_;   
         } else {
-            break;   // El actual ya es el más cercano, paramos
+            break;   // else, stop 
         }
     }
 }
 
 
-// ── findLookahead ─────────────────────────────────────────────────────────────
-// Busca la intersección más adelantada del círculo de radio 'ld' centrado
+//find lookahead
+// Busca la interseccion mas adelantada del ctrculo de radio 'ld' centrado
 // en el robot con los segmentos del path (desde closest_idx_ en adelante).
-//
-// Geometría: para cada segmento P1→P2, planteamos:
+// Geometría: para cada segmento P1 to P2, planteamos:
 //   |P1 + t*(P2-P1) - robot|² = ld²
-// Eso es una ecuación cuadrática en t. Si t ∈ [0,1], hay intersección.
+// Eso es una ecuacion cuadratica en t. Si t ∈ [0,1], hay interseccion.
 std::optional<Point2D> PurePursuitController::findLookahead(
     const RobotState& state, double ld) const
 {
     const int n = static_cast<int>(path_.size());
 
-    // Guardaremos el mejor candidato encontrado.
-    // std::optional empieza vacío — como un puntero que empieza en nullptr,
-    // pero sin el peligro de dereferenciarlo accidentalmente.
     std::optional<Point2D> best;
     int   best_seg{-1};
     double best_t{-1.0};
 
-    // Iteramos desde el segmento activo hasta el penúltimo waypoint.
-    // El segmento i va de path_[i] a path_[i+1].
+    // Iiterate from segmento activo hasta el penultimo waypoint.
     for (int i = closest_idx_; i < n - 1; ++i) {
         const Point2D& p1 = path_[i];
         const Point2D& p2 = path_[i + 1];
 
-        // Vector del segmento: dirección de p1 a p2
+        //vector from actual point to next point
         const double dx = p2.x - p1.x;
         const double dy = p2.y - p1.y;
 
-        // Vector del robot a p1
+        //vector from robot to point p1
         const double fx = p1.x - state.x;
         const double fy = p1.y - state.y;
 
-        // Coeficientes de la cuadrática  a*t² + b*t + c = 0
-        // a = |d|²   (siempre positivo)
-        // b = 2*(f·d)
-        // c = |f|² - ld²
+        // Coeficientes of quadratic ecuation a*t² + b*t + c = 0
         const double a   = dx*dx + dy*dy;
         const double b   = 2.0 * (fx*dx + fy*dy);
         const double c   = fx*fx + fy*fy - ld*ld;
-        const double disc = b*b - 4.0*a*c;   // discriminante
+        const double disc = b*b - 4.0*a*c;   // discriminant
 
-        // disc < 0 → no hay intersección real con este segmento
+        // disc < 0 means there is no intersection
         if (disc < 0.0) continue;
 
         const double sq = std::sqrt(disc);
 
-        // Las dos soluciones de la cuadrática.
-        // t2 > t1 siempre. t2 es la intersección más adelantada en el segmento.
+        // Las dos soluciones de la cuadratica
+        // t2 > t1 siempre. t2 es la interseccion mas adelantada en el segmento
         const double t1 = (-b - sq) / (2.0 * a);
         const double t2 = (-b + sq) / (2.0 * a);
 
-        // Revisamos t2 primero (más adelante), luego t1.
-        // Un t válido debe estar en [0, 1] (dentro del segmento).
+        // Revisamos t2 primero (mas adelante), luego t1.
+        // Un t valido debe estar en [0, 1] (dentro del segmento).
         for (const double t : {t2, t1}) {
             if (t < 0.0 || t > 1.0) continue;   // fuera del segmento
 
-            // Este segmento es más adelante que el mejor hasta ahora
+            // Este segmento es mas adelante que el mejor hasta ahora
             if (i > best_seg || (i == best_seg && t > best_t)) {
                 best_seg = i;
                 best_t   = t;
-                // El punto de intersección: P1 + t * (P2-P1)
+                // El punto de interseccion: P1 + t * (P2-P1)
                 best = Point2D{p1.x + t*dx, p1.y + t*dy};
             }
         }
     }
 
-    return best;   // Vacío si no encontró nada, con valor si sí.
+    return best;   //empty if no best found
 }
 
 
-// ── computeCrossTrackError ────────────────────────────────────────────────────
-// Distancia perpendicular con signo del robot al segmento activo.
+// Distancia perpendicular con signo del robot al segmento activo
 //
-// Truco geométrico: el producto cruzado 2D de dos vectores da el área del
+//el producto cruzado 2D de dos vectores da el área del
 // paralelogramo que forman. Dividido por la longitud del segmento da la
-// distancia perpendicular.
+// distancia perpendicular
 //
 //   e = (P2-P1) × (robot-P1) / |P2-P1|
 //
-// El "×" aquí es el escalar:  ax*by - ay*bx
 // Signo positivo = robot a la izquierda del segmento (mirando hacia adelante).
 double PurePursuitController::computeCrossTrackError(const RobotState& state) const
 {
     if (closest_idx_ >= static_cast<int>(path_.size()) - 1) {
-        return 0.0;   // En el último waypoint no hay segmento activo
+        return 0.0;   //in last waypoint no aplica
     }
 
-    const Point2D& p1 = path_[closest_idx_];
+    const Point2D& p1 = path_[closest_idx_]; //get coordinate of current and next point
     const Point2D& p2 = path_[closest_idx_ + 1];
 
-    // Vector del segmento
-    const double seg_x = p2.x - p1.x;
+    const double seg_x = p2.x - p1.x; //vector del segmento
     const double seg_y = p2.y - p1.y;
     const double seg_len = std::hypot(seg_x, seg_y);
 
-    if (seg_len < 1e-9) return 0.0;   // Segmento degenerado (dos waypoints iguales)
+    if (seg_len < 1e-9) return 0.0;   //segmento degenerado (dos waypoints iguales)
 
-    // Vector del inicio del segmento al robot
-    const double to_robot_x = state.x - p1.x;
+    const double to_robot_x = state.x - p1.x; //vector del inicio del segmento al robot
     const double to_robot_y = state.y - p1.y;
 
     // Producto cruzado 2D (el escalar z del cross product 3D)
@@ -309,19 +232,18 @@ double PurePursuitController::computeCrossTrackError(const RobotState& state) co
 }
 
 
-// ── computeVelocity ───────────────────────────────────────────────────────────
-// Calcula la velocidad lineal deseada considerando:
-//   1. Curvatura actual (frenar en curvas)
-//   2. Distancia al final (frenar antes de la meta)
-//   3. Rampa de aceleración (no saltar bruscamente de v)
+//get lineal velocity cosnidering:
+//   1. kappa (curvature)
+//   2. distance to goal
+//   3. Rampa de aceleracion
 double PurePursuitController::computeVelocity(double kappa, const RobotState& state)
 {
-    // 1) Velocidad base según curvatura
     //    v = v_max / (1 + k_c * |κ|)
-    //    Curvatura cero → v_max. Curvatura alta → v baja.
+    //    Curvatura is 0 so v_max
+    //hight curvature, low vel
     const double v_curvature = p_.v_max / (1.0 + p_.k_curvature * std::abs(kappa));
 
-    // 2) Velocidad de frenado por proximidad a la meta
+    //Velocidad de frenado por proximidad a la meta
     //    Rampa lineal: va de v_max a 0 en el tramo final stop_dist.
     const Point2D& goal = path_.back();
     const double dist = std::hypot(goal.x - state.x, goal.y - state.y);
@@ -329,37 +251,30 @@ double PurePursuitController::computeVelocity(double kappa, const RobotState& st
         ? p_.v_max * (dist / p_.stop_dist)   // fracción de v_max según distancia restante
         : p_.v_max;
 
-    // 3) El mínimo de los dos límites anteriores
+    // 3) El minimo de los dos límites anteriores
     //    std::min devuelve el menor de dos valores del mismo tipo.
     double v_desired = std::min(v_curvature, v_stop);
 
-    // 4) Rampa de aceleración: limita cuánto puede cambiar v en un tick.
-    //    Sin esto, si v_desired salta de 0 a v_max instantáneamente,
-    //    el robot podría dar un tirón mecánico o el PID de rueda no alcanza.
-    //
-    //    Necesitamos dt para la rampa. Como la clase no conoce el tiempo,
-    //    usamos una aproximación: asumimos dt ≈ 0.05s (20Hz).
-    //    En una implementación más precisa, pasarías dt como parámetro a compute().
-    constexpr double dt = 0.05;   // 'constexpr': el compilador evalúa esto en tiempo
-                                   // de compilación, no en runtime. Es una constante
-                                   // real, no una variable.
-    const double dv_max = p_.a_max * dt;
+    // 4) Rampa de aceleracion: limita cuánto puede cambiar v en un tick.
+    //    Sin esto, si v_desired salta de 0 a v_max instantaneamente,
+    //   avoid tirones or lineal vel saturation
 
-    // Clamp: limita v_desired al rango [v_prev_ - dv_max, v_prev_ + dv_max]
+    //consider giving dt to compute
+    constexpr double dt = 0.05;   
+    const double dv_max = p_.a_max * dt; //max accleleration increases progressively
+
+    //limitf lineal vel 
     // std::clamp(valor, min, max) — disponible desde C++17
     v_desired = std::clamp(v_desired, v_prev_ - dv_max, v_prev_ + dv_max);
 
-    // Guardamos para el siguiente tick
     v_prev_ = v_desired;
 
     return v_desired;
 }
 
 
-// ════════════════════════════════════════════════════════════════════════════
-//  GETTERS — const porque no modifican nada
-// ════════════════════════════════════════════════════════════════════════════
 
+//getters
 bool PurePursuitController::goalReached() const
 {
     return goal_reached_;

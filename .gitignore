@@ -5,8 +5,15 @@ log/
 __pycache__/
 .vscode/
 isaac_sim/puzzlebot_description/urdf/puzzlebot/
-isaac_sim/simulation
+isaac_sim/simulation/helpers
+isaac_sim/simulation/robot
+isaac_sim/simulation/ros2
+isaac_sim/simulation/sim_utils
+isaac_sim/simulation/main.py
+
 *.gv
 *.pdf
 *.zip
+pallet_bag/
+
 
