@@ -1,9 +1,9 @@
 robot:
- wheel_radius: 0.044
+ wheel_radius: 0.051
  wheel_base: 0.19
 
 usd:
- stage_path: "../worlds/warehouse_f.usd"
+ stage_path: "../worlds/world.usd"
  robot_path: "/World/robot/"
 
 joints:
@@ -22,6 +22,6 @@ sensors:
   frequency: 10.0
 
  camera:
-  width: 640
-  height: 480
+  width: 320
+  height: 160
   frequency: 15

@@ -1,0 +1,38 @@
+paths:
+ urdf: "assets/puzzlebot/urdf/puzzlebot.urdf"
+ usd_output: "sim/generated/puzzlebot.usd" 
+
+robot:
+ prim_path: "/World/puzzlebot"
+ articulation_path: "/World/puzzlebot/base_footprint"
+ wheel_radius: 0.051
+ wheel_base: 0.19
+
+sensors:
+  camera:
+    focal_length: 30.4
+    horizontal_aperture: 36.8
+    vertical_aperture: 27.6
+    clipping_near: 0.05
+    clipping_far: 50.0
+    resolution: [360, 180]
+    topic: "camera/image_raw"
+    frame_id: "camera_color_optical_frame"
+  lidar:
+    config: "RPLIDAR_S2E"
+    topic: "scan"
+    frame_id: "lidar_link"
+    resolution: [1280, 720]
+
+ros2:
+  graph_path: "/World/ActionGraph/ROS2"
+  use_domain_id_env_var: true
+  topics:
+    odom: "odom"
+    joint_states: "joint_states"
+    cmd_vel: "cmd_vel"
+    tf: "tf"
+    clock: "clock"
+
+world:
+ stage_path: "worlds/world.usd"
