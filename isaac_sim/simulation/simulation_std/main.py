@@ -23,6 +23,9 @@ from pxr import Sdf
 from isaacsim.robot.wheeled_robots.robots import WheeledRobot
 from isaacsim.robot.wheeled_robots.controllers.differential_controller import DifferentialController
 
+import carb.input
+import omni.appwindow
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from simulation_std.helpers.puzzlebot import Puzzlebot
 import numpy as np
@@ -228,21 +231,41 @@ def main():
         wheel_base=WHEEL_BASE,
     )
 
-
     step = 0
+
+    MAX_WHEEL_VEL = 6.0
+    
+    app_window = omni.appwindow.get_default_app_window()
+    input_iface = carb.input.acquire_input_interface()
+    keyboard = app_window.get_keyboard()
 
     while simulation_app.is_running():
         world.step(render=True)
 
+        r_state = input_iface.get_keyboard_button_flags(keyboard, carb.input.KeyboardInput.R)
+        if r_state & carb.input.BUTTON_FLAG_PRESSED:
+            world.reset()
+            diff_controller = DifferentialController(
+                name="diff_ctrl",
+                wheel_radius=WHEEL_RADIUS,
+                wheel_base=WHEEL_BASE,
+            )
+            step = 0
+
         puzzlebot._read_twist_from_graph()
-        cmd = np.array([puzzlebot._twist["v"], puzzlebot._twist["w"]])
+        cmd = np.array([puzzlebot._twist["v"],
+                        puzzlebot._twist["w"]])
 
         action = diff_controller.forward(command=cmd)
-        wheeled_robot.apply_wheel_actions(action)
-        
-        step += 1
 
-    print("[sim] Closing...")
+        if action.joint_velocities is not None:
+            action.joint_velocities = np.clip(action.joint_velocities, -MAX_WHEEL_VEL, MAX_WHEEL_VEL)
+
+            wheeled_robot.apply_wheel_actions(action)
+            
+            step += 1
+
+    print("[sim] Closing")
     simulation_app.close()
 
 

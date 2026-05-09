@@ -33,7 +33,6 @@ class Puzzlebot():
         self._twist = {"v": 0.0, "w": 0.0}
     
     
-
     def import_urdf_to_usd(self, urdf_path: str, usd_output: str) -> str:
 
         importer = _urdf.acquire_urdf_interface()
@@ -63,6 +62,7 @@ class Puzzlebot():
 
         print(f"[sim] URDF imported as {usd_output}  (prim root: {result})")
         return usd_output
+    
 
     def fix_wheel_drives_live(self):
         stage = omni.usd.get_context().get_stage()
@@ -75,7 +75,7 @@ class Puzzlebot():
         for wp in wheel_links:
             prim = stage.GetPrimAtPath(wp)
             if not prim.IsValid():
-                print(f"[sim] wheel link no encontrado: {wp}")
+                print(f"[sim] wheel link not found: {wp}")
                 continue
             rb_api = PhysxSchema.PhysxRigidBodyAPI.Apply(prim)
             rb_api.CreateMaxAngularVelocityAttr().Set(1000.0)
@@ -97,46 +97,13 @@ class Puzzlebot():
             drive = UsdPhysics.DriveAPI.Apply(prim, "angular")
             drive.GetTypeAttr().Set("velocity")
             drive.GetMaxForceAttr().Set(1e4)
-            drive.GetDampingAttr().Set(1e3)
+            drive.GetDampingAttr().Set(1e10)
             drive.GetStiffnessAttr().Set(0.0)
 
             physx_joint = PhysxSchema.PhysxJointAPI.Apply(prim)
             physx_joint.CreateJointFrictionAttr().Set(0.0)
             physx_joint.CreateMaxJointVelocityAttr().Set(1000.0)
 
-
-    '''
- funciona pero no se mueve el robot solo rudas a 0.03 lineal
-    def fix_caster_wheel(self):
-        from pxr import UsdPhysics, PhysxSchema
-        stage = omni.usd.get_context().get_stage()
-
-        caster_path = f"{self.robot_prim_path}/caster_wheel_link"
-        prim = stage.GetPrimAtPath(caster_path)
-        if not prim.IsValid():
-            print(f"[sim] caster_wheel_link no encontrado: {caster_path}")
-            return
-
-        # deshabilitar rigid body y colision en el caster link
-        if prim.HasAPI(UsdPhysics.RigidBodyAPI):
-            UsdPhysics.RigidBodyAPI(prim).GetRigidBodyEnabledAttr().Set(False)
-            print(f"[sim] RigidBody deshabilitado: {caster_path}")
-
-        if prim.HasAPI(UsdPhysics.CollisionAPI):
-            UsdPhysics.CollisionAPI(prim).GetCollisionEnabledAttr().Set(False)
-            print(f"[sim] Collision deshabilitada: {caster_path}")
-
-        # friction=0 en el joint fijo
-        joint_path = f"{self.robot_prim_path}/joints/chassis_to_caster"
-        joint_prim = stage.GetPrimAtPath(joint_path)
-        if joint_prim.IsValid():
-            physx_joint = PhysxSchema.PhysxJointAPI.Apply(joint_prim)
-            physx_joint.CreateJointFrictionAttr().Set(0.0)
-            print(f"[sim] joint friction=0: {joint_path}")
-        else:
-            print(f"[sim] joint caster no encontrado: {joint_path}")
-
-    '''
     def fix_caster_wheel(self):
         from pxr import UsdShade, UsdPhysics, PhysxSchema
         stage = omni.usd.get_context().get_stage()
@@ -167,72 +134,6 @@ class Puzzlebot():
         joint_prim = stage.GetPrimAtPath(f"{self.robot_prim_path}/joints/chassis_to_caster")
         if joint_prim.IsValid():
             PhysxSchema.PhysxJointAPI.Apply(joint_prim).CreateJointFrictionAttr().Set(0.0)
-
-
-
-    def tune_articulation_solver(self):
-        stage = omni.usd.get_context().get_stage()
-        prim = stage.GetPrimAtPath(self.articulation_path)
-        if not prim.IsValid():
-            print(f"[sim] articulation no encontrado: {self.articulation_path}")
-            return
-        art_api = PhysxSchema.PhysxArticulationAPI.Apply(prim)
-        art_api.CreateSolverPositionIterationCountAttr().Set(32)
-        art_api.CreateSolverVelocityIterationCountAttr().Set(8)
-        art_api.CreateSleepThresholdAttr().Set(0.0)
-        art_api.CreateStabilizationThresholdAttr().Set(0.0)
-        print(f"[sim] solver tuneado en {self.articulation_path}")
-
-
-    def fix_wheel_friction_live(self):
-        from pxr import UsdShade, UsdPhysics, PhysxSchema, Sdf
-        stage = omni.usd.get_context().get_stage()
-
-        # crear material fisico una sola vez
-        mat_path = "/World/PhysicsMaterials/WheelMat"
-        mat_prim = stage.DefinePrim(mat_path, "Material")
-        mat = UsdPhysics.MaterialAPI.Apply(mat_prim)
-        mat.CreateStaticFrictionAttr().Set(1.0)
-        mat.CreateDynamicFrictionAttr().Set(1.0)
-        mat.CreateRestitutionAttr().Set(0.0)
-        physx_mat = PhysxSchema.PhysxMaterialAPI.Apply(mat_prim)
-        physx_mat.CreateFrictionCombineModeAttr().Set("max")
-
-        # bind a cada wheel link (no caster)
-        for prim in stage.Traverse():
-            path = str(prim.GetPath())
-            if self.robot_prim_path not in path:
-                continue
-            if "wheel_link" not in path or "caster" in path:
-                continue
-            if not prim.HasAPI(UsdPhysics.CollisionAPI):
-                continue
-
-            binding = UsdShade.MaterialBindingAPI.Apply(prim)
-            binding.Bind(
-                UsdShade.Material(mat_prim),
-                bindingStrength=UsdShade.Tokens.weakerThanDescendants,
-                materialPurpose="physics"
-            )
-            print(f"[sim] bound physics material a: {path}")
-
-    def debug_joint(self):
-        stage = omni.usd.get_context().get_stage()
-        joint_path = f"{self.robot_prim_path}/joints/base_to_left_wheel"
-        prim = stage.GetPrimAtPath(joint_path)
-        print(f"\n[debug] Joint: {joint_path}")
-        print(f"[debug] Type: {prim.GetTypeName()}")
-        print(f"[debug] Applied schemas: {prim.GetAppliedSchemas()}")
-        print(f"[debug] Drive/physx attributes:")
-        for attr in prim.GetAttributes():
-            name = attr.GetName()
-            low = name.lower()
-            if any(k in low for k in ["drive", "physx", "velocity", "force", "damping", "stiffness", "target"]):
-                try:
-                    val = attr.Get()
-                    print(f"    {name} = {val}")
-                except:
-                    pass
 
 
     def setup_sensors(self) -> bool:
