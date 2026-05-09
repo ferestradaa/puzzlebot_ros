@@ -5,6 +5,8 @@ paths:
 robot:
  prim_path: "/World/puzzlebot"
  articulation_path: "/World/puzzlebot/base_footprint"
+ left_wheel_joint: "base_to_left_wheel"
+ right_wheel_joint: "base_to_right_wheel"
  wheel_radius: 0.051
  wheel_base: 0.19
 

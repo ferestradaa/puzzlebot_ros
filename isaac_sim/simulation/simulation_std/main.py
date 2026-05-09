@@ -147,6 +147,8 @@ def main():
 
     ROBOT_PRIM_PATH   = _cfg["robot"]["prim_path"]
     ARTICULATION_PATH = _cfg["robot"]["articulation_path"]
+    LEFT_WHEEL_JOINT  = _cfg["robot"]["left_wheel_joint"]
+    RIGHT_WHEEL_JOINT = _cfg["robot"]["right_wheel_joint"]
     WHEEL_RADIUS      = _cfg["robot"]["wheel_radius"]
     WHEEL_BASE        = _cfg["robot"]["wheel_base"]
 
@@ -176,7 +178,6 @@ def main():
 
     puzzlebot.fix_wheel_drives_live()
     puzzlebot.fix_caster_wheel()
-    #puzzlebot.tune_articulation_solver()
 
 
     if not puzzlebot.setup_sensors():
@@ -214,7 +215,7 @@ def main():
     wheeled_robot = WheeledRobot(
         prim_path=ARTICULATION_PATH,
         name="puzzlebot",
-        wheel_dof_names=["base_to_left_wheel", "base_to_right_wheel"],
+        wheel_dof_names=[LEFT_WHEEL_JOINT, RIGHT_WHEEL_JOINT],
         create_robot=False,
         )
     
