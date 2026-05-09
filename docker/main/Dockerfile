@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-control-msgs \
     ros-humble-slam-toolbox \
     ros-humble-teleop-twist-keyboard \  
+    ros-humble-behaviortree-cpp \
  && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init 2>/dev/null || true && rosdep update
@@ -47,11 +48,6 @@ RUN apt-get update && \
         -r -y && \
     rm -rf /tmp/src && \
     rm -rf /var/lib/apt/lists/*
-
-#maunallu install torch to use cache
-RUN pip3 install --no-cache-dir \
-    torch torchvision \
-    --index-url https://download.pytorch.org/whl/cu121
 
 
 #install requieremnts directlty into syustem, this container has its own requirements

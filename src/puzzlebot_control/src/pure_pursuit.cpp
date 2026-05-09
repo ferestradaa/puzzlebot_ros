@@ -20,7 +20,7 @@ void PurePursuitController::setPath(const std::vector<Point2D>& path){
         throw std::invalid_argument(
             "[PurePursuit] Path needs at least 2 segments.");
     }
-o y
+
     path_ = path;  //if len > 2, copy the objetct for the class
     reset();        // reset everythinh
 }
