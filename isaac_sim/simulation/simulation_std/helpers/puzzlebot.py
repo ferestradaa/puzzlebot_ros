@@ -110,7 +110,6 @@ class Puzzlebot():
 
         stage.DefinePrim("/World/PhysicsMaterials", "Scope")  # idempotente si ya existe
         mat_prim = stage.DefinePrim("/World/PhysicsMaterials/CasterMat", "Material")
-        # ... resto igual
         mat = UsdPhysics.MaterialAPI.Apply(mat_prim)
         mat.CreateStaticFrictionAttr().Set(0.0)
         mat.CreateDynamicFrictionAttr().Set(0.0)

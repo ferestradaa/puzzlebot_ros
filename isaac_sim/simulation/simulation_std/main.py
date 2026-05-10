@@ -19,6 +19,7 @@ from isaacsim.core.api.objects import GroundPlane
 from pxr import PhysxSchema, UsdPhysics
 import omni.usd
 from pxr import Sdf
+from pxr import Vt, Gf
 
 from isaacsim.robot.wheeled_robots.robots import WheeledRobot
 from isaacsim.robot.wheeled_robots.controllers.differential_controller import DifferentialController
@@ -33,7 +34,18 @@ import numpy as np
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.asset.importer.urdf")
 
+
 simulation_app.update()
+
+def setup_world(world_usd_path) -> World:
+    world = World(
+        stage_units_in_meters=1.0,
+        physics_dt=1.0 / 60.0,
+        rendering_dt=1.0 / 30.0,
+    )
+    add_reference_to_stage(usd_path=world_usd_path, prim_path="/World")
+
+    return world
 
 '''
 def setup_world(world_usd_path) -> World:
@@ -64,8 +76,9 @@ def setup_world(world_usd_path) -> World:
     return world
 '''
 
+'''
 def setup_world() -> World:
-    from pxr import UsdShade, UsdPhysics, PhysxSchema
+    from pxr import UsdShade, UsdPhysics, PhysxSchema, Vt, Gf, Sdf
 
     world = World(
         stage_units_in_meters=1.0,
@@ -81,7 +94,21 @@ def setup_world() -> World:
 
     stage = omni.usd.get_context().get_stage()
 
-    # crear scope primero, luego el material
+    # cambiar color del plano a gris
+    for prim in stage.Traverse():
+        path = str(prim.GetPath())
+        if "defaultGroundPlane" in path and prim.GetTypeName() == "Mesh":
+            display_color = prim.GetAttribute("primvars:displayColor")
+            if display_color.IsValid():
+                display_color.Set(Vt.Vec3fArray([Gf.Vec3f(0.463, 0.471, 0.478)]))
+            else:
+                prim.CreateAttribute("primvars:displayColor", Sdf.ValueTypeNames.Color3fArray).Set(
+                    Vt.Vec3fArray([Gf.Vec3f(0.463, 0.471, 0.478)])
+                )
+            print(f"[sim] color gris aplicado a: {path}")
+            break
+
+    # crear scope y material de fisica
     stage.DefinePrim("/World/PhysicsMaterials", "Scope")
     mat_prim = stage.DefinePrim("/World/PhysicsMaterials/GroundMat", "Material")
     gnd_mat = UsdPhysics.MaterialAPI.Apply(mat_prim)
@@ -90,7 +117,6 @@ def setup_world() -> World:
     gnd_mat.CreateRestitutionAttr().Set(0.0)
     PhysxSchema.PhysxMaterialAPI.Apply(mat_prim).CreateFrictionCombineModeAttr().Set("average")
 
-    # add_default_ground_plane crea el collision en este path
     ground_collision = stage.GetPrimAtPath("/World/defaultGroundPlane/CollisionPlane")
     if ground_collision.IsValid():
         UsdShade.MaterialBindingAPI.Apply(ground_collision).Bind(
@@ -98,9 +124,8 @@ def setup_world() -> World:
             bindingStrength=UsdShade.Tokens.strongerThanDescendants,
             materialPurpose="physics"
         )
-        print("[sim] GroundMat bindeado a /World/defaultGroundPlane/CollisionPlane")
+        print("[sim] GroundMat binded to /World/defaultGroundPlane/CollisionPlane")
     else:
-        # fallback: buscar el collision del ground plane
         for prim in stage.Traverse():
             path = str(prim.GetPath())
             if "defaultGroundPlane" in path and prim.HasAPI(UsdPhysics.CollisionAPI):
@@ -109,7 +134,7 @@ def setup_world() -> World:
                     bindingStrength=UsdShade.Tokens.strongerThanDescendants,
                     materialPurpose="physics"
                 )
-                print(f"[sim] GroundMat bindeado a: {path}")
+                print(f"[sim] GroundMat binded to: {path}")
                 break
 
     for prim in stage.Traverse():
@@ -122,6 +147,7 @@ def setup_world() -> World:
             break
 
     return world
+    '''
 
 def load_robot(usd_path: str, robot_prim_path):
     
@@ -175,7 +201,8 @@ def main():
     usd_path = puzzlebot.import_urdf_to_usd(URDF_PATH, USD_OUTPUT)
     
 
-    world = setup_world()
+    #world = setup_world()
+    world = setup_world(WORLD_USD_PATH)
     load_robot(usd_path, ROBOT_PRIM_PATH)
     simulation_app.update()
 
@@ -197,18 +224,18 @@ def main():
     world.reset()
 
 
-    '''
+    
     from isaacsim.core.api.objects import DynamicCuboid
     import numpy as np
     world.scene.add(DynamicCuboid(
         prim_path="/World/Cube",
         name="cube",
-        position=np.array([1.5, 0.0, 0.1]),
+        position=np.array([2.0, 0.0, 0.1]),
         scale=np.array([0.1, 0.1, 0.1]),
         color=np.array([1.0, 0.0, 0.0]),
     ))
 
-
+    '''
     from isaacsim.core.api.robots import Robot
     robot = Robot(prim_path=ARTICULATION_PATH, name="puzzlebot")
     world.scene.add(robot)

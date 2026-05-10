@@ -5,13 +5,24 @@
    <Fallback name = "TryPickPlace"> <!--Normal task start picking-->
      <Sequence name = "SequencePickPlace"> <!--Starts normal sequence for picking-->
 
+      <EnableDetection
+        enable = "true"/>
+
       <GetTargetPose
-        pallet_pose = "{target_pose}"/> <!--execute the pipeline-->
+        pallet_pose = "{target_pose}"/> <!--read detections and save pos-->
+
+      <EnableDetection
+        enable = "false"/>  
+
       <GoToTarget
         target_pose = "{target_pose}"/>
 
      </Sequence> <!--if could not get target pose, fallback to get closer-->
+     
       <Sequence name = "GetCloser">
+
+        <EnableDetection
+          enable = "false"/>
         <GoToTarget
             target_pose = "{dummy_pose}"/> <!--This should be a dummy pose to see if now detecting smthg-->
 
