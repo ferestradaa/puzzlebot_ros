@@ -5,13 +5,13 @@
    <Fallback name = "TryPickPlace"> <!--Normal task start picking-->
      <Sequence name = "SequencePickPlace"> <!--Starts normal sequence for picking-->
 
-      <EnableDetection
+      <EnableDetections
         enable = "true"/>
 
       <GetTargetPose
         pallet_pose = "{target_pose}"/> <!--read detections and save pos-->
 
-      <EnableDetection
+      <EnableDetections
         enable = "false"/>  
 
       <GoToTarget
@@ -21,7 +21,7 @@
      
       <Sequence name = "GetCloser">
 
-        <EnableDetection
+        <EnableDetections
           enable = "false"/>
         <GoToTarget
             target_pose = "{dummy_pose}"/> <!--This should be a dummy pose to see if now detecting smthg-->

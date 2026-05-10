@@ -12,6 +12,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 
@@ -32,6 +33,7 @@ ament_target_dependencies(bt_executor
    rclcpp_action
    ament_index_cpp
    geometry_msgs
+   std_srvs
 )
 
 install(TARGETS bt_executor

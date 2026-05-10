@@ -19,6 +19,10 @@
   <depend>apriltag</depend>
   <depend>image_transport</depend>
   <depend>cv_bridge</depend>
+  <depend>vision_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>puzzlebot_inference_eng</depend>
+
 
   <exec_depend>camera_ros</exec_depend>
   <exec_depend condition="$ROS_DISTRO != 'humble'">image_proc</exec_depend>

@@ -44,6 +44,10 @@ find_package(Threads REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core calib3d)
 find_package(apriltag 3.2 REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(vision_msgs REQUIRED)
+
+
 
 
 # detect tf2 convert header name (Ubuntu 22 uses .hpp, Ubuntu 20 uses .h)
@@ -166,6 +170,10 @@ install(DIRECTORY launch
     DESTINATION share/${PROJECT_NAME}
 )
 
+install(DIRECTORY include/
+    DESTINATION include
+)
+
 if(BUILD_TESTING)
   set(ament_cmake_clang_format_CONFIG_FILE "${CMAKE_SOURCE_DIR}/.clang-format")
   find_package(ament_lint_auto REQUIRED)
@@ -189,6 +197,10 @@ add_executable(camera_info_publisher
 
 add_executable(frame_id_stamper
     src/frame_id_stamper.cpp
+)
+
+add_executable(pallet_detection_engine
+    src/pallet_detection_engine.cpp
 )
 
 target_link_libraries(camera_noise_node
@@ -221,13 +233,27 @@ target_link_libraries(camera_info_publisher
     yaml-cpp
 )
 
-install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper
-    RUNTIME DESTINATION lib/${PROJECT_NAME}
+target_link_libraries(pallet_detection_engine
+  PRIVATE
+    rclcpp::rclcpp
+    ${sensor_msgs_TARGETS}
+    ${vision_msgs_TARGETS}
+    ${std_srvs_TARGETS}
+    cv_bridge::cv_bridge
+    opencv_core
+    opencv_imgproc
+    
 )
 
 
+target_include_directories(pallet_detection_engine
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    /usr/local/cuda-13.0/targets/x86_64-linux/include
+)
 
-
-
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()

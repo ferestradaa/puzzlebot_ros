@@ -5,13 +5,21 @@
 #include <yaml-cpp/yaml.h>
 
 #include "dummy_nodes.hpp"
+#include "enable_detections.hpp"
 
 
 
 class BTexecutor : public  rclcpp::Node{
     public: 
-        BTexecutor() : Node("bt_executor"){
-
+        explicit BTexecutor(rclcpp::Node::SharedPtr bt_node)
+        : Node("bt_executor"), bt_node_(bt_node){
+            
+            factory_.registerBuilder<puzzlebot_bt::EnableDetections>(
+                "EnableDetections", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::EnableDetections>(name, conf, bt_node_); 
+                }); 
+                
             factory_.registerNodeType<GetTargetPose>("GetTargetPose");
             factory_.registerNodeType<GoToTarget>("GoToTarget");
 
@@ -44,19 +52,24 @@ class BTexecutor : public  rclcpp::Node{
             }
         }
 
+        rclcpp::Node::SharedPtr bt_node_; 
         BT::BehaviorTreeFactory factory_; 
         BT::Tree tree_; 
         std::shared_ptr<BT::StdCoutLogger> logger_; 
         rclcpp::TimerBase::SharedPtr timer_; 
-
-
 };
 
 
 int main(int argc, char **argv){
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<BTexecutor>();
-  rclcpp::spin(node);
+  auto bt_node = std::make_shared<rclcpp::Node>("bt_clients"); 
+  auto executor = std::make_shared<BTexecutor>(bt_node);
+
+  rclcpp::executors::MultiThreadedExecutor exec; 
+  exec.add_node(executor); 
+  exec.add_node(bt_node); 
+  exec.spin(); 
+
   rclcpp::shutdown();
   return 0;
 }
