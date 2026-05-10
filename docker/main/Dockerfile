@@ -32,6 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-slam-toolbox \
     ros-humble-teleop-twist-keyboard \  
     ros-humble-behaviortree-cpp \
+    ros-humble-vision-msgs \
+    ros-humble-std-srvs \
  && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init 2>/dev/null || true && rosdep update

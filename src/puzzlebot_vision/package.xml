@@ -21,7 +21,6 @@
   <depend>cv_bridge</depend>
   <depend>vision_msgs</depend>
   <depend>std_srvs</depend>
-  <depend>puzzlebot_inference_eng</depend>
 
 
   <exec_depend>camera_ros</exec_depend>

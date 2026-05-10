@@ -46,6 +46,8 @@ find_package(apriltag 3.2 REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(vision_msgs REQUIRED)
+find_package(CUDA REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core calib3d dnn)
 
 
 
@@ -242,14 +244,22 @@ target_link_libraries(pallet_detection_engine
     cv_bridge::cv_bridge
     opencv_core
     opencv_imgproc
-    
+    opencv_dnn
+    nvinfer
+    nvinfer_plugin
+    nvonnxparser
+    ${CUDA_LIBRARIES}
 )
 
+target_compile_options(pallet_detection_engine
+  PRIVATE
+    -Wno-deprecated-declarations
+)
 
 target_include_directories(pallet_detection_engine
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    /usr/local/cuda-13.0/targets/x86_64-linux/include
+    ${CUDA_INCLUDE_DIRS}
 )
 
 install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine
