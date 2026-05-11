@@ -7,16 +7,16 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from std_srvs.srv import SetBool
+from vision_msgs.msg import Detection2DArray, Detection2D, ObjectHypothesisWithPose
 from ament_index_python.packages import get_package_share_directory
 
 PKG_SHARE = get_package_share_directory('puzzlebot_inference')
-MODEL_PATH = os.path.join(PKG_SHARE, 'models/onnx', 'pallet_side.onnx')
+MODEL_PATH = os.path.join(PKG_SHARE, 'models', 'ft2_full_holes.onnx')
 
-INPUT_H, INPUT_W = 384, 384
+INPUT_H, INPUT_W = 320, 320
 CONF_THRESH = 0.5
 IOU_THRESH  = 0.45
-MASK_THRESH = 0.5
-NUM_MASK_COEFFS = 32
+MAX_DET     = 3
 
 
 def build_session(model_path: str) -> ort.InferenceSession:
@@ -46,17 +46,12 @@ class PalletNode(Node):
 
         self._input_buf = np.zeros((1, 3, INPUT_H, INPUT_W), dtype=np.float32)
 
-        self.srv = self.create_service(
-            SetBool,
-            'enable_detection',
-            self.enable_callback
-        )
-
-        self.pub = self.create_publisher(Image, '/pallet/mask', 10)
-        self.sub = self.create_subscription(
-            Image, 'camera/image_raw', self.cb, 10)
-
-        self.get_logger().info('Listo.')
+        self.srv = self.create_service(SetBool, 'enable_detection', self.enable_callback)
+        self.pub = self.create_publisher(Detection2DArray, '/pallet/detections', 10)
+        self.pub_viz = self.create_publisher(Image, '/pallet/viz', 10)
+        
+        self.sub = self.create_subscription(Image, 'camera/image_raw', self.cb, 10)
+        self.get_logger().info('Ready.')
 
     def enable_callback(self, request, response):
         self.enabled = request.data
@@ -73,71 +68,95 @@ class PalletNode(Node):
     def infer(self, bgr):
         inp = self.preprocess(bgr)
         outputs = self.session.run(self.output_names, {self.input_name: inp})
-        out0 = out1 = None
-        for o in outputs:
-            if o.ndim == 3:
-                out0 = o
-            elif o.ndim == 4:
-                out1 = o
-        if out0 is None or out1 is None:
-            raise RuntimeError(f'Salidas inesperadas: {[o.shape for o in outputs]}')
-        return out0, out1
+        out = outputs[0]
+        if out.ndim != 3:
+            raise RuntimeError(f'out: {out.shape}')
+        return out
+
+    def publish_empty(self, header):
+        msg = Detection2DArray()
+        msg.header = header
+        self.pub.publish(msg)
 
     def cb(self, msg: Image):
         if not self.enabled:
-            return
+            pass
+            # return
 
         bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         orig_h, orig_w = bgr.shape[:2]
-        empty = np.zeros((orig_h, orig_w), dtype=np.uint8)
 
         try:
-            out0, out1 = self.infer(bgr)
+            out = self.infer(bgr)
         except Exception as e:
             self.get_logger().error(f'Inferencia fallo: {e}')
-            self.pub.publish(self.bridge.cv2_to_imgmsg(empty, encoding='mono8'))
+            self.publish_empty(msg.header)
             return
 
-        preds = out0[0].T
-        confs = preds[:, 4]
+        # (1, C, N) -> (N, C). C = 4 + num_classes
+        preds = out[0].T
+        num_classes = preds.shape[1] - 4
+        if num_classes < 1:
+            self.get_logger().error(f'Canales insuficientes: {preds.shape}')
+            self.publish_empty(msg.header)
+            return
+
+        boxes_xywh = preds[:, :4]
+        class_scores = preds[:, 4:4 + num_classes]
+        confs = class_scores.max(axis=1)
+        class_ids = class_scores.argmax(axis=1)
+
         keep = confs > CONF_THRESH
         if not keep.any():
-            self.pub.publish(self.bridge.cv2_to_imgmsg(empty, encoding='mono8'))
+            self.publish_empty(msg.header)
             return
 
-        preds = preds[keep]
-        confs = preds[:, 4]
-        mask_coeffs = preds[:, 5:]
+        boxes_xywh = boxes_xywh[keep]
+        confs = confs[keep]
+        class_ids = class_ids[keep]
 
         sx, sy = orig_w / INPUT_W, orig_h / INPUT_H
-        xc, yc, w, h = preds[:, 0], preds[:, 1], preds[:, 2], preds[:, 3]
+        xc, yc, w, h = boxes_xywh[:, 0], boxes_xywh[:, 1], boxes_xywh[:, 2], boxes_xywh[:, 3]
         boxes = np.stack([
             (xc - w / 2) * sx, (yc - h / 2) * sy,
             (xc + w / 2) * sx, (yc + h / 2) * sy
         ], axis=1).clip([0, 0, 0, 0], [orig_w, orig_h, orig_w, orig_h])
 
-        idx = cv2.dnn.NMSBoxes(
-            boxes.tolist(), confs.tolist(), CONF_THRESH, IOU_THRESH)
+        idx = cv2.dnn.NMSBoxes(boxes.tolist(), confs.tolist(), CONF_THRESH, IOU_THRESH)
         if len(idx) == 0:
-            self.pub.publish(self.bridge.cv2_to_imgmsg(empty, encoding='mono8'))
+            self.publish_empty(msg.header)
             return
 
-        idx = np.asarray(idx).flatten()[:3]
-        boxes = boxes[idx]
-        mask_coeffs = mask_coeffs[idx]
+        idx = np.asarray(idx).flatten()[:MAX_DET]
 
-        protos = out1[0].reshape(NUM_MASK_COEFFS, -1)
-        raw = mask_coeffs @ protos
-        masks_proto = 1.0 / (1.0 + np.exp(-raw))
+        det_array = Detection2DArray()
+        det_array.header = msg.header
 
-        _, _, proto_h, proto_w = out1.shape
-        masks_proto = masks_proto.reshape(-1, proto_h, proto_w)
-        combined_proto = np.max(masks_proto, axis=0)
-        combined_proto = (combined_proto > MASK_THRESH).astype(np.uint8) * 255
+        for i in idx:
+            x1, y1, x2, y2 = boxes[i]
+            det = Detection2D()
+            det.bbox.center.position.x = float((x1 + x2) * 0.5)
+            det.bbox.center.position.y = float((y1 + y2) * 0.5)
+            det.bbox.size_x = float(x2 - x1)
+            det.bbox.size_y = float(y2 - y1)
 
-        combined = cv2.resize(combined_proto, (orig_w, orig_h),
-                              interpolation=cv2.INTER_NEAREST)
-        self.pub.publish(self.bridge.cv2_to_imgmsg(combined, encoding='mono8'))
+            hyp = ObjectHypothesisWithPose()
+            hyp.hypothesis.class_id = str(int(class_ids[i]))
+            hyp.hypothesis.score = float(confs[i])
+            det.results.append(hyp)
+
+            det_array.detections.append(det)
+
+        self.pub.publish(det_array)
+        for i in idx:
+            x1, y1, x2, y2 = boxes[i].astype(int)
+            cv2.rectangle(bgr, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+        viz_msg = self.bridge.cv2_to_imgmsg(bgr, encoding='bgr8')
+        viz_msg.header = msg.header
+        self.pub_viz.publish(viz_msg)
+
+        
 
 
 def main(args=None):
