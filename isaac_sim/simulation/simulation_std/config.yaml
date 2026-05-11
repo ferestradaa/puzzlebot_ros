@@ -1,6 +1,6 @@
 paths:
  urdf: "assets/puzzlebot/urdf/puzzlebot.urdf"
- usd_output: "sim/generated/puzzlebot.usd" 
+ usd_output: "simulation/simulation_std/generated_usd/puzzlebot.usd" 
 
 robot:
  prim_path: "/World/puzzlebot"
@@ -33,8 +33,7 @@ ros2:
     odom: "odom"
     joint_states: "joint_states"
     cmd_vel: "cmd_vel"
-    tf: "tf"
     clock: "clock"
 
 world:
- stage_path: "worlds/warehouse.usd"
+ stage_path: "worlds/puzz_scene.usd"

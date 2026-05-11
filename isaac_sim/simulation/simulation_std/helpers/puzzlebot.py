@@ -67,7 +67,7 @@ class Puzzlebot():
     def fix_wheel_drives_live(self):
         stage = omni.usd.get_context().get_stage()
 
-        # 1. quitar caps en los rigid bodies de las llantas
+        # quitar caps en los rigid bodies de las llantas
         wheel_links = [
             f"{self.robot_prim_path}/left_wheel_link",
             f"{self.robot_prim_path}/right_wheel_link",
@@ -83,7 +83,7 @@ class Puzzlebot():
             max_ang = rb_api.GetMaxAngularVelocityAttr().Get()
             print(f"[sim] {wp} maxAngularVelocity = {max_ang}")
 
-        # 2. configurar drives + quitar caps de joint
+        # configurar drives y quitar caps de joint
         joints = [
             f"{self.robot_prim_path}/joints/base_to_left_wheel",
             f"{self.robot_prim_path}/joints/base_to_right_wheel",
@@ -155,15 +155,16 @@ class Puzzlebot():
         camera_prim.GetAttribute("clippingRange").Set(Gf.Vec2f(0.05, 50.0))
 
         # Orientacion: Z-forward (Isaac)  eje optico ROS (Z-forward, Y-down)
+        
         cam_xform = UsdGeom.XformCommonAPI(camera_prim)
         cam_xform.SetRotate(
-            Gf.Vec3f(-90.0, 0.0, -90.0),
+            Gf.Vec3f(-90.0, 0.0, 90.0),
             UsdGeom.XformCommonAPI.RotationOrderXYZ
         )
-        print(f"[sim] Camera prim creado: {self.camera_prim_path}")
 
-        # path = nombre relativo (no path completo), parent = path completo del padre
-        # Resultado: parent + "/Lidar" → luego el sensor RTX queda en Lidar/RPLidar_S2E
+        
+        print(f"[sim] Camera prim created: {self.camera_prim_path}")
+
         ok, sensor = omni.kit.commands.execute(
             "IsaacSensorCreateRtxLidar",
             path        = "/Lidar",
@@ -175,7 +176,7 @@ class Puzzlebot():
         if ok and sensor is not None:
             print(f"[sim] LiDAR RTX creado. Sensor OmniLidar: {self.lidar_sensor_path}")
         else:
-            print(f"[sim] ADVERTENCIA: IsaacSensorCreateRtxLidar falló — LiDAR no disponible")
+            print(f"[sim] LiDAR NOT available")
         return True
 
 
@@ -183,7 +184,6 @@ class Puzzlebot():
         self._rp_camera = rep.create.render_product(self.camera_prim_path, (640, 480))
         print(f"[sim] RenderProduct cámara: {self._rp_camera.path}")
 
-        # El OmniLidar es el sensor real — el render product se adjunta a ese prim
         stage = omni.usd.get_context().get_stage()
         if stage.GetPrimAtPath(self.lidar_sensor_path).IsValid():
             self._rp_lidar = rep.create.render_product(self.lidar_sensor_path, (1280, 720))
@@ -226,8 +226,7 @@ class Puzzlebot():
             # Cmd vel
             ("DiffDrive.inputs:topicName",               "cmd_vel"),
 
-            # Articulation controller — ArticulationRoot correct
-            # Cámara RGB
+
             ("CameraHelper.inputs:topicName",            "camera/image_raw"),
             ("CameraHelper.inputs:type",                 "rgb"),
             ("CameraHelper.inputs:frameId",              "camera_color_optical_frame"),
@@ -247,7 +246,7 @@ class Puzzlebot():
             ]
 
         connect = [
-            # Tick → exec
+            # Tick to exec
             ("OnPlaybackTick.outputs:tick", "ComputeOdom.inputs:execIn"),
             ("OnPlaybackTick.outputs:tick", "PublishJointState.inputs:execIn"),
             ("OnPlaybackTick.outputs:tick", "DiffDrive.inputs:execIn"),
@@ -255,17 +254,17 @@ class Puzzlebot():
             ("OnPlaybackTick.outputs:tick", "PublishClock.inputs:execIn"),
             # ComputeOdom exec chain
             ("ComputeOdom.outputs:execOut", "OdomPublisher.inputs:execIn"),
-            # SimTime → timestamps
+            # SimTime to timestamps
             ("ReadSimTime.outputs:simulationTime", "OdomPublisher.inputs:timeStamp"),
             ("ReadSimTime.outputs:simulationTime", "PublishJointState.inputs:timeStamp"),
             ("ReadSimTime.outputs:simulationTime", "PublishClock.inputs:timeStamp"),
-            # Context → nodos ROS2
+            # Context to  nodos ROS2
             ("ROS2Context.outputs:context", "OdomPublisher.inputs:context"),
             ("ROS2Context.outputs:context", "PublishJointState.inputs:context"),
             ("ROS2Context.outputs:context", "DiffDrive.inputs:context"),
             ("ROS2Context.outputs:context", "CameraHelper.inputs:context"),
             ("ROS2Context.outputs:context", "PublishClock.inputs:context"),
-            # ComputeOdom → OdomPublisher data
+            # ComputeOdom to  OdomPublisher data
             ("ComputeOdom.outputs:position",        "OdomPublisher.inputs:position"),
             ("ComputeOdom.outputs:orientation",     "OdomPublisher.inputs:orientation"),
             ("ComputeOdom.outputs:linearVelocity",  "OdomPublisher.inputs:linearVelocity"),
@@ -287,7 +286,7 @@ class Puzzlebot():
         )
 
         if not ok:
-            print("[sim] ERROR: Falló la creación del Action Graph ROS2")
+            print("[sim] ERROR: Action Graph ROS2 creation")
             return False
 
         print("[sim] Action Graph ROS2 OK")
