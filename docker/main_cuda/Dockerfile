@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libnvinfer-vc-plugin8=8.6.1.6-1+cuda11.8 \
     && rm -rf /var/lib/apt/lists/*
 
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg2 \
@@ -57,9 +58,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-slam-toolbox \
     ros-humble-teleop-twist-keyboard \
     ros-humble-behaviortree-cpp \
+    ros-humble-vision-msgs \
+    ros-humble-std-srvs \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init 2>/dev/null || true && rosdep update
+
 
 COPY src /tmp/src
 RUN apt-get update && \
@@ -70,6 +74,8 @@ RUN apt-get update && \
         -r -y && \
     rm -rf /tmp/src && \
     rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir "numpy<2" onnxruntime-gpu==1.16.3
 
 COPY docker/main_cuda/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

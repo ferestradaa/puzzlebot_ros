@@ -1,7 +1,7 @@
 // trt_engine.hpp - Wrapper RAII de TensorRT para inferencia
 //
 // Encapsula deserializacion del .engine, manejo de memoria GPU, y ejecucion.
-// Diseño:
+// Diseno:
 //   - Una instancia por modelo (ej. uno para two_sides, otro para pallet_complete)
 //   - Asume modelo de entrada/salida unica (1 input binding, 1 output binding)
 //   - Mantiene buffers GPU pre-allocados durante toda la vida del objeto
@@ -21,7 +21,6 @@
 namespace puzzlebot_inference
 {
 
-// Logger minimalista para TRT
 class TrtLogger : public nvinfer1::ILogger {
 public:
   void log(Severity severity, const char* msg) noexcept override {
@@ -44,8 +43,8 @@ public:
   TrtEngine & operator=(const TrtEngine &) = delete;
 
   // Ejecuta inferencia: copia input a GPU, corre, copia output a host
-  // input_data debe tener tamaño input_size_ (ya en formato CHW float32 normalizado)
-  // output_data se llena con tamaño output_size_
+  // input_data debe tener tamnno input_size_ (ya en formato CHW float32 normalizado)
+  // output_data se llena con tamano output_size_
   // Returns false si la inferencia falla
   bool infer(const float * input_data, float * output_data);
 
@@ -73,9 +72,6 @@ private:
   size_t output_size_ = 0;
 };
 
-// =============================================================================
-// Implementacion (header-only para simplificar build)
-// =============================================================================
 
 inline TrtEngine::TrtEngine(const std::string & engine_path)
 {

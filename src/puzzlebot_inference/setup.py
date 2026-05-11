@@ -1,4 +1,5 @@
 from setuptools import find_packages, setup
+import glob
 
 package_name = 'puzzlebot_inference'
 
@@ -10,6 +11,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/models',
+            glob.glob('models/*.onnx')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,6 +29,7 @@ setup(
         'console_scripts': [
             'pallet_detection_cpu = puzzlebot_inference.pallet_detection_cpu:main',
             'pallet_detection_gpu = puzzlebot_inference.pallet_detection_gpu:main',
+            'pallet_detection_sim = puzzlebot_inference.pallet_detection_sim:main',
         ],
     },
 )

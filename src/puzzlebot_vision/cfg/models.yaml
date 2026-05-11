@@ -1,0 +1,4 @@
+models: 
+    onxx: models/full_holes_raw.onxx
+    real_engine: models/real_engine/
+    sim_engine: models/sim_engine/

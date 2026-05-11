@@ -10,7 +10,7 @@ public:
     EnableDetections(const std::string& name, const BT::NodeConfig& config, 
                      rclcpp::Node::SharedPtr node)
         : BT::SyncActionNode(name, config), node_(node) {
-            client_ = node_ ->create_client<std_srvs::srv::SetBool>("enable_detections"); 
+            client_ = node_ ->create_client<std_srvs::srv::SetBool>("enable_detection"); 
         }
 
     static BT::PortsList providedPorts() {
@@ -18,26 +18,25 @@ public:
     }
 
     BT::NodeStatus tick() override {
-        bool enable = false; 
-        getInput("enable", enable); //reading the blackboard declared in xml tree
+        bool enable = false;
+        getInput("enable", enable);
 
-        if (!client_->wait_for_service(std::chrono::seconds(2))){
-            RCLCPP_ERROR(node_->get_logger(), "enable_detection_service NOT available"); 
-            return BT::NodeStatus::FAILURE; 
-        }
-
-        auto request = std::make_shared<std_srvs::srv::SetBool::Request>(); 
-        request->data = enable; 
-
-        auto future = client_ -> async_send_request(request); 
-
-        if (rclcpp::spin_until_future_complete(node_, future, std::chrono::seconds(3))
-            != rclcpp::FutureReturnCode::SUCCESS){
-            RCLCPP_ERROR(node_->get_logger(), "enable_detection_service DID not respond"); 
+        if (!client_->wait_for_service(std::chrono::seconds(2))) {
+            RCLCPP_ERROR(node_->get_logger(), "enable_detection service NOT available");
             return BT::NodeStatus::FAILURE;
         }
 
-        return future.get()-> success ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE; 
+        auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
+        request->data = enable;
+        auto future = client_->async_send_request(request);
+
+        //executor externo ya esta spineando bt_node_
+        if (future.wait_for(std::chrono::seconds(3)) != std::future_status::ready) {
+            RCLCPP_ERROR(node_->get_logger(), "enable_detection service DID not respond");
+            return BT::NodeStatus::FAILURE;
+        }
+
+        return future.get()->success ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
     }
 
 private: 
