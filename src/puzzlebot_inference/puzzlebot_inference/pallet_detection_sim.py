@@ -10,7 +10,7 @@ from std_srvs.srv import SetBool
 from ament_index_python.packages import get_package_share_directory
 
 PKG_SHARE = get_package_share_directory('puzzlebot_inference')
-MODEL_PATH = os.path.join(PKG_SHARE, 'models', 'pallet_side.onnx')
+MODEL_PATH = os.path.join(PKG_SHARE, 'models/onnx', 'pallet_side.onnx')
 
 INPUT_H, INPUT_W = 384, 384
 CONF_THRESH = 0.5

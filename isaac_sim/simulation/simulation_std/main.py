@@ -181,7 +181,10 @@ def main():
     WHEEL_RADIUS      = _cfg["robot"]["wheel_radius"]
     WHEEL_BASE        = _cfg["robot"]["wheel_base"]
 
-    CAMERA_LINK_PATH  = f"{ROBOT_PRIM_PATH}/camera_link"
+    CAMERA_WIDTH      = _cfg["sensors"]["camera"]["width"]
+    CAMERA_HEIGHT     = _cfg["sensors"]["camera"]["height"]
+
+    CAMERA_LINK_PATH  = f"{ROBOT_PRIM_PATH}/camera_link"    
     LIDAR_LINK_PATH   = f"{ROBOT_PRIM_PATH}/lidar_link"
     CAMERA_PRIM_PATH  = f"{CAMERA_LINK_PATH}/Camera"
     LIDAR_SENSOR_PATH = f"{LIDAR_LINK_PATH}/Lidar/{_cfg['sensors']['lidar']['config']}"
@@ -214,12 +217,13 @@ def main():
         simulation_app.close()
         return
 
-    puzzlebot.setup_render_products()
+    puzzlebot.setup_render_products(CAMERA_WIDTH, CAMERA_HEIGHT)
 
+    
     if not puzzlebot.setup_ros2_graph():
         simulation_app.close()
         return
-
+    
     simulation_app.update()
     world.reset()
 

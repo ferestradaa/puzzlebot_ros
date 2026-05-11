@@ -12,6 +12,8 @@ robot:
 
 sensors:
   camera:
+    width: 320
+    height: 240
     focal_length: 30.4
     horizontal_aperture: 36.8
     vertical_aperture: 27.6

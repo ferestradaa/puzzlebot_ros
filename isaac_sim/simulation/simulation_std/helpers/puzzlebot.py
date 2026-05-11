@@ -128,7 +128,7 @@ class Puzzlebot():
             bindingStrength=UsdShade.Tokens.strongerThanDescendants,
             materialPurpose="physics"
         )
-        print(f"[sim] caster friction=0 bindeado en: {caster_prim.GetPath()}")
+        print(f"[sim] caster friction=0 binded in: {caster_prim.GetPath()}")
 
         joint_prim = stage.GetPrimAtPath(f"{self.robot_prim_path}/joints/chassis_to_caster")
         if joint_prim.IsValid():
@@ -140,12 +140,7 @@ class Puzzlebot():
 
         for path in [self.camera_link_path, self.lidar_link_path]:
             if not stage.GetPrimAtPath(path).IsValid():
-                print(f"[sim] ERROR: link no encontrado: {path}")
-                print("[sim] Prims del robot:")
-                for p in stage.Traverse():
-                    sp = str(p.GetPath())
-                    if self.robot_prim_path in sp:
-                        print(f"  {sp}  [{p.GetTypeName()}]")
+                print(f"[sim] ERROR: link not found: {path}")
                 return False
 
         camera_prim = stage.DefinePrim(self.camera_prim_path, "Camera")
@@ -153,48 +148,43 @@ class Puzzlebot():
         camera_prim.GetAttribute("horizontalAperture").Set(36.8)
         camera_prim.GetAttribute("verticalAperture").Set(27.6)
         camera_prim.GetAttribute("clippingRange").Set(Gf.Vec2f(0.05, 50.0))
-
-        # Orientacion: Z-forward (Isaac)  eje optico ROS (Z-forward, Y-down)
-        
         cam_xform = UsdGeom.XformCommonAPI(camera_prim)
-        cam_xform.SetRotate(
-            Gf.Vec3f(-90.0, 0.0, 90.0),
-            UsdGeom.XformCommonAPI.RotationOrderXYZ
-        )
-
-        
+        cam_xform.SetRotate(Gf.Vec3f(-90.0, 0.0, 90.0), UsdGeom.XformCommonAPI.RotationOrderXYZ)
         print(f"[sim] Camera prim created: {self.camera_prim_path}")
 
         ok, sensor = omni.kit.commands.execute(
             "IsaacSensorCreateRtxLidar",
-            path        = "/Lidar",
-            parent      = self.lidar_link_path,
-            config      = "RPLIDAR_S2E",
-            translation = Gf.Vec3d(0.0, 0.0, 0.0),
-            orientation = Gf.Quatd(1.0, 0.0, 0.0, 0.0),
+            path="/Lidar",
+            parent=self.lidar_link_path,
+            config="Example_Rotary_2D",  
+            translation=Gf.Vec3d(0.0, 0.0, 0.0),
+            orientation=Gf.Quatd(1.0, 0.0, 0.0, 0.0),
         )
         if ok and sensor is not None:
-            print(f"[sim] LiDAR RTX creado. Sensor OmniLidar: {self.lidar_sensor_path}")
+            self.lidar_sensor_path = str(sensor.GetPath())
+            print(f"[sim] Lidar created: {self.lidar_sensor_path}")
         else:
-            print(f"[sim] LiDAR NOT available")
+            print(f"[sim] Lidar NOT available")
+            self.lidar_sensor_path = ""
         return True
+    
 
 
-    def setup_render_products(self):
-        self._rp_camera = rep.create.render_product(self.camera_prim_path, (640, 480))
-        print(f"[sim] RenderProduct cámara: {self._rp_camera.path}")
+    def setup_render_products(self, cam_w, cam_h):
+        self._rp_camera = rep.create.render_product(self.camera_prim_path, (cam_w, cam_h))
+        print(f"[sim] RenderProduct camera: {self._rp_camera.path}")
 
-        stage = omni.usd.get_context().get_stage()
-        if stage.GetPrimAtPath(self.lidar_sensor_path).IsValid():
-            self._rp_lidar = rep.create.render_product(self.lidar_sensor_path, (1280, 720))
-            print(f"[sim] RenderProduct LiDAR : {self._rp_lidar.path}")
-        else:
-            print(f"[sim] ADVERTENCIA: {self.lidar_sensor_path} no existe - LiDAR sin render product")
+        if self.lidar_sensor_path:
+            self._rp_lidar = rep.create.render_product(self.lidar_sensor_path, [1, 1], name="Lidar")
+            writer = rep.writers.get("RtxLidarROS2PublishLaserScan")
+            writer.initialize(topicName="scan", frameId="lidar_link")
+            writer.attach([self._rp_lidar])
+            print(f"[sim] Lidar writer attached: {self._rp_lidar.path}")
 
 
     def setup_ros2_graph(self) -> bool:
         rp_cam = self._rp_camera.path if self._rp_camera else ""
-        rp_lid = self._rp_lidar.path  if self._rp_lidar  else ""
+ 
 
         nodes = [
             ("OnPlaybackTick",    "omni.graph.action.OnPlaybackTick"),
@@ -207,8 +197,6 @@ class Puzzlebot():
             ("CameraHelper",      "isaacsim.ros2.bridge.ROS2CameraHelper"),
             ("PublishClock",      "isaacsim.ros2.bridge.ROS2PublishClock"),
         ]
-        if rp_lid:
-            nodes.append(("LidarHelper", "isaacsim.ros2.bridge.ROS2RtxLidarHelper"))
 
         set_values = [
             ("ROS2Context.inputs:useDomainIDEnvVar",     True),
@@ -236,14 +224,7 @@ class Puzzlebot():
             # Clock
             ("PublishClock.inputs:topicName",            "clock"),
         ]
-        if rp_lid:
-            set_values += [
-                ("LidarHelper.inputs:topicName",         "scan"),
-                ("LidarHelper.inputs:type",              "laser_scan"),
-                ("LidarHelper.inputs:frameId",           "lidar_link"),
-                ("LidarHelper.inputs:renderProductPath", rp_lid),
-                ("LidarHelper.inputs:fullScan",          True),
-            ]
+
 
         connect = [
             # Tick to exec
@@ -270,11 +251,7 @@ class Puzzlebot():
             ("ComputeOdom.outputs:linearVelocity",  "OdomPublisher.inputs:linearVelocity"),
             ("ComputeOdom.outputs:angularVelocity", "OdomPublisher.inputs:angularVelocity"),
         ]
-        if rp_lid:
-            connect += [
-                ("OnPlaybackTick.outputs:tick",     "LidarHelper.inputs:execIn"),
-                ("ROS2Context.outputs:context",     "LidarHelper.inputs:context"),
-            ]
+
 
         (ok, _, _, _) = og.Controller.edit(
             {"graph_path": self.graph_path, "evaluator_name": "execution"},
