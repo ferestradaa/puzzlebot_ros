@@ -11,12 +11,12 @@
   <xacro:property name="chassis_mass"   value="0.710"/>
 
 
-  <xacro:property name="wheel_radius"    value="0.051"/>
+  <xacro:property name="wheel_radius"    value="0.05"/>
   <xacro:property name="wheel_thickness" value="0.01"/>
   <xacro:property name="wheel_mass"      value="0.03"/>
 
   <!-- Distancia desde el centro del chassis al centro de cada rueda en Y -->
-  <xacro:property name="wheel_separation" value="0.09"/>
+  <xacro:property name="wheel_separation" value="0.095"/>
   <!-- Offset en X: las ruedas no están centradas, van ligeramente adelante -->
   <xacro:property name="wheel_x_offset"   value="0.05"/>
 

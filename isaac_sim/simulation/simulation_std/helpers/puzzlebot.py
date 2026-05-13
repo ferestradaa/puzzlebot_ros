@@ -44,7 +44,7 @@ class Puzzlebot():
         config.set_import_inertia_tensor(True)
         config.set_create_physics_scene(False)
         config.set_default_drive_type(2)           # velocity drive
-        config.set_default_drive_strength(1047198.0)
+        config.set_default_drive_strength(100.0)
         config.set_default_position_drive_damping(10.0)
         config.set_distance_scale(1.0)
         config.set_density(0.0)
@@ -67,7 +67,6 @@ class Puzzlebot():
     def fix_wheel_drives_live(self):
         stage = omni.usd.get_context().get_stage()
 
-        # quitar caps en los rigid bodies de las llantas
         wheel_links = [
             f"{self.robot_prim_path}/left_wheel_link",
             f"{self.robot_prim_path}/right_wheel_link",
@@ -78,7 +77,7 @@ class Puzzlebot():
                 print(f"[sim] wheel link not found: {wp}")
                 continue
             rb_api = PhysxSchema.PhysxRigidBodyAPI.Apply(prim)
-            rb_api.CreateMaxAngularVelocityAttr().Set(1000.0)
+            rb_api.CreateMaxAngularVelocityAttr().Set(50.0)
             rb_api.CreateMaxLinearVelocityAttr().Set(1000.0)
             max_ang = rb_api.GetMaxAngularVelocityAttr().Get()
             print(f"[sim] {wp} maxAngularVelocity = {max_ang}")
@@ -96,8 +95,8 @@ class Puzzlebot():
 
             drive = UsdPhysics.DriveAPI.Apply(prim, "angular")
             drive.GetTypeAttr().Set("velocity")
-            drive.GetMaxForceAttr().Set(1e4)
-            drive.GetDampingAttr().Set(1e10)
+            drive.GetMaxForceAttr().Set(10)
+            drive.GetDampingAttr().Set(100)
             drive.GetStiffnessAttr().Set(0.0)
 
             physx_joint = PhysxSchema.PhysxJointAPI.Apply(prim)
@@ -149,7 +148,7 @@ class Puzzlebot():
         camera_prim.GetAttribute("verticalAperture").Set(27.6)
         camera_prim.GetAttribute("clippingRange").Set(Gf.Vec2f(0.05, 50.0))
         cam_xform = UsdGeom.XformCommonAPI(camera_prim)
-        cam_xform.SetRotate(Gf.Vec3f(-90.0, 0.0, 90.0), UsdGeom.XformCommonAPI.RotationOrderXYZ)
+        cam_xform.SetRotate(Gf.Vec3f(-90.0, 180.0, 90.0), UsdGeom.XformCommonAPI.RotationOrderXYZ)
         print(f"[sim] Camera prim created: {self.camera_prim_path}")
 
         ok, sensor = omni.kit.commands.execute(
@@ -185,7 +184,6 @@ class Puzzlebot():
     def setup_ros2_graph(self) -> bool:
         rp_cam = self._rp_camera.path if self._rp_camera else ""
  
-
         nodes = [
             ("OnPlaybackTick",    "omni.graph.action.OnPlaybackTick"),
             ("ReadSimTime",       "isaacsim.core.nodes.IsaacReadSimulationTime"),
@@ -201,7 +199,7 @@ class Puzzlebot():
         set_values = [
             ("ROS2Context.inputs:useDomainIDEnvVar",     True),
 
-            # Odometría — ArticulationRoot correcto
+            # odometria  ArticulationRoot correcto
             ("ComputeOdom.inputs:chassisPrim",           [self.articulation_path]),
             ("OdomPublisher.inputs:topicName",           "odom"),
             ("OdomPublisher.inputs:odomFrameId",         "odom"),
@@ -219,7 +217,6 @@ class Puzzlebot():
             ("CameraHelper.inputs:type",                 "rgb"),
             ("CameraHelper.inputs:frameId",              "camera_color_optical_frame"),
             ("CameraHelper.inputs:renderProductPath",    rp_cam),
-
 
             # Clock
             ("PublishClock.inputs:topicName",            "clock"),

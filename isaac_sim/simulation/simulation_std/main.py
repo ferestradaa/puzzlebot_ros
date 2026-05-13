@@ -157,7 +157,7 @@ def load_robot(usd_path: str, robot_prim_path):
     if not prim.IsValid():
         raise RuntimeError(f"No valid prim: {robot_prim_path}")
     xform = UsdGeom.XformCommonAPI(prim)
-    xform.SetTranslate(Gf.Vec3d(0.0, 0.0, 0.08))
+    xform.SetTranslate(Gf.Vec3d(0.0, 0.0, 0.03))
 
 
 def main():
@@ -246,6 +246,7 @@ def main():
     world.reset()
     '''
 
+
     wheeled_robot = WheeledRobot(
         prim_path=ARTICULATION_PATH,
         name="puzzlebot",
@@ -253,6 +254,8 @@ def main():
         create_robot=False,
         )
     
+
+
     world.scene.add(wheeled_robot)
     world.reset()
 

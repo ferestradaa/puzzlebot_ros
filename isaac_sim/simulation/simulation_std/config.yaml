@@ -7,8 +7,8 @@ robot:
  articulation_path: "/World/puzzlebot/base_footprint"
  left_wheel_joint: "base_to_left_wheel"
  right_wheel_joint: "base_to_right_wheel"
- wheel_radius: 0.051
- wheel_base: 0.19
+ wheel_radius: 0.05
+ wheel_base: 0.18
 
 sensors:
   camera:
@@ -26,7 +26,6 @@ sensors:
     config: "RPLIDAR_S2E"
     topic: "scan"
     frame_id: "lidar_link"
-    resolution: [1280, 720]
 
 ros2:
   graph_path: "/World/ActionGraph/ROS2"

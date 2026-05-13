@@ -2,12 +2,15 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <yaml-cpp/yaml.h>
-#include <ament_index_cpp/get_package_share_directory.hpp>  // FIX 1: faltaba este include
+#include <ament_index_cpp/get_package_share_directory.hpp>  
+
 
 #include <array>
 #include <string>
 #include <vector>
 #include <stdexcept>
+
+
 
 template <typename T, std::size_t N>
 std::array<T, N> yaml_to_array(const YAML::Node & node)
@@ -51,7 +54,6 @@ public:
     this->declare_parameter<std::string>("camera_info", "camera_info.yaml");
     this->declare_parameter<std::string>("camera_frame_id", "camera_color_optical_frame");
 
-    // FIX 2: resolver path — si no es absoluto, buscar en share del paquete
     std::string yaml_path = this->get_parameter("camera_info").as_string();
     if (yaml_path.empty() || yaml_path.front() != '/') {
       const std::string share_dir =
@@ -62,7 +64,6 @@ public:
     const std::string frame_id =
       this->get_parameter("camera_frame_id").as_string();
 
-    // FIX 3: eliminadas las variables pkg_path y map_path que nunca se usaban
 
     RCLCPP_INFO(this->get_logger(), "Loading camera info from: %s", yaml_path.c_str());
     load_camera_info(yaml_path, frame_id);
@@ -73,8 +74,11 @@ public:
       camera_info_msg_.k[0], camera_info_msg_.k[4],
       camera_info_msg_.k[2], camera_info_msg_.k[5]);
 
-    camera_info_pub_ = this->create_publisher<sensor_msgs::msg::CameraInfo>(
-      "/camera/camera_info", rclcpp::SensorDataQoS());
+
+    rclcpp::QoS info_qos(10);
+    info_qos.reliable();
+    info_pub_ = create_publisher<sensor_msgs::msg::CameraInfo>("/camera/camera_info", info_qos);
+
 
     image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
       "/camera/image_rect",
