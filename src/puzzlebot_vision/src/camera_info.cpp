@@ -79,6 +79,8 @@ public:
     info_qos.reliable();
     info_pub_ = create_publisher<sensor_msgs::msg::CameraInfo>("/camera/camera_info", info_qos);
 
+    
+
 
     image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
       "/camera/image_rect",

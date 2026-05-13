@@ -44,8 +44,8 @@ class Puzzlebot():
         config.set_import_inertia_tensor(True)
         config.set_create_physics_scene(False)
         config.set_default_drive_type(2)           # velocity drive
-        config.set_default_drive_strength(100.0)
-        config.set_default_position_drive_damping(10.0)
+        config.set_default_drive_strength(10.0)
+        config.set_default_position_drive_damping(0.0)
         config.set_distance_scale(1.0)
         config.set_density(0.0)
         config.set_convex_decomp(False)
@@ -95,8 +95,8 @@ class Puzzlebot():
 
             drive = UsdPhysics.DriveAPI.Apply(prim, "angular")
             drive.GetTypeAttr().Set("velocity")
-            drive.GetMaxForceAttr().Set(10)
-            drive.GetDampingAttr().Set(100)
+            drive.GetMaxForceAttr().Set(2.0)
+            drive.GetDampingAttr().Set(200)
             drive.GetStiffnessAttr().Set(0.0)
 
             physx_joint = PhysxSchema.PhysxJointAPI.Apply(prim)
@@ -132,6 +132,36 @@ class Puzzlebot():
         joint_prim = stage.GetPrimAtPath(f"{self.robot_prim_path}/joints/chassis_to_caster")
         if joint_prim.IsValid():
             PhysxSchema.PhysxJointAPI.Apply(joint_prim).CreateJointFrictionAttr().Set(0.0)
+
+
+
+    def fix_wheel_friction(self):
+        from pxr import UsdShade, UsdPhysics, PhysxSchema
+        stage = omni.usd.get_context().get_stage()
+
+        stage.DefinePrim("/World/PhysicsMaterials", "Scope")
+        mat_prim = stage.DefinePrim("/World/PhysicsMaterials/WheelMat", "Material")
+        mat = UsdPhysics.MaterialAPI.Apply(mat_prim)
+        mat.CreateStaticFrictionAttr().Set(1.0)
+        mat.CreateDynamicFrictionAttr().Set(1.0)
+        mat.CreateRestitutionAttr().Set(0.0)
+        PhysxSchema.PhysxMaterialAPI.Apply(mat_prim).CreateFrictionCombineModeAttr().Set("multiply")
+
+        wheel_links = [
+            f"{self.robot_prim_path}/left_wheel_link",
+            f"{self.robot_prim_path}/right_wheel_link",
+        ]
+        for wp in wheel_links:
+            prim = stage.GetPrimAtPath(wp)
+            if not prim.IsValid():
+                print(f"[sim] wheel link not found: {wp}")
+                continue
+            UsdShade.MaterialBindingAPI.Apply(prim).Bind(
+                UsdShade.Material(mat_prim),
+                bindingStrength=UsdShade.Tokens.strongerThanDescendants,
+                materialPurpose="physics"
+            )
+            print(f"[sim] WheelMat binded to: {wp}")
 
 
     def setup_sensors(self) -> bool:
