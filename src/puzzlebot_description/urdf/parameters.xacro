@@ -47,7 +47,7 @@
 
 
   <xacro:property name="mesh_chassis"
-    value="$(find puzzlebot_description)/meshes/puzzlebot_jetson_lidar_base.stl"/>
+    value="$(find puzzlebot_description)/meshes/chassis.stl"/>
   <xacro:property name="mesh_wheel"
     value="$(find puzzlebot_description)/meshes/puzzlebot_wheel.stl"/>
   <xacro:property name="mesh_camera"
