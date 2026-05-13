@@ -8,4 +8,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
-        run: python3 -m pytest tests/
+        run: python3 tests/github_action_test.py
