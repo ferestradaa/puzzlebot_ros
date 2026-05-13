@@ -1,4 +1,3 @@
-from my_module import some_function
 
 a = 1
 b = 2
