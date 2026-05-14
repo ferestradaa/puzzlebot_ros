@@ -19,6 +19,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(vision_msgs REQUIRED)
 
 
 
@@ -28,6 +29,8 @@ add_executable(odometry_raw src/odometry_raw.cpp)
 add_executable(sim_encoders src/sim_encoders.cpp)
 add_executable(pure_pursuit_node src/pure_pursuit_node.cpp
                                  src/pure_pursuit.cpp)
+
+add_executable(visual_servoing src/visual_servoing.cpp)
 
 
 
@@ -76,6 +79,13 @@ sensor_msgs
 std_msgs
 )
 
+ament_target_dependencies(visual_servoing
+rclcpp
+tf2_geometry_msgs
+vision_msgs
+std_msgs
+)
+
 target_include_directories(odometry PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -86,10 +96,17 @@ target_include_directories(pure_pursuit_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+
+if(EXISTS "/opt/ros/humble/include/vision_msgs/vision_msgs")
+  target_include_directories(visual_servoing PUBLIC
+    /opt/ros/humble/include/vision_msgs
+  )
+endif()
+
 target_link_libraries(odometry yaml-cpp Eigen3::Eigen)
 
 
-install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node
+install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node visual_servoing
   DESTINATION lib/${PROJECT_NAME}
 )
 

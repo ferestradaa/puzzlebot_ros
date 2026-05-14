@@ -7,7 +7,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from std_srvs.srv import SetBool
-from vision_msgs.msg import Detection2DArray, Detection2D, ObjectHypothesisWithPose
+from vision_msgs.msg import Detection2DArray, Detection2D 
 from ament_index_python.packages import get_package_share_directory
 
 PKG_SHARE = get_package_share_directory('puzzlebot_inference')
@@ -48,7 +48,7 @@ class PalletNode(Node):
 
         self.srv = self.create_service(SetBool, 'enable_detection', self.enable_callback)
         self.pub = self.create_publisher(Detection2DArray, '/pallet/detections', 10)
-        self.pub_viz = self.create_publisher(Image, '/pallet/viz', 10)
+        self.pub_viz = self.create_publisher(Image, '/pallet/image_detections', 10)
         
         self.sub = self.create_subscription(Image, 'camera/image_raw', self.cb, 10)
         self.get_logger().info('Ready.')
@@ -89,15 +89,14 @@ class PalletNode(Node):
         try:
             out = self.infer(bgr)
         except Exception as e:
-            self.get_logger().error(f'Inferencia fallo: {e}')
+            self.get_logger().error(f'Inference failed: {e}')
             self.publish_empty(msg.header)
             return
 
-        # (1, C, N) -> (N, C). C = 4 + num_classes
         preds = out[0].T
         num_classes = preds.shape[1] - 4
         if num_classes < 1:
-            self.get_logger().error(f'Canales insuficientes: {preds.shape}')
+            self.get_logger().error(f'insufiicnet channels: {preds.shape}')
             self.publish_empty(msg.header)
             return
 
@@ -140,14 +139,15 @@ class PalletNode(Node):
             det.bbox.size_x = float(x2 - x1)
             det.bbox.size_y = float(y2 - y1)
 
-            hyp = ObjectHypothesisWithPose()
-            hyp.hypothesis.class_id = str(int(class_ids[i]))
-            hyp.hypothesis.score = float(confs[i])
-            det.results.append(hyp)
+            #hyp = ObjectHypothesisWithPose()
+            #hyp.hypothesis.class_id = str(int(class_ids[i]))
+            #hyp.hypothesis.score = float(confs[i])
+            #det.results.append(hyp)
 
             det_array.detections.append(det)
 
         self.pub.publish(det_array)
+
         for i in idx:
             x1, y1, x2, y2 = boxes[i].astype(int)
             cv2.rectangle(bgr, (x1, y1), (x2, y2), (0, 255, 0), 2)
