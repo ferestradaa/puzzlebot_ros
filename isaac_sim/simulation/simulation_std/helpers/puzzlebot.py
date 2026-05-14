@@ -202,6 +202,23 @@ class Puzzlebot():
     def setup_render_products(self, cam_w, cam_h):
         self._rp_camera = rep.create.render_product(self.camera_prim_path, (cam_w, cam_h))
         print(f"[sim] RenderProduct camera: {self._rp_camera.path}")
+        from isaacsim.ros2.bridge import read_camera_info
+
+        camera_info, _ = read_camera_info(render_product_path=self._rp_camera.path)
+        writer_cam_info = rep.writers.get("ROS2PublishCameraInfo")
+        writer_cam_info.initialize (
+            frameId = "camera_color_optical_frame", 
+            topicName = "camera/camera_info", 
+            width=camera_info.width,
+            height=camera_info.height,
+            projectionType=camera_info.distortion_model,
+            k=camera_info.k.reshape([1, 9]),
+            r=camera_info.r.reshape([1, 9]),
+            p=camera_info.p.reshape([1, 12]),
+        )
+
+        writer_cam_info.attach([self._rp_camera])
+
 
         if self.lidar_sensor_path:
             self._rp_lidar = rep.create.render_product(self.lidar_sensor_path, [1, 1], name="Lidar")
@@ -224,6 +241,7 @@ class Puzzlebot():
             ("DiffDrive",         "isaacsim.ros2.bridge.ROS2SubscribeTwist"),
             ("CameraHelper",      "isaacsim.ros2.bridge.ROS2CameraHelper"),
             ("PublishClock",      "isaacsim.ros2.bridge.ROS2PublishClock"),
+
         ]
 
         set_values = [
@@ -250,7 +268,10 @@ class Puzzlebot():
 
             # Clock
             ("PublishClock.inputs:topicName",            "clock"),
+
+
         ]
+        
 
 
         connect = [
@@ -277,6 +298,8 @@ class Puzzlebot():
             ("ComputeOdom.outputs:orientation",     "OdomPublisher.inputs:orientation"),
             ("ComputeOdom.outputs:linearVelocity",  "OdomPublisher.inputs:linearVelocity"),
             ("ComputeOdom.outputs:angularVelocity", "OdomPublisher.inputs:angularVelocity"),
+
+       
         ]
 
 
