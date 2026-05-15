@@ -32,7 +32,14 @@ def generate_launch_description():
         remappings=[('joint_states', '/joint_states')], #change the topic  in case using simulated joint states (not now)
         parameters=[{'robot_description': robot_description,
                      'use_sim_time': use_sim_time,}])
+    
                     # 'frame_prefix': 'sim/'}] use it when youve got world 
+
+    jsp = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        parameters=[{'zeros': {'forks_joint': 0.0}}]
+)
     
     rviz_node = Node( #for vialuzation, launch rviz too
             package='rviz2',
@@ -47,6 +54,7 @@ def generate_launch_description():
             use_sim_time_arg,
             SetParameter(name='use_sim_time', value=use_sim_time),
             rviz_arg, 
+            jsp, 
             rs_pub,
             rviz_node,
         ])

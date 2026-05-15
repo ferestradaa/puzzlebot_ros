@@ -27,7 +27,7 @@ class PurePursuitNode : public rclcpp::Node{
             p.v_max        = 0.2;
             p.k_curvature  = 2.0;
             p.k_crosstrack = 0.4;
-            p.wheelbase    = 0.18;
+            p.wheelbase    = 0.18; 
             p.goal_tol     = 0.12;
             p.stop_dist    = 0.5;
             p.a_max        = 0.3;
@@ -59,6 +59,8 @@ class PurePursuitNode : public rclcpp::Node{
                 return;
             }
 
+
+
             std::vector<Point2D> path; //create vector 2d for saving xy path coordinates
             path.reserve(msg->poses.size()); //reserve memory for dynamic vector that cointains waypoitns instead of allocating
 
@@ -84,7 +86,7 @@ class PurePursuitNode : public rclcpp::Node{
                 return;
             }
 
-            if (controller_->goalReached()) { //if flag, return 
+            if (controller_->goalReached()) { //    if flag, return 
                 cmd_pub_->publish(geometry_msgs::msg::Twist{});
                 RCLCPP_INFO_ONCE(get_logger(), "Goal Reached.");
                 return;

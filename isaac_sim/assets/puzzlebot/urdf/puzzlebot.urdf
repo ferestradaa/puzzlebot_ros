@@ -54,7 +54,7 @@
     <visual>
       <origin rpy="1.570796326794895 0 3.14159265358979" xyz="0.050 0 0.0"/>
       <geometry>
-        <mesh filename="../meshes/puzzlebot_chasis.obj"/>
+        <mesh filename="../meshes/puzzlebot_chassis_detailed.obj"/>
       </geometry>
       <material name="white"/>
     </visual>

@@ -77,7 +77,7 @@ public:
 
     rclcpp::QoS info_qos(10);
     info_qos.reliable();
-    info_pub_ = create_publisher<sensor_msgs::msg::CameraInfo>("/camera/camera_info", info_qos);
+    camera_info_pub_ = create_publisher<sensor_msgs::msg::CameraInfo>("/camera/camera_info", info_qos);
 
     
 
