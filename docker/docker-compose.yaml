@@ -87,6 +87,7 @@ services:
 
     volumes:
       - ../src:/ws/src
+      - ../isaac_sim:/ws/isaac_sim
       - ./fastdds_no_shm.xml:/ws/fastdds_no_shm.xml
       - /tmp/.X11-unix:/tmp/.X11-unix  # GUI
 

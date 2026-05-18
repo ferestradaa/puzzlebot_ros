@@ -1,6 +1,5 @@
 paths:
- urdf: "assets/puzzlebot/urdf/puzzlebot.urdf"
- xacro: "src/puzzlebot_description/urdf/puzzlebot.urdf.xacro"
+ urdf: "assets/puzzlebot/urdf/test6.urdf"
  usd_output: "simulation/simulation_std/generated_usd/puzzlebot.usd" 
 
 robot:

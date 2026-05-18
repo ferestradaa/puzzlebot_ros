@@ -31,6 +31,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from simulation_std.helpers.puzzlebot import Puzzlebot
 import numpy as np
 from pxr import UsdShade, UsdPhysics, PhysxSchema
+from isaacsim.core.api.objects import DynamicCuboid
+import subprocess
 
 
 enable_extension("isaacsim.ros2.bridge")
@@ -180,20 +182,6 @@ def setup_world() -> World:
     return world
     '''
 
-def xacro_to_urdf(ros_ws, xacro_path):
-    import subprocess
-    urdf_path = os.path.join("/tmp", os.path.basename(xacro_path).replace(".xacro", ".urdf"))
-    result = subprocess.run(
-        ["bash", "-c", 
-         f"source /opt/ros/humble/setup.bash && "
-         f"source {ros_ws}/install/setup.bash && "
-         f"xacro {xacro_path} -o {urdf_path}"],
-        capture_output=True, text=True,
-        env={"HOME": os.environ["HOME"], "PATH": "/usr/bin:/bin"}
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"xacro failed: {result.stderr}")
-    return urdf_path
 
 
 def load_robot(usd_path: str, robot_prim_path):
@@ -209,21 +197,17 @@ def load_robot(usd_path: str, robot_prim_path):
 
 def main():
     _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-    ROOT_ROOT_DIR    = os.path.abspath(os.path.join(_SCRIPT_DIR, "..", "..", ".."))
     ROOT_DIR    = os.path.abspath(os.path.join(_SCRIPT_DIR, "..", ".."))
 
     _CONFIG_PATH = os.path.join(_SCRIPT_DIR, "config.yaml")
     with open(_CONFIG_PATH) as f:
         _cfg=yaml.safe_load(f)
 
-    #ROS_WS = _cfg["paths"]["your_ros_ws"]
 
-    #XACRO_PATH = os.path.join(ROOT_ROOT_DIR, _cfg["paths"]["xacro"])
     URDF_PATH  = os.path.join(ROOT_DIR, _cfg["paths"]["urdf"])
     USD_OUTPUT = os.path.join(ROOT_DIR, _cfg["paths"]["usd_output"])
     os.makedirs(os.path.dirname(USD_OUTPUT), exist_ok=True)
 
-    #URDF_PATH = xacro_to_urdf(ROS_WS, XACRO_PATH)
 
     WORLD_USD_PATH = os.path.join(ROOT_DIR, _cfg["world"]["stage_path"])
 
@@ -256,8 +240,6 @@ def main():
 
     usd_path = puzzlebot.import_urdf_to_usd(URDF_PATH, USD_OUTPUT)
     
-
-    #world = setup_world()
     world = setup_world(WORLD_USD_PATH)
     load_robot(usd_path, ROBOT_PRIM_PATH)
     simulation_app.update()
@@ -283,8 +265,10 @@ def main():
 
 
     
-    from isaacsim.core.api.objects import DynamicCuboid
+    
     import numpy as np
+
+    '''
     world.scene.add(DynamicCuboid(
         prim_path="/World/Cube",
         name="cube",
@@ -292,6 +276,7 @@ def main():
         scale=np.array([0.1, 0.1, 0.1]),
         color=np.array([1.0, 0.0, 0.0]),
     ))
+    '''
 
     wheeled_robot = WheeledRobot(
         prim_path=ARTICULATION_PATH,

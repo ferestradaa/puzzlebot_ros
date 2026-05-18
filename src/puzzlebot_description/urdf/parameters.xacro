@@ -22,11 +22,12 @@
 
 <!-- Distance from base link to the front edge of the chasis -->
   <xacro:property name="baselink_2_front"   value="0.09"/>
+  <xacro:property name="front_2_forklift"   value="0.03"/>
 
 
   <xacro:property name="caster_radius" value="0.0065"/>
   <xacro:property name="caster_mass"   value="0.012"/>
-  <!-- Posicionn relativa al chassis: atras y abajo -->
+  <!-- Posicionn relativa al chassis atras y abajo -->
   <xacro:property name="caster_x" value="-0.095"/>
   <xacro:property name="caster_y" value="0.0"/>
   <xacro:property name="caster_z" value="-0.0425"/>
@@ -37,10 +38,10 @@
   <xacro:property name="camera_width"  value="0.01"/>
   <xacro:property name="camera_height" value="0.06"/>
 
-  <!-- camera position over the chassis-->
-  <xacro:property name="camera_x" value="0.08"/>
+  <!-- camera position over the chassis /OVER THE FORKS-->
+  <xacro:property name="camera_x" value="0.0"/>
   <xacro:property name="camera_y" value="0.0"/>
-  <xacro:property name="camera_z" value="0.07"/>
+  <xacro:property name="camera_z" value="0.10"/>
 
 
   <xacro:property name="lidar_mass"   value="0.1"/>
@@ -50,27 +51,36 @@
 
 
   <!-- fork position over the chassis FRONT-->
-  <xacro:property name="forks_x" value="${baselink_2_front + 0.064}"/>
+  <xacro:property name="forks_x" value="${baselink_2_front + front_2_forklift}"/>
   <xacro:property name="forks_y" value="0.0"/>
-  <xacro:property name="forks_z" value="-0.02"/>
-  <xacro:property name="forks_yaw" value="${PI}"/>  
+  <xacro:property name="forks_z" value="-0.04"/>
+  <xacro:property name="forks_yaw" value= "0.0"/>  
+
+
+<xacro:property name="mast_height"      value="0.169"/>
+<xacro:property name="mast_width"       value="0.0628"/>
+<xacro:property name="mast_thickness"   value="0.01"/>
+
+<xacro:property name="fork_length"      value="0.109"/>
+<xacro:property name="fork_width"       value="0.017"/>
+<xacro:property name="fork_thickness"   value="0.003"/>
+<xacro:property name="fork_separation"  value="0.045"/>  <!-- distance between 2 fingers -->
+
+<xacro:property name="inner_travel"     value="0.20"/>
+<xacro:property name="fork_travel"      value="0.20"/>
 
 
   <xacro:property name="mesh_chassis"
-    value="$(find puzzlebot_description)/meshes/chasis_detailed.stl"/>
+    value="$(find puzzlebot_description)/meshes/puzzlebot_chassis_detailed.obj"/>
   <xacro:property name="mesh_wheel"
-    value="$(find puzzlebot_description)/meshes/puzzlebot_wheel.stl"/>
-  <xacro:property name="mesh_camera"
-    value="$(find puzzlebot_description)/meshes/camera.stl"/>
-  <xacro:property name="mesh_lidar"
-    value="$(find puzzlebot_description)/meshes/lidar.stl"/>
+    value="$(find puzzlebot_description)/meshes/puzzlebot_wheel.obj"/>
   <xacro:property name="caster_wheel"
-    value="$(find puzzlebot_description)/meshes/puzzlebot_caster_wheel.stl"/>
+    value="$(find puzzlebot_description)/meshes/puzzlebot_caster_wheel.obj"/>
   <xacro:property name="mesh_forks"
-    value="$(find puzzlebot_description)/meshes/forks.stl"/>
+    value="$(find puzzlebot_description)/meshes/forks.obj"/>
   <xacro:property name="mesh_outer_mast"
-    value="$(find puzzlebot_description)/meshes/outer_mast.stl"/>
+    value="$(find puzzlebot_description)/meshes/outer_mast.obj"/>
   <xacro:property name="mesh_inner_mast"
-    value="$(find puzzlebot_description)/meshes/inner_mast.stl"/>
+    value="$(find puzzlebot_description)/meshes/inner_mast.obj"/>
 
 </robot>

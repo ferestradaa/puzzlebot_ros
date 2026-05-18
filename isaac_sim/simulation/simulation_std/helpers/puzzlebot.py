@@ -59,6 +59,11 @@ class Puzzlebot():
 
         if not result:
             raise RuntimeError(f"failed import_robot: {urdf_path}")
+        from pxr import Usd, UsdGeom
+        stage = Usd.Stage.Open(usd_output)
+        UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
+        UsdGeom.SetStageMetersPerUnit(stage, 1.0)
+        stage.GetRootLayer().Save()
 
         print(f"[sim] URDF imported as {usd_output}  (prim root: {result})")
         return usd_output
@@ -95,8 +100,8 @@ class Puzzlebot():
 
             drive = UsdPhysics.DriveAPI.Apply(prim, "angular")
             drive.GetTypeAttr().Set("velocity")
-            drive.GetMaxForceAttr().Set(2.0)
-            drive.GetDampingAttr().Set(200)
+            drive.GetMaxForceAttr().Set(1000.0)
+            drive.GetDampingAttr().Set(100)
             drive.GetStiffnessAttr().Set(0.0)
 
             physx_joint = PhysxSchema.PhysxJointAPI.Apply(prim)
