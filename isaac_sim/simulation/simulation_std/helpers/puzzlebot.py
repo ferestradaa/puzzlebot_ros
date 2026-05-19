@@ -252,7 +252,7 @@ class Puzzlebot():
         set_values = [
             ("ROS2Context.inputs:useDomainIDEnvVar",     True),
 
-            # odometria  ArticulationRoot correcto
+            # odometria  ArticulationRoot 
             ("ComputeOdom.inputs:chassisPrim",           [self.articulation_path]),
             ("OdomPublisher.inputs:topicName",           "odom"),
             ("OdomPublisher.inputs:odomFrameId",         "odom"),

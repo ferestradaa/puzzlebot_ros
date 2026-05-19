@@ -48,6 +48,7 @@ find_package(std_srvs REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core calib3d dnn)
+find_package(ZXing REQUIRED)
 
 
 
@@ -205,6 +206,10 @@ add_executable(pallet_detection_engine
     src/pallet_detection_engine.cpp
 )
 
+add_executable(qr_detection_node
+    src/qr_detection.cpp
+)
+
 target_link_libraries(camera_noise_node
   PRIVATE
     ${sensor_msgs_TARGETS}
@@ -251,6 +256,18 @@ target_link_libraries(pallet_detection_engine
     ${CUDA_LIBRARIES}
 )
 
+target_link_libraries(qr_detection_node
+  PRIVATE
+    rclcpp::rclcpp
+    ZXing::ZXing
+    ${sensor_msgs_TARGETS}
+    ${std_srvs_TARGETS}
+    cv_bridge::cv_bridge
+    opencv_core
+    opencv_imgproc
+    opencv_dnn
+)
+
 target_compile_options(pallet_detection_engine
   PRIVATE
     -Wno-deprecated-declarations
@@ -262,8 +279,14 @@ target_include_directories(pallet_detection_engine
     ${CUDA_INCLUDE_DIRS}
 )
 
-install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine qr_detection_node
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
+target_include_directories(qr_detection_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 
 ament_package()

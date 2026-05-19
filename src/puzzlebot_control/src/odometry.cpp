@@ -93,8 +93,8 @@ class OdometryNode : public rclcpp::Node{
         loadLandmarkMap(map_path);
 
         RCLCPP_INFO(this->get_logger(), "Reading encoder velocities");
-        
     }
+
 
     private:
         void encoderL_callback(const std_msgs::msg::Float32::SharedPtr msg){
@@ -150,11 +150,8 @@ class OdometryNode : public rclcpp::Node{
                         fixed_positions[i],    // xy pf world landmark 
                         detected_positions[i]  // xy of runtime detection
                     );
-                }
-                
+                }                
         }
-
-
 
 
         void get_odom(const rclcpp::Time& now){

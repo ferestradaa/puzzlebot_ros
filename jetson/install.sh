@@ -14,6 +14,9 @@ cd /tmp && rm -rf apriltag
 BT_VERSION="4.9.0"
 BT_PREFIX="/opt/behaviortree"
 
+sudo apt install -y libzmq3-dev libboost-dev
+sudo apt install libzxingcore-dev
+
 cd /tmp 
 git clone --branch ${BT_VERSION} https://github.com/BehaviorTree/BehaviorTree.CPP.git
 cd BehaviorTree.CPP
