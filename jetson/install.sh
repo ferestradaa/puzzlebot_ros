@@ -10,6 +10,23 @@ echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/apriltag.conf
 sudo ldconfig
 cd /tmp && rm -rf apriltag
 
+
+BT_VERSION="4.9.0"
+BT_PREFIX="/opt/behaviortree"
+
+cd /tmp 
+git clone --branch ${BT_VERSION} https://github.com/BehaviorTree/BehaviorTree.CPP.git
+cd BehaviorTree.CPP
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=OFF \
+  -DBTCPP_EXAMPLES=OFF7
+cmake --build build -j$(nproc)
+sudo cmake --install build --prefix ${BT_PREFIX}
+echo "export CMAKE_PREFIX_PATH=${BT_PREFIX}:\$CMAKE_PREFIX_PATH" >> ~/.bashrc
+source ~/.bashrc
+
+
 echo "Installing pip dependencies (Humble on Focal workaround)"
 pip3 install xacro
 
