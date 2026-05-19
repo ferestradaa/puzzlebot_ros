@@ -2,7 +2,7 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 
-#include <puzzlebot_vision/qr_detections.hpp>
+#include <puzzlebot_vision/qr_detection.hpp>
 #include <opencv2/opencv.hpp>
 
 
@@ -76,7 +76,7 @@ class QrDetection : public rclcpp::Node{
 
 int main(int argc, char * argv[]){
     rclcpp::init(argc, argv); 
-    rclcpp::spin(std::make_shared<QrDetection>()); 
+    rclcpp::spin(std::make_shared<Qr_detection>()); 
     rclcpp::shutdown(); 
     return 0; 
 }

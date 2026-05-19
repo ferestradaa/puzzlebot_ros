@@ -48,7 +48,7 @@ find_package(std_srvs REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core calib3d dnn)
-find_package(ZXing REQUIRED)
+find_package(ZXing REQUIRED CONFIG)
 
 
 
