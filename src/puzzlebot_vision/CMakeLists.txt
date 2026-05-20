@@ -290,8 +290,14 @@ install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_
 )
 
 target_include_directories(qr_detection_node PUBLIC
+
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
+)
+
+ament_target_dependencies(qr_detection_node
+  PUBLIC
+  puzzlebot_control
 )
 
 
