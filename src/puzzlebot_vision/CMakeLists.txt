@@ -51,6 +51,7 @@ find_package(OpenCV REQUIRED COMPONENTS core calib3d dnn)
 find_package(rclcpp_action REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(puzzlebot_interfaces REQUIRED)
+find_package(puzzlebot_control REQUIRED)
 
 #list(APPEND CMAKE_PREFIX_PATH "/usr/lib/aarch64-linux-gnu/cmake/ZXing")
 #find_package(ZXing REQUIRED)    

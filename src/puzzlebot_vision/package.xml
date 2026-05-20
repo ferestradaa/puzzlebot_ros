@@ -25,6 +25,7 @@
   <depend>action_msgs</depend>
   <depend>puzzlebot_interfaces</depend> 
   <depend>builtin_interfaces</depend> 
+  <depend>puzzlebot_control</depend>
 
 
   <exec_depend>camera_ros</exec_depend>
