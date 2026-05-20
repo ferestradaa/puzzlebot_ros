@@ -263,6 +263,7 @@ target_link_libraries(pallet_detection_engine
 target_link_libraries(qr_detection_node
   PRIVATE
     rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
     #ZXing::ZXing
     ${sensor_msgs_TARGETS}
     ${std_srvs_TARGETS}
@@ -270,7 +271,6 @@ target_link_libraries(qr_detection_node
     opencv_core
     opencv_imgproc
     opencv_dnn
-    puzzlebot_interfaces
 )
 
 target_compile_options(pallet_detection_engine
