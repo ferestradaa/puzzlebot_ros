@@ -30,7 +30,6 @@ public:
         request->data = enable;
         auto future = client_->async_send_request(request);
 
-        //executor externo ya esta spineando bt_node_
         if (future.wait_for(std::chrono::seconds(3)) != std::future_status::ready) {
             RCLCPP_ERROR(node_->get_logger(), "enable_detection service DID not respond");
             return BT::NodeStatus::FAILURE;

@@ -60,6 +60,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-behaviortree-cpp \
     ros-humble-vision-msgs \
     ros-humble-std-srvs \
+    ros-humble-rclcpp-action
     && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init 2>/dev/null || true && rosdep update

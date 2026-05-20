@@ -48,9 +48,12 @@ find_package(std_srvs REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core calib3d dnn)
+find_package(rclcpp_action REQUIRED)
+find_package(action_msgs REQUIRED)
+find_package(puzzlebot_interfaces REQUIRED)
 
-list(APPEND CMAKE_PREFIX_PATH "/usr/lib/aarch64-linux-gnu/cmake/ZXing")
-find_package(ZXing REQUIRED)    
+#list(APPEND CMAKE_PREFIX_PATH "/usr/lib/aarch64-linux-gnu/cmake/ZXing")
+#find_package(ZXing REQUIRED)    
 
 
 
@@ -260,13 +263,14 @@ target_link_libraries(pallet_detection_engine
 target_link_libraries(qr_detection_node
   PRIVATE
     rclcpp::rclcpp
-    ZXing::ZXing
+    #ZXing::ZXing
     ${sensor_msgs_TARGETS}
     ${std_srvs_TARGETS}
     cv_bridge::cv_bridge
     opencv_core
     opencv_imgproc
     opencv_dnn
+    puzzlebot_interfaces
 )
 
 target_compile_options(pallet_detection_engine

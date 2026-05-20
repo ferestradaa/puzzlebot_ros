@@ -1,0 +1,12 @@
+# Goal
+uint32 consecutive_detections
+float32 pos_tolerance
+float32 yaw_tolerance
+---
+# Result
+bool success
+string qr_data
+geometry_msgs/PoseStamped pose
+---
+# Feedback
+uint32 current_consecutive_detections

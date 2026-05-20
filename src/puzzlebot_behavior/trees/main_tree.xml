@@ -4,6 +4,7 @@
 
    <Fallback name = "TryPickPlace"> <!--Normal task start picking-->
      <Sequence name = "SequencePickPlace"> <!--Starts normal sequence for picking-->
+     
 
       <EnableDetections
         enable = "true"/>
