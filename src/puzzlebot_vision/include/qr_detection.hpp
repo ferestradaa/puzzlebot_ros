@@ -2,7 +2,6 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 #include <opencv2/objdetect.hpp>
-#include "puzzlebot_control/pose_validator.hpp"
 
 struct Qrpose {
     cv::Vec3d rvec;
