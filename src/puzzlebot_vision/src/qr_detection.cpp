@@ -24,7 +24,7 @@ class QrDetectionActionServer : public rclcpp::Node{
             qr_detection_ = std::make_unique<Qr_detection>(qr_size_); //instance class using size
 
             rclcpp::QoS info_qos(10);
-            info_qos.reliable();
+            info_qos.best_effort();
 
 
             image_sub_ = this -> create_subscription<sensor_msgs::msg::Image>(
