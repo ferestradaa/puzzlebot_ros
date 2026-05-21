@@ -154,6 +154,13 @@ class QrDetectionActionServer : public rclcpp::Node{
                 result -> pose.pose.orientation.z = std::sin(p.yaw / 2.0); 
                 
                 goal_handle -> succeed(result); //reset everything after sending result 
+
+                RCLCPP_INFO(get_logger(), "QR detected: data='%s' x=%.3f y=%.3f z=%.3f yaw=%.3f",
+                result->qr_data.c_str(),
+                result->pose.pose.position.x,
+                result->pose.pose.position.y,
+                result->pose.pose.position.z,
+                p.yaw);
                 active_goal_handle_ = nullptr; 
                 pose_validator_.reset(); 
             }
