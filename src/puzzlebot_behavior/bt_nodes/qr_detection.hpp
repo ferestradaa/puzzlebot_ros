@@ -1,3 +1,10 @@
+
+/*
+
+this is a BT node that sends a goal: position and yaw tolerance, and num of consecutive frames to the 
+server. the server validates if the pose detected is ok and returns the final pose. 
+Once is valid, the pose is published
+*/
 #pragma once
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
