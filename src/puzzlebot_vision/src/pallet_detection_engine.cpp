@@ -109,15 +109,14 @@ private:
     LetterboxInfo lb_info; //preprocess
     auto input_data = preprocess(frame, input_size_, lb_info);
 
-    // 3. Inferencia TRT
     if (!engine_->infer(input_data.data(), output_buffer_.data())) {
-      RCLCPP_ERROR(this->get_logger(), "Inferencia fallo");
+      RCLCPP_ERROR(this->get_logger(), "Inference failed");
       return;
     }
 
     // 4. Postprocess
-    int num_features = engine_->outputDims()[1];   // ej. 5
-    int num_candidates = engine_->outputDims()[2]; // ej. 2100
+    int num_features = engine_->outputDims()[1];   //
+    int num_candidates = engine_->outputDims()[2]; // 
     auto detections = postprocess(
       output_buffer_.data(), num_candidates, num_features,
       lb_info, conf_threshold_, nms_threshold_);
@@ -155,18 +154,8 @@ private:
       debug_image_pub_->publish(*debug_msg);
     }
 
-    // 7. Log de performance (cada 30 frames para no saturar)
-    auto t_end = std::chrono::high_resolution_clock::now();
-    double total_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
-    frame_count_++;
-    if (frame_count_ % 30 == 0) {
-      RCLCPP_INFO(this->get_logger(),
-                  "Frame %lu: %.1f ms total, %zu detecciones",
-                  frame_count_, total_ms, detections.size());
-    }
   }
 
-  // Engine + buffer reusable
   std::unique_ptr<TrtEngine> engine_;
   std::vector<float> output_buffer_;
 
