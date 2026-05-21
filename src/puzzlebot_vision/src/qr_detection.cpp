@@ -20,7 +20,7 @@ class QrDetectionActionServer : public rclcpp::Node{
         : Node("qr_detection_node"){
 
 
-            qr_size_= 0.15; //size in meters of qr code
+            qr_size_= 0.10; //size in meters of qr code
             qr_detection_ = std::make_unique<Qr_detection>(qr_size_); //instance class using size
 
             rclcpp::QoS info_qos(10);
