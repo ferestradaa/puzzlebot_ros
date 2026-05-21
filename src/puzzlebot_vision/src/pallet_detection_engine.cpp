@@ -24,7 +24,7 @@ public:
   : Node("pallet_detection_engine"){
     this->declare_parameter<std::string>(
       "engine_path",
-      "/home/puzzlebot/puzz_ws/src/puzzlebot_inference/models/two_sides.engine");
+      "/home/puzzlebot/puzz_ws/src/puzzlebot_inference/models/real/two_sides.engine");
     this->declare_parameter<std::string>("image_topic", "/camera/image_raw");
     this->declare_parameter<std::string>("detections_topic", "/pallet_detections");
     this->declare_parameter<std::string>("debug_image_topic", "/pallet_detections/image");
