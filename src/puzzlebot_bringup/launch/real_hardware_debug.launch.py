@@ -67,7 +67,14 @@ def generate_launch_description():
         'scan_mode': 'Sensitivity',
     }],
     output='screen'
-)
+    )
+
+
+    camera_info = Node(
+        package = 'puzzlebot_vision',
+        executable = 'camera_info_publisher',
+
+    )
 
     desc_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -91,6 +98,7 @@ def generate_launch_description():
         micro_ros_agent,
         puzzlebot_cam,
         lidar,
+        camera_info, 
         desc_launch,
         control_launch, 
 

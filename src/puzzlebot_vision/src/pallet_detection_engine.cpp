@@ -91,7 +91,6 @@ private:
 
   void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr msg){
 
-    auto t_start = std::chrono::high_resolution_clock::now();
 
     if (!enabled_){
       return; 

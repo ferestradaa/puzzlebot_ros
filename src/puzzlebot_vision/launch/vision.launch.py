@@ -33,7 +33,7 @@ def generate_launch_description():
         package='puzzlebot_vision',
         executable='apriltag_node',
         remappings=[
-            ('image_rect', '/camera/image_rect'),
+            ('image_rect', '/camera/image_raw'),
             ('camera_info', '/camera/camera_info'),
         ],
         parameters=[apriltag_config],
@@ -52,13 +52,6 @@ def generate_launch_description():
 
     )
 
-    fid_stamper = Node(
-        package = 'puzzlebot_vision',
-        executable = 'frame_id_stamper', 
-        condition =UnlessCondition(use_sim)
-        
-        
-    )
 
     return LaunchDescription([
         use_sim_time_arg,
@@ -67,6 +60,5 @@ def generate_launch_description():
         apriltag_node, 
         camera_noise, 
         camera_info,
-        fid_stamper,  
 
     ])

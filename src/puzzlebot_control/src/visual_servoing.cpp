@@ -61,7 +61,7 @@ class VisualServoing : public rclcpp::Node{
         rclcpp::Subscription<vision_msgs::msg::Detection2DArray>::SharedPtr bbox_sub_;
 
         double Kw_; 
-        double Kv_; x|
+        double Kv_;
         double target_area_ = 28000.0; 
         double image_width_ = 640; 
 
