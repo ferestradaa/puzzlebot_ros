@@ -1,0 +1,5 @@
+bool trigger
+---
+bool success
+string qr_data
+geometry_msgs/PoseStamped pose

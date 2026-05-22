@@ -212,8 +212,8 @@ add_executable(pallet_detection_engine
     src/pallet_detection_engine.cpp
 )
 
-add_executable(qr_detection_node
-    src/qr_detection.cpp
+add_executable(qr_detection_node_test
+    src/qr_detection_srv.cpp
 )
 
 target_link_libraries(camera_noise_node
@@ -262,7 +262,7 @@ target_link_libraries(pallet_detection_engine
     ${CUDA_LIBRARIES}
 )
 
-target_link_libraries(qr_detection_node
+target_link_libraries(qr_detection_node_test
   PRIVATE
     rclcpp::rclcpp
     rclcpp_action::rclcpp_action
@@ -276,6 +276,7 @@ target_link_libraries(qr_detection_node
     opencv_calib3d
     -lzbar)
 
+
 target_compile_options(pallet_detection_engine
   PRIVATE
     -Wno-deprecated-declarations
@@ -287,11 +288,11 @@ target_include_directories(pallet_detection_engine
     ${CUDA_INCLUDE_DIRS}
 )
 
-install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine qr_detection_node
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine qr_detection_node_test
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-target_include_directories(qr_detection_node PUBLIC
+target_include_directories(qr_detection_node_test PUBLIC
 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -299,7 +300,7 @@ target_include_directories(qr_detection_node PUBLIC
 
 )
 
-ament_target_dependencies(qr_detection_node
+ament_target_dependencies(qr_detection_node_test
   PUBLIC
   puzzlebot_control
   puzzlebot_interfaces
