@@ -30,6 +30,7 @@ public:
 
         zbar::Image zimg(gray.cols, gray.rows, "Y800", gray.data, gray.cols * gray.rows);
         int n = scanner_.scan(zimg);
+        printf("scan result: %d\n", n);
         if (n <= 0) return result;
 
         auto sym = zimg.symbol_begin();

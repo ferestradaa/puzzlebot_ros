@@ -44,32 +44,46 @@ class QrDetectionNode : public rclcpp::Node{
             if (!qr_result.valid) return;
             cv::Mat R;
             cv::Rodrigues(qr_result.rvec, R);
-            double yaw = std::atan2(R.at<double>(1, 0), R.at<double>(0, 0));
+
+            double trace = R.at<double>(0,0) + R.at<double>(1,1) + R.at<double>(2,2);
+            double qw = std::sqrt(1.0 + trace) / 2.0;
+            double qx = (R.at<double>(2,1) - R.at<double>(1,2)) / (4.0 * qw);
+            double qy = (R.at<double>(0,2) - R.at<double>(2,0)) / (4.0 * qw);
+            double qz = (R.at<double>(1,0) - R.at<double>(0,1)) / (4.0 * qw);
+
             geometry_msgs::msg::PoseStamped pose_msg;
             pose_msg.header.stamp = now();
             pose_msg.header.frame_id = "camera_color_optical_frame";
             pose_msg.pose.position.x = qr_result.tvec[0];
             pose_msg.pose.position.y = qr_result.tvec[1];
             pose_msg.pose.position.z = qr_result.tvec[2];
-            pose_msg.pose.orientation.w = std::cos(yaw / 2.0);
-            pose_msg.pose.orientation.z = std::sin(yaw / 2.0);
-            pose_pub_ -> publish(pose_msg);
-            RCLCPP_INFO(get_logger(), "QR detected: data='%s' x=%.3f y=%.3f z=%.3f yaw=%.3f",
+            pose_msg.pose.orientation.w = qw;
+            pose_msg.pose.orientation.x = qx;
+            pose_msg.pose.orientation.y = qy;
+            pose_msg.pose.orientation.z = qz;
+
+            pose_pub_->publish(pose_msg);
+
+            RCLCPP_INFO(get_logger(), "QR detected: data='%s' x=%.3f y=%.3f z=%.3f",
                 qr_result.data.c_str(),
                 qr_result.tvec[0],
                 qr_result.tvec[1],
-                qr_result.tvec[2],
-                yaw);
+                qr_result.tvec[2]);
+                
+
         }
-        
-    std::unique_ptr<Qr_detection> qr_detection_;
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
-    rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr cam_info_sub_;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
-    cv::Mat K_, dist_;
-    double qr_size_;
-    bool has_camera_info_ = false;
-}; 
+
+
+                std::unique_ptr<Qr_detection> qr_detection_;
+                rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+                rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr cam_info_sub_;
+                rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+                cv::Mat K_, dist_;
+                double qr_size_;
+                bool has_camera_info_ = false;
+    }; 
+
+
 int main(int argc, char * argv[]){
     rclcpp::init(argc, argv); 
     rclcpp::spin(std::make_shared<QrDetectionNode>()); 
