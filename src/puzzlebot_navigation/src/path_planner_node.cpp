@@ -35,7 +35,7 @@ class PathPlannerNode : public rclcpp::Node
 public:
   using GridCell = std::pair<int, int>;
   using WorldPoint = std::pair<double, double>;
-  using PlanPath = robot_interfaces::srv::PlanPath;
+  using PlanPath = puzzlebot_interfaces::srv::PlanPath;
 
   struct PairHash
   {
