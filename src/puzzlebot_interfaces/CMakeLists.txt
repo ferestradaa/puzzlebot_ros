@@ -12,6 +12,7 @@ find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/QrDetect.action"
+  "srv/PlanPath.srv"
    DEPENDENCIES geometry_msgs
 )
 # uncomment the following section in order to fill in

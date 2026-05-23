@@ -1,0 +1,9 @@
+# Request
+geometry_msgs/PoseStamped goal
+
+---
+
+# Response
+bool success
+string message
+nav_msgs/Path path

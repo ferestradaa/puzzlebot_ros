@@ -1,21 +1,48 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+
 <package format="3">
   <name>puzzlebot_navigation</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="fernaest213@gmail.com">ferestrada</maintainer>
+
+  <description>
+    Puzzlebot navigation package with a CUDA-accelerated MCL SLAM node,
+    dynamic map generation, and an RRT-based path planner service.
+  </description>
+
+  <maintainer email="a00833638@tec.mx">genaro-rivero</maintainer>
   <license>TODO: License declaration</license>
 
+  <!-- Build system -->
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <!-- Core ROS 2 dependency -->
+  <depend>rclcpp</depend>
+
+  <!-- Message dependencies -->
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>message_filters</depend>
+
+  <!-- TF dependencies -->
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+
+  <!-- Used to locate installed package resources such as maps -->
+  <depend>ament_index_cpp</depend>
+
+  <!-- External libraries used by map loading, planner, and dynamic map -->
+  <depend>OpenCV</depend>
+  <depend>yaml-cpp</depend>
+
+  <!-- Custom service dependency for robot_interfaces/srv/PlanPath -->
+  <depend>puzzlebot_interfaces</depend>
+
+  <!-- Testing dependencies -->
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
-    <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
-  <depend>rclcpp</depend>
-  <depend>sensor_msgs</depend>
-  <depend>std_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
