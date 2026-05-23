@@ -274,7 +274,7 @@ target_link_libraries(qr_detection_node_test
     opencv_dnn
     opencv_objdetect
     opencv_calib3d
-    -lzbar)
+    -lzbar) 
 
 
 target_compile_options(pallet_detection_engine
