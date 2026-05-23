@@ -205,6 +205,25 @@ ament_target_dependencies(
 )
 
 
+add_executable(map_server_node
+  src/map_server.cpp
+)
+
+target_link_libraries(map_server_node
+  yaml-cpp
+  ${OpenCV_LIBS})
+
+
+ament_target_dependencies(
+  map_server_node
+  rclcpp
+  nav_msgs
+  ament_index_cpp
+  OpenCV
+
+
+)
+
 # # -------------------------------------------------------------------
 # # Dynamic map node
 # # -------------------------------------------------------------------
@@ -262,6 +281,7 @@ install(TARGETS
   path_planner_node
   # dynamic_map_node
   cuda_kernels
+  map_server_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
