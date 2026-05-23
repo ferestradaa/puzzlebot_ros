@@ -13,8 +13,8 @@ class VisualServoing : public rclcpp::Node{
 
             RCLCPP_INFO(get_logger(), "Visual Servoing node initialized !"); 
 
-            Kw_ = 0.3; 
-            Kv_ = 0.3; 
+            Kw_ = 0.1; 
+            Kv_ = 0.05; 
 
         }
  
