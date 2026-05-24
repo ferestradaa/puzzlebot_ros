@@ -30,6 +30,8 @@ public:
     }
 
     BT::NodeStatus onStart() override {
+        result_ = GoalHandleQrDetect::WrappedResult();
+        
         int consecutive_detections = 3; //default if not set explicitly 
         getInput("consecutive_detections", consecutive_detections);
 

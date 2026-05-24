@@ -1,7 +1,7 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import SetParameter
@@ -50,9 +50,6 @@ def generate_launch_description():
             'loop': 0,
             'latency': 100,
         }],
-        remappings=[
-            ('/video_source/raw', '/camera/image_raw'),
-        ]
     )
 
     lidar = Node(
@@ -90,6 +87,18 @@ def generate_launch_description():
         launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
     )
 
+    behavior = Node(
+        package='puzzlebot_behavior',
+        executable='bt_executor',
+        output='screen'
+    )
+
+    delayed_behavior = TimerAction(
+        period = 30.0, 
+        actions = [behavior]
+    )
+
+
     return LaunchDescription([
         use_sim_arg,
         rviz_arg,
@@ -100,6 +109,7 @@ def generate_launch_description():
         desc_launch,
         control_launch, 
         vision_launch,
+        delayed_behavior
 
     ])
 

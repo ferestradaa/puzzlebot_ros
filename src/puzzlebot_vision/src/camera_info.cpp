@@ -36,8 +36,9 @@ public:
             [this](sensor_msgs::msg::Image::SharedPtr msg) {
                 msg->header.frame_id = frame_id_;
                 camera_info_.header  = msg->header;
-                pub_image_->publish(std::move(*msg));
+                
                 pub_info_->publish(camera_info_);
+                pub_image_->publish(std::move(*msg));
             });
     }
 

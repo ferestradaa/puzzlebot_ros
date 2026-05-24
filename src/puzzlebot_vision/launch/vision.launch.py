@@ -48,7 +48,19 @@ def generate_launch_description():
     camera_info = Node(
         package = 'puzzlebot_vision',
         executable = 'camera_info_publisher',
-        condition =UnlessCondition(use_sim) 
+    )
+
+    
+
+    qr_detection_srvr = Node(
+        package = 'puzzlebot_vision',
+        executable = 'qr_detection_node',
+
+    )
+
+    pallet_inference = Node(
+        package = 'puzzlebot_vision',
+        executable = 'pallet_detection_engine',
 
     )
 
@@ -57,8 +69,11 @@ def generate_launch_description():
         use_sim_time_arg,
         sim_arg,
         SetParameter(name='use_sim_time', value=use_sim_time),
-        apriltag_node, 
+        #apriltag_node, 
         camera_noise, 
         camera_info,
+        qr_detection_srvr, 
+        pallet_inference,
+        
 
     ])

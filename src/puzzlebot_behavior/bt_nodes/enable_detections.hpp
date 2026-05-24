@@ -10,7 +10,7 @@ public:
     EnableDetections(const std::string& name, const BT::NodeConfig& config, 
                      rclcpp::Node::SharedPtr node)
         : BT::SyncActionNode(name, config), node_(node) {
-            client_ = node_ ->create_client<std_srvs::srv::SetBool>("enable_detection"); 
+            client_ = node_ ->create_client<std_srvs::srv::SetBool>("enable_detection_service"); 
         }
 
     static BT::PortsList providedPorts() {

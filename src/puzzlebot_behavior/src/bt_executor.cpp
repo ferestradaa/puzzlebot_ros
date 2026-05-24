@@ -27,13 +27,8 @@ class BTexecutor : public  rclcpp::Node{
                     return std::make_unique<puzzlebot_bt::EnableDetections>(name, conf, bt_node_); 
                 }); 
                 
-            factory_.registerNodeType<GetTargetPose>("GetTargetPose");
-            factory_.registerNodeType<GoToTarget>("GoToTarget");
-            RCLCPP_INFO(this -> get_logger(), "BT created nodeds"); 
-
             std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_behavior"); 
             YAML::Node config = YAML::LoadFile(pkg_path + "/config/config.yaml"); 
-            RCLCPP_INFO(this -> get_logger(), "BT failed to load!"); 
 
             std::string relative_tree_path = config["path_trees"]["main_tree"].as<std::string>();
 

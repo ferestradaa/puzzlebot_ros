@@ -71,9 +71,20 @@ private:
     }
 
     void handle_accepted(const std::shared_ptr<GoalHandle> goal_handle) {
+        if (!has_camera_info_) {
+            RCLCPP_ERROR(get_logger(), "Camera info NOT received - aborting goal");
+            auto result = std::make_shared<QrDetect::Result>();
+            result->success = false;
+            goal_handle->abort(result);
+            return;
+        }
+        
         auto goal = goal_handle->get_goal();
         qr_detection_ = std::make_unique<Qr_detection>(qr_size_, goal->consecutive_detections);
         active_goal_handle_ = goal_handle;
+        
+        RCLCPP_INFO(get_logger(), "Goal accepted, waiting for %d consecutive QR detections", 
+                    goal->consecutive_detections);
     }
 
     void cam_info_callback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr msg) {
