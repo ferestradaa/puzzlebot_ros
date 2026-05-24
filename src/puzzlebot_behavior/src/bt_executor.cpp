@@ -7,13 +7,19 @@
 
 #include "dummy_nodes.hpp"
 #include "enable_detections.hpp"
-
+#include "qr_detection.hpp"
 
 
 class BTexecutor : public  rclcpp::Node{
     public: 
         explicit BTexecutor(rclcpp::Node::SharedPtr bt_node)
         : Node("bt_executor"), bt_node_(bt_node){
+
+            factory_.registerBuilder<puzzlebot_bt::QrDetectionAction>(
+                "QrDetectionAction", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::QrDetectionAction>(name, conf, bt_node_); 
+                });
             
             factory_.registerBuilder<puzzlebot_bt::EnableDetections>(
                 "EnableDetections", 

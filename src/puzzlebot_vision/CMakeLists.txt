@@ -53,6 +53,7 @@ find_package(action_msgs REQUIRED)
 find_package(puzzlebot_interfaces REQUIRED)
 find_package(puzzlebot_control REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 #list(APPEND CMAKE_PREFIX_PATH "/usr/lib/aarch64-linux-gnu/cmake/ZXing")
 #find_package(ZXing REQUIRED)    
@@ -213,7 +214,11 @@ add_executable(pallet_detection_engine
 )
 
 add_executable(qr_detection_node_test
-    src/qr_detection_srv.cpp
+    src/qr_detection.cpp
+)
+
+add_executable(qr_detection_node
+    src/qr_detection_server.cpp
 )
 
 target_link_libraries(camera_noise_node
@@ -276,6 +281,22 @@ target_link_libraries(qr_detection_node_test
     opencv_calib3d
     -lzbar) 
 
+target_link_libraries(qr_detection_node
+  PRIVATE
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    ${sensor_msgs_TARGETS}
+    ${geometry_msgs_TARGETS}
+    ${std_srvs_TARGETS}
+    cv_bridge::cv_bridge
+    opencv_core
+    opencv_imgproc
+    opencv_dnn
+    opencv_objdetect
+    opencv_calib3d
+    tf2_ros::tf2_ros
+    -lzbar)
+
 
 target_compile_options(pallet_detection_engine
   PRIVATE
@@ -288,7 +309,7 @@ target_include_directories(pallet_detection_engine
     ${CUDA_INCLUDE_DIRS}
 )
 
-install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine qr_detection_node_test
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine qr_detection_node_test qr_detection_node
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -304,6 +325,22 @@ ament_target_dependencies(qr_detection_node_test
   PUBLIC
   puzzlebot_control
   puzzlebot_interfaces
+)
+
+
+target_include_directories(qr_detection_node PUBLIC
+
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${ZBAR_LIBRARIES}
+
+)
+
+ament_target_dependencies(qr_detection_node
+  PUBLIC
+  puzzlebot_control
+  puzzlebot_interfaces
+  tf2_geometry_msgs
 )
 
 

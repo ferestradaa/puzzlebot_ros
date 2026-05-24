@@ -14,6 +14,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(puzzlebot_interfaces REQUIRED)
 
 
 include_directories(bt_nodes)
@@ -34,6 +35,9 @@ ament_target_dependencies(bt_executor
    ament_index_cpp
    geometry_msgs
    std_srvs
+   puzzlebot_interfaces
+   
+   
 )
 
 install(TARGETS bt_executor

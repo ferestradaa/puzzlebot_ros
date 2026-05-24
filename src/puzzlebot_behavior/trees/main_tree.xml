@@ -6,17 +6,14 @@
      <Sequence name = "SequencePickPlace"> <!--Starts normal sequence for picking-->
      
 
+      <QrDetectionAction consecutive_detections="3" qr_data="{qr_data}" z="{z}"/>
+
       <EnableDetections
         enable = "true"/>
 
-      <GetTargetPose
-        pallet_pose = "{target_pose}"/> <!--read detections and save pos-->
 
       <EnableDetections
         enable = "false"/>  
-
-      <GoToTarget
-        target_pose = "{target_pose}"/>
 
      </Sequence> <!--if could not get target pose, fallback to get closer-->
      
@@ -24,8 +21,6 @@
 
         <EnableDetections
           enable = "false"/>
-        <GoToTarget
-            target_pose = "{dummy_pose}"/> <!--This should be a dummy pose to see if now detecting smthg-->
 
      </Sequence>
    </Fallback>
