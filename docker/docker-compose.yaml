@@ -1,31 +1,25 @@
 services:
-
-  puzzlebot: #main service(launches the bringup launch)
+  puzzlebot:
     build:
-      context: .. #root of project
+      context: ..
       dockerfile: docker/main/Dockerfile
-
     container_name: puzzlebot
-
     network_mode: host
-
     environment: 
-      #- ROS_DOMAIN_ID=100
-      - ROS_DOMAIN_ID=0 #when using jetson 
-      - DISPLAY=${DISPLAY} #in case needing GUI
+      - ROS_DOMAIN_ID=0
+      - DISPLAY=${DISPLAY}
       - PULSE_SERVER=unix:/run/user/1000/pulse/native
-      #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
       - NVIDIA_VISIBLE_DEVICES=all   
       - NVIDIA_DRIVER_CAPABILITIES=all      
-      - LIBGL_ALWAYS_SOFTWARE=0 
+      - LIBGL_ALWAYS_SOFTWARE=0
+      - QT_X11_NO_MITSHM=1
       - FASTRTPS_DEFAULT_PROFILES_FILE=/ws/fastdds_no_shm.xml
-
     devices:
       - /dev/snd:/dev/snd
       - /dev/video0:/dev/video0 
-      - /dev/video0:/dev/video1 
-
+      - /dev/video0:/dev/video1
+      - /dev/dri:/dev/dri
     group_add:
       - audio 
       - video 
@@ -36,44 +30,35 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-
     volumes:
       - ../src:/ws/src
       - ./fastdds_no_shm.xml:/ws/fastdds_no_shm.xml
-      - /tmp/.X11-unix:/tmp/.X11-unix  # GUI
-
-    
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
     stdin_open: true
     tty: true
     restart: unless-stopped
 
-
-  puzzlebot_cuda: #main service(launches the bringup launch)
+  puzzlebot_cuda:
     build:
-      context: .. #root of project
+      context: ..
       dockerfile: docker/main_cuda/Dockerfile
-
     container_name: puzzlebot_cuda
-
     network_mode: host
-
     environment: 
-      #- ROS_DOMAIN_ID=100
-      - ROS_DOMAIN_ID=0 #when using jetson 
-      - DISPLAY=${DISPLAY} #in case needing GUI
+      - ROS_DOMAIN_ID=0
+      - DISPLAY=${DISPLAY}
       - PULSE_SERVER=unix:/run/user/1000/pulse/native
-      #- RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
       - NVIDIA_VISIBLE_DEVICES=all   
       - NVIDIA_DRIVER_CAPABILITIES=all      
-      - LIBGL_ALWAYS_SOFTWARE=0 
+      - LIBGL_ALWAYS_SOFTWARE=0
+      - QT_X11_NO_MITSHM=1
       - FASTRTPS_DEFAULT_PROFILES_FILE=/ws/fastdds_no_shm.xml
-
     devices:
       - /dev/snd:/dev/snd
       - /dev/video0:/dev/video0 
-      - /dev/video0:/dev/video1 
-
+      - /dev/video0:/dev/video1
+      - /dev/dri:/dev/dri
     group_add:
       - audio 
       - video 
@@ -84,17 +69,11 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-
     volumes:
       - ../src:/ws/src
       - ../isaac_sim:/ws/isaac_sim
       - ./fastdds_no_shm.xml:/ws/fastdds_no_shm.xml
-      - /tmp/.X11-unix:/tmp/.X11-unix  # GUI
-
-    
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
     stdin_open: true
     tty: true
     restart: unless-stopped
-
-
-

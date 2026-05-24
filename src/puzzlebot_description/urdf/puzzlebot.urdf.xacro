@@ -185,7 +185,7 @@
   <joint name="${prefix}chassis_to_lidar" type="fixed">
     <parent link="${prefix}chassis_link"/>
     <child  link="${prefix}lidar_link"/>
-    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 ${PI}"/>
+    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 0"/>
   </joint>
 
 
