@@ -14,6 +14,7 @@ find_package(nav_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/QrDetect.action"
+  "action/DriveRaw.action"
   "srv/PlanPath.srv"
    DEPENDENCIES geometry_msgs nav_msgs
 )

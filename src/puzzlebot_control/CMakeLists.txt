@@ -20,6 +20,7 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(vision_msgs REQUIRED)
+find_package(puzzlebot_interfaces REQUIRED)
 
 
 
@@ -31,6 +32,7 @@ add_executable(pure_pursuit_node src/pure_pursuit_node.cpp
                                  src/pure_pursuit.cpp)
 
 add_executable(visual_servoing src/visual_servoing.cpp)
+add_executable(drive_raw_server src/drive_raw_server.cpp)
 
 
 
@@ -86,6 +88,15 @@ vision_msgs
 std_msgs
 )
 
+ament_target_dependencies(drive_raw_server
+rclcpp
+rclcpp_action
+geometry_msgs
+std_msgs
+puzzlebot_interfaces
+sensor_msgs
+)
+
 target_include_directories(odometry PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -106,7 +117,7 @@ endif()
 target_link_libraries(odometry yaml-cpp Eigen3::Eigen)
 
 
-install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node visual_servoing
+install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node visual_servoing drive_raw_server
   DESTINATION lib/${PROJECT_NAME}
 )
 

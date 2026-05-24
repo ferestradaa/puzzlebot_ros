@@ -47,6 +47,11 @@ def generate_launch_description():
         executable='odometry_raw',
     )
 
+    drive_raw = Node(
+        package='puzzlebot_control', 
+        executable='drive_raw_server',
+    )
+
     
 
 
@@ -58,6 +63,7 @@ def generate_launch_description():
             encoders_sim,
             #odom,
             odom_raw,
+            drive_raw
         ])
 
 

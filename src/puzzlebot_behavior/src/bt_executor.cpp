@@ -8,6 +8,8 @@
 #include "dummy_nodes.hpp"
 #include "enable_detections.hpp"
 #include "qr_detection.hpp"
+#include "drive_raw.hpp"
+
 
 
 class BTexecutor : public  rclcpp::Node{
@@ -26,7 +28,14 @@ class BTexecutor : public  rclcpp::Node{
                 [this](const std::string & name, const BT::NodeConfig & conf){
                     return std::make_unique<puzzlebot_bt::EnableDetections>(name, conf, bt_node_); 
                 }); 
+
+            factory_.registerBuilder<puzzlebot_bt::DriveRawAction>(
+                "DriveRawAction", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::DriveRawAction>(name, conf, bt_node_); 
+                }); 
                 
+
             std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_behavior"); 
             YAML::Node config = YAML::LoadFile(pkg_path + "/config/config.yaml"); 
 

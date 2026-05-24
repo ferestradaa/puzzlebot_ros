@@ -1,0 +1,6 @@
+geometry_msgs/Twist cmd_vel
+---
+bool success
+string message
+---
+float32 distance_to_obstacle
