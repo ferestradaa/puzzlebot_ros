@@ -88,7 +88,6 @@ class ExtendedKalmanFilter{
             //consideres yaw orientation (it is noise and probablu instroduces more noise
             //rather than improving the filter)
 
-            std::cout << "=== EKF UPDATE ===" << std::endl;
             std::cout << "mu antes: " << mu_.transpose() << std::endl;
             std::cout << "landmark_world: " << landmark_world.transpose() << std::endl;
             std::cout << "z_detected (base_link): " << z_detected.transpose() << std::endl;
@@ -109,7 +108,7 @@ class ExtendedKalmanFilter{
             y << z_detected(0) - h_mu(0), //inovation (xy landmark runtime detection - zpred)
                  z_detected(1) - h_mu(1); 
 
-            std::cout << "innovacion y: " << y.transpose() << std::endl;
+            std::cout << "innovation y: " << y.transpose() << std::endl;
                         
             Eigen::Matrix<double, 2, 3> H;
             H << -std::cos(mu_(2)),     -std::sin(mu_(2)),  -delta_x * std::sin(mu_(2)) + delta_y * std::cos(mu_(2)), //jacobian
@@ -127,7 +126,7 @@ class ExtendedKalmanFilter{
 
             Eigen::Matrix3d I_KH = Eigen::Matrix3d::Identity() - K * H;
             P_ = I_KH * P_ * I_KH.transpose() + K * R_ * K.transpose();
-            std::cout << "mu despues: " << mu_.transpose() << std::endl;
+            std::cout << "mu after: " << mu_.transpose() << std::endl;
             std::cout << "==================" << std::endl;
         }
 
