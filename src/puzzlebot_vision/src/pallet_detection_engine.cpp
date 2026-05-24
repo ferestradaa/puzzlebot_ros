@@ -118,7 +118,7 @@ private:
     int num_candidates = engine_->outputDims()[2]; // 
     auto detections = postprocess(
       output_buffer_.data(), num_candidates, num_features,
-      lb_info, conf_threshold_, nms_threshold_);
+      lb_info, conf_threshold_, nms_threshold_, max_detections);
 
     vision_msgs::msg::Detection2DArray det_msg;
     det_msg.header = msg->header;
@@ -167,6 +167,7 @@ private:
   float nms_threshold_;
   int input_size_;
   bool enabled_ = false;
+  int max_detections = 1; 
 
   size_t frame_count_ = 0;
 };
