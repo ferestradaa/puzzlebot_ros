@@ -52,9 +52,12 @@ def generate_launch_description():
         executable='drive_raw_server',
     )
 
+    visual_servoing = Node(
+        package='puzzlebot_control', 
+        executable='visual_servoing',
+    )
+
     
-
-
     return LaunchDescription([
             use_sim_time_arg,
             sim_arg,
@@ -63,6 +66,7 @@ def generate_launch_description():
             encoders_sim,
             #odom,
             odom_raw,
+            visual_servoing, 
             drive_raw
         ])
 

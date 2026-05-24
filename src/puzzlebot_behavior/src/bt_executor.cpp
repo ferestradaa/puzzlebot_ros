@@ -9,6 +9,9 @@
 #include "enable_detections.hpp"
 #include "qr_detection.hpp"
 #include "drive_raw.hpp"
+#include "visual_servoing.hpp"
+
+
 
 
 
@@ -34,6 +37,14 @@ class BTexecutor : public  rclcpp::Node{
                 [this](const std::string & name, const BT::NodeConfig & conf){
                     return std::make_unique<puzzlebot_bt::DriveRawAction>(name, conf, bt_node_); 
                 }); 
+
+            factory_.registerBuilder<puzzlebot_bt::VisualServoingAction>(
+                "VisualServoingAction", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::VisualServoingAction>(name, conf, bt_node_); 
+                }); 
+
+            
                 
 
             std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_behavior"); 

@@ -83,9 +83,11 @@ std_msgs
 
 ament_target_dependencies(visual_servoing
 rclcpp
+rclcpp_action
 tf2_geometry_msgs
 vision_msgs
 std_msgs
+puzzlebot_interfaces
 )
 
 ament_target_dependencies(drive_raw_server
