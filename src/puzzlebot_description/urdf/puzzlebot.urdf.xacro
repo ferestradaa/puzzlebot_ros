@@ -242,7 +242,7 @@
     <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
   </inertial>
 </link>
-<joint name="${prefix}inner_mast_joint" type="prismatic">
+<joint name="${prefix}inner_mast_joint" type="fixed">
   <parent link="${prefix}outer_mast_link"/>
   <child  link="${prefix}inner_mast_link"/>
   <origin xyz="0 0 0" rpy="0 0 0"/>

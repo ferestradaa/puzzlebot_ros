@@ -54,8 +54,8 @@ class EncoderNode : public rclcpp::Node{
 
             sensor_msgs::msg::JointState msg; 
             msg.header.stamp = this -> get_clock() -> now(); 
-            msg.name = {"base_to_left_wheel", "base_to_right_wheel"}; 
-            msg.position = {left_pos_, right_pos_}; 
+            msg.name = {"base_to_left_wheel", "base_to_right_wheel", "forks_joint"}; 
+            msg.position = {left_pos_, right_pos_, 0.0}; 
 
             js_pub_ -> publish(msg); 
         }
