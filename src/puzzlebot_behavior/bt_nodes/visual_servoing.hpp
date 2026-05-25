@@ -40,8 +40,8 @@ public:
         send_goal_options.feedback_callback =
             [this](GoalHandleVisualServoing::SharedPtr,
                    const std::shared_ptr<const VisualServoing::Feedback> feedback) {
-                RCLCPP_INFO(node_->get_logger(), "area=%.0f ex=%.1f ey=%.0f",
-                            feedback->current_area, feedback->error_x, feedback->error_area);
+                RCLCPP_INFO(node_->get_logger(), "current_area=%.0f ",
+                            feedback->current_area);
             };
         
         send_goal_options.result_callback =

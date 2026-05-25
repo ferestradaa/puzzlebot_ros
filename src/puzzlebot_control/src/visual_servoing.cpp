@@ -6,27 +6,29 @@
 
 class VisualServoingActionServer : public rclcpp::Node {
 public:
+
     using VisualServoing = puzzlebot_interfaces::action::VisualServoing;
     using GoalHandleVisualServoing = rclcpp_action::ServerGoalHandle<VisualServoing>;
 
     VisualServoingActionServer() : Node("visual_servoing_action_server") {
-        bbox_sub_ = create_subscription<vision_msgs::msg::Detection2DArray>(
+        bbox_sub_ = create_subscription<vision_msgs::msg::Detection2DArray>( //subcribing to boundign box from cnn detection
             "pallet_detections", 10,
             std::bind(&VisualServoingActionServer::detections_callback, this, std::placeholders::_1));
         
         cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
         
-        action_server_ = rclcpp_action::create_server<VisualServoing>(
+        action_server_ = rclcpp_action::create_server<VisualServoing>( 
             this,
             "visual_servoing",
             std::bind(&VisualServoingActionServer::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
             std::bind(&VisualServoingActionServer::handle_cancel, this, std::placeholders::_1),
             std::bind(&VisualServoingActionServer::handle_accepted, this, std::placeholders::_1));
         
-        Kw_ = 0.1;
-        Kv_ = 0.05;
+        Kw_ = 0.1; //gain for angular velocity 
+        Kv_ = 0.05; //gain por lineal velocity 
         image_width_ = 640;
         active_ = false;
+        last_current_area_= 0.0; //state inside callback 
         
         RCLCPP_INFO(get_logger(), "Visual Servoing action server initialized");
     }
@@ -60,7 +62,7 @@ private:
         RCLCPP_INFO(get_logger(), "Executing visual servoing");
         
         const auto goal = goal_handle->get_goal();
-        target_area_ = goal->target_area;
+        target_area_ = goal->target_area; //target area set by the client inside behavior tree
         active_ = true;
         current_goal_handle_ = goal_handle;
         
@@ -78,9 +80,24 @@ private:
                 RCLCPP_INFO(get_logger(), "Goal canceled");
                 return;
             }
+
+            std::lock_guard<std::mutex> lock(error_mutex_); 
+            double tolerance = target_area_* 0.05; 
+
+            if (std::abs(last_current_area_ - target_area_) < tolerance){
+                geometry_msgs::msg::Twist stop; 
+                cmd_pub_ -> publish(stop); 
+                result -> success = true; 
+                result ->message = "Target area reached"; 
+                goal_handle -> succeed(result); 
+                active_ = false; 
+                RCLCPP_INFO(get_logger(), "Goal succeed"); 
+                return; 
+            }
+        }
             
             loop_rate.sleep();
-        }
+        
         
         if (rclcpp::ok()) {
             result->success = true;
@@ -125,17 +142,18 @@ private:
         twist.linear.x = std::clamp(twist.linear.x, -0.05, 0.15);
         twist.angular.z = std::clamp(twist.angular.z, -0.3, 0.3);
         
-        RCLCPP_INFO(get_logger(), "cx_raw=%.1f cx_corr=%.1f ex=%.1f area=%.0f vx=%.3f wz=%.3f",
-                    cx, cx_corrected, ex, bbox_area, twist.linear.x, twist.angular.z);
+       // RCLCPP_INFO(get_logger(), "cx_raw=%.1f cx_corr=%.1f ex=%.1f area=%.0f",
+         //           cx, cx_corrected, ex, bbox_area);
         
         cmd_pub_->publish(twist);
         
         if (current_goal_handle_) {
             auto feedback = std::make_shared<VisualServoing::Feedback>();
-            feedback->current_area = bbox_area;
-            feedback->error_x = ex;
-            feedback->error_area = ey;
+            feedback->current_area = bbox_area; //.action uses current area as feedback 
             current_goal_handle_->publish_feedback(feedback);
+
+            std::lock_guard<std::mutex> lock(error_mutex_); 
+            last_current_area_ = bbox_area; 
         }
     }
 
@@ -149,6 +167,8 @@ private:
     double target_area_;
     double image_width_;
     bool active_;
+    double last_current_area_; 
+    std::mutex error_mutex_; 
 };
 
 int main(int argc, char* argv[]) {

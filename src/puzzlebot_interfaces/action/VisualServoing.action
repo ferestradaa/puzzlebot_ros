@@ -9,5 +9,3 @@ string message
 ---
 # Feedback
 float64 current_area
-float64 error_x
-float64 error_area
