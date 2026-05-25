@@ -1,12 +1,12 @@
 <root BTCPP_format="4">
  <BehaviorTree ID = "PuzzlebotTree">
 
-     <Sequence name = "SequencePickPlace"> <!--Starts normal sequence for picking-->
+     <Sequence name = "SequencePickPlace"> Starts normal sequence for picking-->
        <!-- <QrDetectionAction consecutive_detections="3" qr_data="{qr_data}" z="{z}"/>-->
         <EnableDetections enable = "true"/>
         <VisualServoingAction target_area ="28000.0"/>
         <!--<DriveRawAction linear_x="0.05" angular_z="0.0" duration_sec="2.0"/>-->
 
-
+    </Sequence>
  </BehaviorTree>
  </root>
