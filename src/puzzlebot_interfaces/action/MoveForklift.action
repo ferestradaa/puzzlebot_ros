@@ -1,0 +1,11 @@
+# Goal
+float32 target_height_m
+
+---
+# Result
+bool success
+float32 final_height_m
+
+---
+# Feedback
+float32 current_height_m
