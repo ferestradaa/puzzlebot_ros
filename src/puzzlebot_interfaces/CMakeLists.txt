@@ -18,6 +18,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/VisualServoing.action"
   "action/MoveForklift.action"
   "srv/PlanPath.srv"
+  "srv/ForkliftHeight.srv"
    DEPENDENCIES geometry_msgs nav_msgs
 )
 # uncomment the following section in order to fill in

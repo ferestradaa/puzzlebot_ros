@@ -9,10 +9,12 @@ import time
 import sys
 from smbus2 import SMBus
 
-INT32_MAX = 2_147_483_647
+from puzzlebot_interfaces.srv import ForkliftHeight
+
+INT32_MAX =  2_147_483_647
 INT32_MIN = -2_147_483_648
 
-CM_TO_FPGA_RAW = (2200.0 / 29.0) *10
+CM_TO_FPGA_RAW = (2200.0 / 29.0) * 10
 FPGA_INTERNAL_FACTOR = 1.26318 * 2.0
 
 
@@ -55,13 +57,13 @@ class ForkliftSPINode(Node):
         except Exception as e:
             self.get_logger().error(f'I2C init failed: {e}')
 
-        self.pub_height = self.create_publisher(Float32, '/forklift_height', 10)
-        self.sub_target = self.create_subscription(
-            Float32,
-            '/forklift_target_height',
-            self.target_callback,
-            10
+        self.srv_move = self.create_service(
+            ForkliftHeight, 
+            'forklift/target_height', 
+            self.move_forklift_callback
         )
+
+        self.pub_height = self.create_publisher(Float32, '/forklift/actual_height', 10)
 
         self.timer_main = self.create_timer(0.1, self.main_loop)
 
@@ -82,15 +84,18 @@ class ForkliftSPINode(Node):
             return True
         except:
             return False
-
-    def target_callback(self, msg):
-        if not self.calibrated:
-            self.get_logger().warn('Target rejected: system not calibrated')
-            return
         
-        target_cm = msg.data * 100.0
+    def move_forklift_callback(self, request, response):
+        if not self.calibrated:
+            response.success = False
+            response.message = "Not calibrated"
+            return response
+        
+        target_cm = request.target_height * 100.0
         self.current_target_raw = int(round(target_cm * CM_TO_FPGA_RAW))
-        self.get_logger().info(f'New target: {msg.data:.3f} m')
+        response.success = True
+        response.message = f"Target set to {request.target_height:.3f} m"
+        return response
 
     def main_loop(self):
         try:
