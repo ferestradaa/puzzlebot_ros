@@ -50,10 +50,13 @@ find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core calib3d dnn)
 find_package(rclcpp_action REQUIRED)
 find_package(action_msgs REQUIRED)
-find_package(puzzlebot_interfaces REQUIRED)
-find_package(puzzlebot_control REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+
+find_package(puzzlebot_interfaces REQUIRED)
+find_package(puzzlebot_control REQUIRED)
+
+
 
 #list(APPEND CMAKE_PREFIX_PATH "/usr/lib/aarch64-linux-gnu/cmake/ZXing")
 #find_package(ZXing REQUIRED)    
@@ -221,6 +224,10 @@ add_executable(qr_detection_node
     src/qr_detection_server.cpp
 )
 
+add_executable(aruco_pose_node
+    src/aruco_pose.cpp
+)
+
 target_link_libraries(camera_noise_node
   PRIVATE
     ${sensor_msgs_TARGETS}
@@ -298,6 +305,22 @@ target_link_libraries(qr_detection_node
     -lzbar)
 
 
+target_link_libraries(aruco_pose_node
+  PRIVATE
+    rclcpp::rclcpp
+    ${sensor_msgs_TARGETS}
+    ${geometry_msgs_TARGETS}
+    ${std_srvs_TARGETS}
+    cv_bridge::cv_bridge
+    opencv_core
+    opencv_imgproc
+    opencv_dnn
+    opencv_objdetect
+    opencv_calib3d
+    opencv_aruco
+    tf2_ros::tf2_ros)
+
+
 target_compile_options(pallet_detection_engine
   PRIVATE
     -Wno-deprecated-declarations
@@ -309,7 +332,7 @@ target_include_directories(pallet_detection_engine
     ${CUDA_INCLUDE_DIRS}
 )
 
-install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine qr_detection_node_test qr_detection_node
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine qr_detection_node_test qr_detection_node aruco_pose_node 
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
