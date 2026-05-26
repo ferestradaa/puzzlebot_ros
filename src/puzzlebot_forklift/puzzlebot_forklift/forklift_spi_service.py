@@ -42,7 +42,7 @@ class ForkliftSPINode(Node):
         
         self.calibrated = False
         self.homing_target_mm = 25.0
-        self.homing_tolerance_mm = 5.0
+        self.homing_tolerance_mm = 25.0
         self.homing_step_down = -60
         self.homing_step_up = 60
         self.stable_count = 0

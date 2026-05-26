@@ -13,7 +13,7 @@ class CameraRelay : public rclcpp::Node
 public:
     CameraRelay() : Node("camera_relay")
     {
-        this->declare_parameter<std::string>("camera_info", "camera_info.yaml");
+        this->declare_parameter<std::string>("camera_info", "camera_info_rasp.yaml");
         this->declare_parameter<std::string>("frame_id", "camera_color_optical_frame");
 
         frame_id_ = this->get_parameter("frame_id").as_string();

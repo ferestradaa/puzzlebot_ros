@@ -1,0 +1,26 @@
+image_width: 640
+image_height: 360
+camera_name: imx219_raspicam
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [655.9479004,   0.0,         278.05936056,
+           0.0,         651.86127248, 192.43228517,
+           0.0,           0.0,           1.0]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.1507937, -0.08774784, 0.00044198, -0.02809164, 0.32524824]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1.0, 0.0, 0.0,
+         0.0, 1.0, 0.0,
+         0.0, 0.0, 1.0]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [655.9479004,   0.0,         278.05936056, 0.0,
+           0.0,         651.86127248, 192.43228517, 0.0,
+           0.0,           0.0,           1.0,       0.0]
