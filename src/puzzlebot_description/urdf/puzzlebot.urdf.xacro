@@ -38,7 +38,8 @@
       <origin xyz="0.04 0 -0.05" rpy="0 0 0"/>
       <geometry>
    <!-- <mesh filename="../meshes3/puzzlebot_chassis_detailed.obj"/> -->
-        <mesh filename="file://${mesh_chassis}"/>
+        <!--<mesh filename="file://${mesh_chassis}"/> -->
+        <mesh filename="package://puzzlebot_description/meshes/puzzlebot_chassis_detailed.obj"/>        
        <!-- <mesh filename="../meshes3/puzzlebot_chassis_detailed.obj"/> -->
       </geometry>
       <material name="white"/>
@@ -67,7 +68,9 @@
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
    <!-- <mesh filename="../meshes3/puzzlebot_caster_wheel.obj"/> -->
-        <mesh filename="file://${caster_wheel}"/>
+        <!--<mesh filename="file://${caster_wheel}"/> -->
+        <!--<mesh filename="package://puzzlebot_description/meshes/puzzlebot_wheel.obj"/>-->
+        <mesh filename="package://puzzlebot_description/meshes/puzzlebot_caster_wheel.obj"/>
       </geometry>
       <material name="dark_grey"/>
     </visual>
@@ -101,7 +104,8 @@
       <origin xyz="0 0 -0.046" rpy="0 0 0"/>
       <geometry>
    <!-- <mesh filename="../meshes3/puzzlebot_wheel.obj"/> -->
-        <mesh filename="file://${mesh_wheel}"/>
+        <!--<mesh filename="file://${mesh_wheel}"/> -->
+        <mesh filename="package://puzzlebot_description/meshes/puzzlebot_wheel.obj"/>
       </geometry>
       <material name="orange"/>
     </visual>
@@ -135,7 +139,8 @@
       <origin xyz="0 0 -0.046" rpy="0 0 ${PI}"/>
       <geometry>
    <!-- <mesh filename="../meshes3/puzzlebot_wheel.obj"/> -->
-        <mesh filename="file://${mesh_wheel}"/>
+        <!--<mesh filename="file://${mesh_wheel}"/> -->
+        <mesh filename="package://puzzlebot_description/meshes/puzzlebot_wheel.obj"/>
       </geometry> 
       <material name="orange"/>
     </visual>
@@ -197,7 +202,8 @@
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <geometry>
     <!-- <mesh filename="../meshes3/outer_mast.obj"/> -->
-      <mesh filename="file://${mesh_outer_mast}"/>
+      <!--<mesh filename="file://${mesh_outer_mast}"/> -->
+      <mesh filename="package://puzzlebot_description/meshes/outer_mast.obj"/>
     </geometry>
     <material name="black"/>
   </visual>
@@ -226,7 +232,8 @@
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <geometry>
  <!-- <mesh filename="../meshes3/inner_mast.obj"/> -->
-      <mesh filename="file://${mesh_inner_mast}"/>
+     <!-- <mesh filename="file://${mesh_inner_mast}"/>-->
+      <mesh filename="package://puzzlebot_description/meshes/inner_mast.obj"/>
     </geometry>
     <material name="black"/>
   </visual>
@@ -258,7 +265,8 @@
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <geometry>
   <!-- <mesh filename="../meshes3/forks.obj"/> -->
-      <mesh filename="file://${mesh_forks}"/>
+      <!--<mesh filename="file://${mesh_forks}"/>-->
+      <mesh filename="package://puzzlebot_description/meshes/forks.obj"/>
     </geometry>
     <material name="black"/>
   </visual>
