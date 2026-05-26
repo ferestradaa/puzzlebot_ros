@@ -193,11 +193,12 @@ class ForkliftSPIServer(Node):
         try:
             self.encoder_pulses = struct.unpack('>i', bytes(rx_bytes[1:5]))[0]
             
-            target_pulses_fpga = target_raw * FPGA_INTERNAL_FACTOR
-            if target_pulses_fpga != 0:
+            # Solo recalcular si target_raw != 0
+            if target_raw != 0:
+                target_pulses_fpga = target_raw * FPGA_INTERNAL_FACTOR
                 self.encoder_cm = (self.encoder_pulses / target_pulses_fpga) * (target_raw / CM_TO_FPGA_RAW)
-            else:
-                self.encoder_cm = 0.0
+            # Si target_raw == 0, mantener self.encoder_cm del ciclo anterior
+            
         except:
             pass
 

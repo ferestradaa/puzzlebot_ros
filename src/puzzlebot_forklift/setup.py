@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'forklift_spi_server = puzzlebot_forklift.forklift_spi_server:main',
+            'forklift_spi_node = puzzlebot_forklift.forklift_spi_node:main',
         ],
 },
 )
