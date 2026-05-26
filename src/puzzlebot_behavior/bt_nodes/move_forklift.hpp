@@ -1,7 +1,8 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
-#include <std_srvs/srv/set_bool.hpp>
 #include <behaviortree_cpp/action_node.h>
+#include "puzzlebot_interfaces/srv/forklift_height.hpp"
+
 
 namespace puzzlebot_bt{
 
@@ -10,7 +11,9 @@ public:
     MoveForklift(const std::string& name, const BT::NodeConfig& config, 
                      rclcpp::Node::SharedPtr node)
         : BT::SyncActionNode(name, config), node_(node) {
-            client_ = node_ ->create_client<std_srvs::srv::SetBool>("move_forklift"); 
+
+            client_ = node_->create_client<puzzlebot_interfaces::srv::ForkliftHeight>("/forklift/target_height");
+            
         }
 
     static BT::PortsList providedPorts() {
@@ -26,8 +29,8 @@ public:
             return BT::NodeStatus::FAILURE;
         }
 
-        auto request = std::make_shared<std_msgs::msg::Float32>();
-        request->data = target_height;
+        auto request = std::make_shared<puzzlebot_interfaces::srv::ForkliftHeight::Request>();
+        request->target_height = target_height;
 
         auto future = client_->async_send_request(request);
 
@@ -37,10 +40,11 @@ public:
         }
 
         return BT::NodeStatus::SUCCESS; 
+    }
 
 private: 
     rclcpp::Node::SharedPtr node_; 
-    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_;  
+    rclcpp::Client<puzzlebot_interfaces::srv::ForkliftHeight>::SharedPtr client_;  
 };
 
 }

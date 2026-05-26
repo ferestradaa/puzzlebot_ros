@@ -93,8 +93,14 @@ def generate_launch_description():
         output='screen'
     )
 
+    move_forklift = Node(
+        package='puzzlebot_forklift',
+        executable='forklift_spi_service',
+        output='screen'
+    )
+
     delayed_behavior = TimerAction(
-        period = 50.0, 
+        period = 70.0, 
         actions = [behavior]
     )
 
@@ -106,6 +112,7 @@ def generate_launch_description():
         micro_ros_agent,
         puzzlebot_cam,
         lidar,
+        #move_forklift, 
         desc_launch,
         control_launch, 
         vision_launch,

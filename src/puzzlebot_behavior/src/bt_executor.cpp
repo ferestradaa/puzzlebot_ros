@@ -10,9 +10,7 @@
 #include "qr_detection.hpp"
 #include "drive_raw.hpp"
 #include "visual_servoing.hpp"
-
-
-
+#include "move_forklift.hpp"
 
 
 class BTexecutor : public  rclcpp::Node{
@@ -30,6 +28,12 @@ class BTexecutor : public  rclcpp::Node{
                 "EnableDetections", 
                 [this](const std::string & name, const BT::NodeConfig & conf){
                     return std::make_unique<puzzlebot_bt::EnableDetections>(name, conf, bt_node_); 
+                }); 
+
+            factory_.registerBuilder<puzzlebot_bt::MoveForklift>(
+                "MoveForklift", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::MoveForklift>(name, conf, bt_node_); 
                 }); 
 
             factory_.registerBuilder<puzzlebot_bt::DriveRawAction>(
