@@ -42,7 +42,7 @@ class ForkliftSPINode(Node):
         
         self.calibrated = False
         self.homing_target_mm = 25.0
-        self.homing_tolerance_mm = 25.0
+        self.homing_tolerance_mm = 105.0
         self.homing_step_down = -60
         self.homing_step_up = 60
         self.stable_count = 0
@@ -139,6 +139,8 @@ class ForkliftSPINode(Node):
                         self.get_logger().info(f'Homing complete. Offset: {self.encoder_offset_cm:.2f} cm')
             else:
                 self.send_spi(self.current_servo_angle, self.current_target_raw)
+                self.get_logger().info(f'laser_raw={raw_distance:.1f}mm  target_raw={self.current_target_raw}')
+                
 
             self.publish_height()
 
@@ -148,12 +150,15 @@ class ForkliftSPINode(Node):
     def send_spi(self, servo_angle, target_raw):
         target_raw = max(INT32_MIN, min(INT32_MAX, target_raw))
         servo_angle = max(0, min(180, servo_angle))
+        print(target_raw)
+        #self.get_logger().info(f'TX: servo={servo_angle} raw={target_raw} | RX: {rx_bytes}')
 
         packet = struct.pack('>Bi', servo_angle, target_raw)
         tx_bytes = list(packet)
 
         try:
             rx_bytes = self.spi.xfer2(tx_bytes)
+            print(rx_bytes)
         except:
             return
 

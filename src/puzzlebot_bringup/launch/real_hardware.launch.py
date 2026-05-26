@@ -13,6 +13,7 @@ def generate_launch_description():
     description = get_package_share_directory('puzzlebot_description')
     control     = get_package_share_directory('puzzlebot_control')
     vision      = get_package_share_directory('puzzlebot_vision')
+    navigation  = get_package_share_directory('puzzlebot_navigation')
 
     use_sim      = LaunchConfiguration('use_sim')
     rviz         = LaunchConfiguration('rviz')
@@ -53,20 +54,20 @@ def generate_launch_description():
     )
 
     lidar = Node(
-    package='sllidar_ros2',
-    executable='sllidar_node',
-    name='sllidar_node',
-    parameters=[{
-        'channel_type': 'serial',
-        'serial_port': '/dev/ttyLIDAR',
-        'serial_baudrate': 115200,
-        'frame_id': 'laser',
-        'inverted': False,
-        'angle_compensate': True,
-        'scan_mode': 'Sensitivity',
-    }],
-    output='screen'
-)
+        package='sllidar_ros2',
+        executable='sllidar_node',
+        name='sllidar_node',
+        parameters=[{
+            'channel_type': 'serial',
+            'serial_port': '/dev/ttyLIDAR',
+            'serial_baudrate': 115200,
+            'frame_id': 'laser',
+            'inverted': False,
+            'angle_compensate': True,
+            'scan_mode': 'Sensitivity',
+        }],
+        output='screen'
+    )
 
     desc_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -80,6 +81,13 @@ def generate_launch_description():
             os.path.join(control, 'launch', 'control.launch.py')),
         launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
     )
+
+    navigation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(navigation, 'launch', "navigation.launch.py")), 
+
+    )
+    
     
     vision_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -112,7 +120,8 @@ def generate_launch_description():
         micro_ros_agent,
         puzzlebot_cam,
         lidar,
-        #move_forklift, 
+        navigation_launch,         
+        move_forklift, 
         desc_launch,
         control_launch, 
         vision_launch,
