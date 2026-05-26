@@ -1,2 +1,3 @@
 path_trees:
     main_tree: trees/main_tree.xml
+    debug_tree: trees/debug_tree.xml

@@ -108,7 +108,7 @@ def generate_launch_description():
     )
 
     delayed_behavior = TimerAction(
-        period = 70.0, 
+        period = 15.0, 
         actions = [behavior]
     )
 

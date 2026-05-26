@@ -3,6 +3,9 @@
 #include <geometry_msgs/msg/pose.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+
+namespace puzzlebot_bt{
+
 class GetTargetPose : public BT::SyncActionNode {
 public:
     GetTargetPose(const std::string& name, const BT::NodeConfig& config)
@@ -17,6 +20,8 @@ public:
         return BT::NodeStatus::SUCCESS;
     }
 };
+
+}
 
 class GoToTarget : public BT::SyncActionNode {
 public:

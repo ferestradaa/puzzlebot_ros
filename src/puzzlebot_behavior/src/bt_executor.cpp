@@ -13,6 +13,8 @@
 #include "move_forklift.hpp"
 
 
+
+
 class BTexecutor : public  rclcpp::Node{
     public: 
         explicit BTexecutor(rclcpp::Node::SharedPtr bt_node)
@@ -28,6 +30,12 @@ class BTexecutor : public  rclcpp::Node{
                 "EnableDetections", 
                 [this](const std::string & name, const BT::NodeConfig & conf){
                     return std::make_unique<puzzlebot_bt::EnableDetections>(name, conf, bt_node_); 
+                }); 
+
+            factory_.registerBuilder<puzzlebot_bt::GetTargetPose>(
+                "GetTargetPose", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::GetTargetPose>(name, conf); 
                 }); 
 
             factory_.registerBuilder<puzzlebot_bt::MoveForklift>(
@@ -54,7 +62,8 @@ class BTexecutor : public  rclcpp::Node{
             std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_behavior"); 
             YAML::Node config = YAML::LoadFile(pkg_path + "/config/config.yaml"); 
 
-            std::string relative_tree_path = config["path_trees"]["main_tree"].as<std::string>();
+            //std::string relative_tree_path = config["path_trees"]["main_tree"].as<std::string>();
+            std::string relative_tree_path = config["path_trees"]["debug_tree"].as<std::string>();
 
             std::string xml_path = pkg_path + "/" + relative_tree_path;
 

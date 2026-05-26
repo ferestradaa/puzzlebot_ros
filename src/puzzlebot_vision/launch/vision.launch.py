@@ -73,7 +73,7 @@ def generate_launch_description():
         camera_noise, 
         camera_info,
         qr_detection_srvr, 
-        pallet_inference,
+        #pallet_inference,
         
 
     ])

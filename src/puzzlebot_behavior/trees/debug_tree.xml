@@ -1,0 +1,9 @@
+<root BTCPP_format="4">
+ <BehaviorTree ID = "PuzzlebotTree">
+    <KeepRunningUntilFailure>
+    <Sequence name = "SequencePickPlace">
+    <GetTargetPose />
+    </Sequence>
+    </KeepRunningUntilFailure>
+ </BehaviorTree>
+ </root>
