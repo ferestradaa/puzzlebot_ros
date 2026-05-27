@@ -6,6 +6,7 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 
+
 class ArucoPoseNode : public rclcpp::Node
 {
 public:
@@ -14,9 +15,10 @@ public:
         dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
         detector_params_ = cv::aruco::DetectorParameters::create();
         marker_length_ = 0.10f;
+        auto qos = rclcpp::QoS(10).best_effort();
 
         info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-            "camera/camera_info", 1,
+            "camera/camera_info", qos,
             [this](const sensor_msgs::msg::CameraInfo::SharedPtr msg) {
                 camera_matrix_ = (cv::Mat_<double>(3, 3) <<
                     msg->k[0], msg->k[1], msg->k[2],
@@ -28,7 +30,7 @@ public:
             });
 
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "camera/image_raw", 10,
+            "camera/image_raw", qos,
             std::bind(&ArucoPoseNode::imageCallback, this, std::placeholders::_1));
 
         pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/aruco_pose", 10);
