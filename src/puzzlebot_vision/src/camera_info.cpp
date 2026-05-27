@@ -1,10 +1,11 @@
-//in the same node the topic from ros_deep_learning is read and stamped with camera color optical frame 
-//at the same time the camera info is published. THis avoids creating a separate susbcribtipn to imagen 
-//for stamping and publishing camera info which contirbutes to light payload for the jetson
-
+// in the same node the topic from ros_deep_learning is read and stamped with camera color optical frame
+// at the same time the camera info is published. This avoids creating a separate subscription to image
+// for stamping and publishing camera info which contributes to light payload for the jetson
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/opencv.hpp>
 #include <yaml-cpp/yaml.h>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
@@ -31,15 +32,35 @@ public:
         pub_image_ = create_publisher<sensor_msgs::msg::Image>("/camera/image_raw", qos);
         pub_info_  = create_publisher<sensor_msgs::msg::CameraInfo>("/camera/camera_info", qos);
 
+
+        /*
         sub_ = create_subscription<sensor_msgs::msg::Image>(
             "/video_source/raw", qos,
             [this](sensor_msgs::msg::Image::SharedPtr msg) {
+                auto cv_img = cv_bridge::toCvCopy(msg, msg->encoding);
+                cv::flip(cv_img->image, cv_img->image, -1);
+                auto flipped_msg = cv_img->toImageMsg();
+                flipped_msg->header = msg->header;
+                flipped_msg->header.frame_id = frame_id_;
+                camera_info_.header = flipped_msg->header;
+                pub_info_->publish(camera_info_);
+                pub_image_->publish(std::move(*flipped_msg));
+            }); 
+        */
+
+        sub_ = create_subscription<sensor_msgs::msg::Image>(
+            "/video_source/raw", qos,
+            [this](sensor_msgs::msg::Image::SharedPtr msg) {
+                auto cv_img = cv_bridge::toCvCopy(msg, msg->encoding);
+
                 msg->header.frame_id = frame_id_;
-                camera_info_.header  = msg->header;
-                
+                camera_info_.header = msg->header;
                 pub_info_->publish(camera_info_);
                 pub_image_->publish(std::move(*msg));
-            });
+            }); 
+
+
+        
     }
 
 private:
@@ -70,7 +91,6 @@ private:
 
     std::string frame_id_;
     sensor_msgs::msg::CameraInfo camera_info_;
-
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr    pub_image_;
     rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr pub_info_;

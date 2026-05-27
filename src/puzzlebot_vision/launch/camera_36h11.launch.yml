@@ -26,9 +26,9 @@ launch:
       namespace: camera
       remap:
       - from: image
-        to: /camera/camera/image_raw
+        to: /camera/image_raw
       - from: camera_info
-        to: /camera/camera/camera_info
+        to: /camera/camera_info
       extra_arg:
       - name: use_intra_process_comms
         value: "True"
@@ -39,9 +39,9 @@ launch:
       namespace: apriltag
       remap:
       - from: /apriltag/image_rect
-        to: /camera/image_rect
+        to: /camera/image_raw
       - from: /camera/camera_info
-        to: /camera/camera/camera_info
+        to: /camera/camera_info
       param:
       - from: $(find-pkg-share apriltag_ros)/cfg/tags_36h11.yaml
       extra_arg:

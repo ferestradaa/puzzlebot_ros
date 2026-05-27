@@ -6,7 +6,6 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 
-
 class ArucoPoseNode : public rclcpp::Node
 {
 public:
@@ -14,7 +13,15 @@ public:
     {
         dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
         detector_params_ = cv::aruco::DetectorParameters::create();
+
+        // Ajustar params para deteccion mas robusta
+        detector_params_->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+        detector_params_->cornerRefinementWinSize = 5;
+        detector_params_->minMarkerPerimeterRate = 0.03;
+        detector_params_->maxMarkerPerimeterRate = 4.0;
+
         marker_length_ = 0.10f;
+
         auto qos = rclcpp::QoS(10).best_effort();
 
         info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
@@ -26,7 +33,7 @@ public:
                     msg->k[6], msg->k[7], msg->k[8]);
                 dist_coeffs_ = cv::Mat(msg->d);
                 camera_ready_ = true;
-                info_sub_.reset(); // desuscribirse, ya no se necesita
+                info_sub_.reset();
             });
 
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
@@ -37,6 +44,65 @@ public:
     }
 
 private:
+    // Verifica que las corners formen un cuadrilatero valido (no degenerado)
+    bool cornersValid(const std::vector<cv::Point2f> &corners)
+    {
+        if (corners.size() != 4) return false;
+
+        // Area minima en pixeles^2
+        double area = std::abs(
+            (corners[0].x * (corners[1].y - corners[3].y) +
+             corners[1].x * (corners[2].y - corners[0].y) +
+             corners[2].x * (corners[3].y - corners[1].y) +
+             corners[3].x * (corners[0].y - corners[2].y)) * 0.5);
+
+        if (area < 100.0) return false;
+
+        // Verificar que ningun par de corners este demasiado cerca
+        for (int i = 0; i < 4; ++i) {
+            for (int j = i + 1; j < 4; ++j) {
+                double dist = cv::norm(corners[i] - corners[j]);
+                if (dist < 5.0) return false;
+            }
+        }
+
+        return true;
+    }
+
+    cv::Vec4d rotMatToQuat(const cv::Mat &R)
+    {
+        double trace = R.at<double>(0,0) + R.at<double>(1,1) + R.at<double>(2,2);
+        double qw, qx, qy, qz;
+
+        if (trace > 0) {
+            double s = 0.5 / std::sqrt(trace + 1.0);
+            qw = 0.25 / s;
+            qx = (R.at<double>(2,1) - R.at<double>(1,2)) * s;
+            qy = (R.at<double>(0,2) - R.at<double>(2,0)) * s;
+            qz = (R.at<double>(1,0) - R.at<double>(0,1)) * s;
+        } else if (R.at<double>(0,0) > R.at<double>(1,1) && R.at<double>(0,0) > R.at<double>(2,2)) {
+            double s = 2.0 * std::sqrt(1.0 + R.at<double>(0,0) - R.at<double>(1,1) - R.at<double>(2,2));
+            qw = (R.at<double>(2,1) - R.at<double>(1,2)) / s;
+            qx = 0.25 * s;
+            qy = (R.at<double>(0,1) + R.at<double>(1,0)) / s;
+            qz = (R.at<double>(0,2) + R.at<double>(2,0)) / s;
+        } else if (R.at<double>(1,1) > R.at<double>(2,2)) {
+            double s = 2.0 * std::sqrt(1.0 + R.at<double>(1,1) - R.at<double>(0,0) - R.at<double>(2,2));
+            qw = (R.at<double>(0,2) - R.at<double>(2,0)) / s;
+            qx = (R.at<double>(0,1) + R.at<double>(1,0)) / s;
+            qy = 0.25 * s;
+            qz = (R.at<double>(1,2) + R.at<double>(2,1)) / s;
+        } else {
+            double s = 2.0 * std::sqrt(1.0 + R.at<double>(2,2) - R.at<double>(0,0) - R.at<double>(1,1));
+            qw = (R.at<double>(1,0) - R.at<double>(0,1)) / s;
+            qx = (R.at<double>(0,2) + R.at<double>(2,0)) / s;
+            qy = (R.at<double>(1,2) + R.at<double>(2,1)) / s;
+            qz = 0.25 * s;
+        }
+
+        return {qw, qx, qy, qz};
+    }
+
     void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &img_msg)
     {
         if (!camera_ready_) return;
@@ -56,54 +122,50 @@ private:
         geometry_msgs::msg::PoseArray pose_array;
         pose_array.header = img_msg->header;
 
-        if (!ids.empty()) {
-            std::vector<cv::Vec3d> rvecs, tvecs;
-            cv::aruco::estimatePoseSingleMarkers(
-                corners, marker_length_, camera_matrix_, dist_coeffs_, rvecs, tvecs);
+        // Puntos 3D del marcador en coordenadas locales (origen en centro)
+        float h = marker_length_ / 2.0f;
+        std::vector<cv::Point3f> obj_points = {
+            {-h,  h, 0},
+            { h,  h, 0},
+            { h, -h, 0},
+            {-h, -h, 0}
+        };
 
-            for (size_t i = 0; i < ids.size(); ++i) {
-                cv::Mat R;
-                cv::Rodrigues(rvecs[i], R);
-
-                double trace = R.at<double>(0,0) + R.at<double>(1,1) + R.at<double>(2,2);
-                double qw, qx, qy, qz;
-
-                if (trace > 0) {
-                    double s = 0.5 / std::sqrt(trace + 1.0);
-                    qw = 0.25 / s;
-                    qx = (R.at<double>(2,1) - R.at<double>(1,2)) * s;
-                    qy = (R.at<double>(0,2) - R.at<double>(2,0)) * s;
-                    qz = (R.at<double>(1,0) - R.at<double>(0,1)) * s;
-                } else if (R.at<double>(0,0) > R.at<double>(1,1) && R.at<double>(0,0) > R.at<double>(2,2)) {
-                    double s = 2.0 * std::sqrt(1.0 + R.at<double>(0,0) - R.at<double>(1,1) - R.at<double>(2,2));
-                    qw = (R.at<double>(2,1) - R.at<double>(1,2)) / s;
-                    qx = 0.25 * s;
-                    qy = (R.at<double>(0,1) + R.at<double>(1,0)) / s;
-                    qz = (R.at<double>(0,2) + R.at<double>(2,0)) / s;
-                } else if (R.at<double>(1,1) > R.at<double>(2,2)) {
-                    double s = 2.0 * std::sqrt(1.0 + R.at<double>(1,1) - R.at<double>(0,0) - R.at<double>(2,2));
-                    qw = (R.at<double>(0,2) - R.at<double>(2,0)) / s;
-                    qx = (R.at<double>(0,1) + R.at<double>(1,0)) / s;
-                    qy = 0.25 * s;
-                    qz = (R.at<double>(1,2) + R.at<double>(2,1)) / s;
-                } else {
-                    double s = 2.0 * std::sqrt(1.0 + R.at<double>(2,2) - R.at<double>(0,0) - R.at<double>(1,1));
-                    qw = (R.at<double>(1,0) - R.at<double>(0,1)) / s;
-                    qx = (R.at<double>(0,2) + R.at<double>(2,0)) / s;
-                    qy = (R.at<double>(1,2) + R.at<double>(2,1)) / s;
-                    qz = 0.25 * s;
-                }
-
-                geometry_msgs::msg::Pose pose;
-                pose.position.x = tvecs[i][0];
-                pose.position.y = tvecs[i][1];
-                pose.position.z = tvecs[i][2];
-                pose.orientation.w = qw;
-                pose.orientation.x = qx;
-                pose.orientation.y = qy;
-                pose.orientation.z = qz;
-                pose_array.poses.push_back(pose);
+        for (size_t i = 0; i < ids.size(); ++i) {
+            if (!cornersValid(corners[i])) {
+                RCLCPP_WARN(this->get_logger(), "Marker %d: corners degeneradas, descartando", ids[i]);
+                continue;
             }
+
+            cv::Vec3d rvec, tvec;
+
+            // SOLVEPNP_IPPE_SQUARE resuelve la ambiguedad de pose para marcadores cuadrados
+            bool ok = cv::solvePnP(obj_points, corners[i],
+                                   camera_matrix_, dist_coeffs_,
+                                   rvec, tvec,
+                                   false, cv::SOLVEPNP_IPPE_SQUARE);
+
+            if (!ok) continue;
+
+            // Descartar si z es fisicamente imposible (< 0 o > 10 m)
+            if (tvec[2] < 0.01 || tvec[2] > 10.0) {
+                RCLCPP_WARN(this->get_logger(), "Marker %d: z=%.3f fuera de rango, descartando", ids[i], tvec[2]);
+                continue;
+            }
+
+            cv::Mat R;
+            cv::Rodrigues(rvec, R);
+            auto q = rotMatToQuat(R);
+
+            geometry_msgs::msg::Pose pose;
+            pose.position.x = tvec[0];
+            pose.position.y = tvec[1];
+            pose.position.z = tvec[2];
+            pose.orientation.w = q[0];
+            pose.orientation.x = q[1];
+            pose.orientation.y = q[2];
+            pose.orientation.z = q[3];
+            pose_array.poses.push_back(pose);
         }
 
         pose_pub_->publish(pose_array);

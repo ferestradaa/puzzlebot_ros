@@ -112,16 +112,18 @@ AprilTagNode::AprilTagNode(const rclcpp::NodeOptions& options)
     sub_cam{
 #ifdef image_transport_NODE_INTERFACE
         image_transport::RequiredInterfaces{*this},
+
 #else
+        
         this,
 #endif
-        this->get_node_topics_interface()->resolve_topic_name("image_rect"),
+        this->get_node_topics_interface()->resolve_topic_name("camera/image_raw"),
         std::bind(&AprilTagNode::onCamera, this, std::placeholders::_1, std::placeholders::_2),
         declare_parameter("image_transport", "raw", descr({}, true)),
 #ifdef image_transport_QoS
         rclcpp::QoS{rclcpp::QoSInitialization::from_rmw(
 #endif
-            qos_profiles.at(declare_parameter("qos_profile", "default", descr("qos profile to use. 'default', 'sensor_data' or 'system_default'", true)))
+            qos_profiles.at(declare_parameter("qos_profile", "sensor_data", descr("qos profile to use. 'default', 'sensor_data' or 'system_default'", true)))
 #ifdef image_transport_QoS
                 )}
 #endif
