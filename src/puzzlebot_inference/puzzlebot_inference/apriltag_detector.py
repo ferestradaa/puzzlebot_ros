@@ -38,7 +38,7 @@ class AprilTagDetector(Node):
         self.detector = Detector(
             families='tag36h11',
             nthreads=2,
-            quad_decimate=1.0,
+            quad_decimate=2.0,
             quad_sigma=0.0,
             refine_edges=True,
             decode_sharpening=0.25,
@@ -49,6 +49,8 @@ class AprilTagDetector(Node):
         self.pub_camera = self.create_publisher(AprilTagDetectionArray, 'apriltag/camera_pose', 10)
         self.pub_base = self.create_publisher(AprilTagDetectionArray, 'apriltag/base_pose', 10)
 
+        self.get_logger().info("Apriltag node initializad")
+
     def info_cb(self, msg: CameraInfo):
         if self.camera_matrix is not None:
             return
@@ -58,7 +60,7 @@ class AprilTagDetector(Node):
             [k[3], k[4], k[5]],
             [k[6], k[7], k[8]],
         ], dtype=np.float64)
-        self.get_logger().info('Camera info recibida')
+        self.get_logger().info('Camera info recieved')
 
     def _get_extrinsic(self, camera_frame):
         try:
@@ -66,12 +68,12 @@ class AprilTagDetector(Node):
                 target_frame=self.base_frame,
                 source_frame=camera_frame,
                 time=rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=0.5),
+                timeout=rclpy.duration.Duration(seconds=0.05),
             )
         except (tf2_ros.LookupException,
                 tf2_ros.ConnectivityException,
                 tf2_ros.ExtrapolationException) as e:
-            self.get_logger().warn(f'No hay TF {self.base_frame} -> {camera_frame}: {e}')
+            self.get_logger().warn(f'No TF {self.base_frame} to {camera_frame}: {e}')
             return None
 
     def image_cb(self, msg: Image):
@@ -110,7 +112,7 @@ class AprilTagDetector(Node):
             cam_array.detections.append(cam_det)
 
             self._broadcast_tf(pose_cam.pose, msg.header.stamp,
-                               msg.header.frame_id, f'tag_meas_{det.tag_id}')
+                               msg.header.frame_id, f'tag_{det.tag_id}')
 
             if extrinsic is not None:
                 pose_base_raw = tf2_geometry_msgs.do_transform_pose(pose_cam.pose, extrinsic)
@@ -140,19 +142,51 @@ class AprilTagDetector(Node):
         self.tf_broadcaster.sendTransform(tf_msg)
 
     def _build_pose(self, det, header) -> PoseStamped:
-        q = Rotation.from_matrix(det.pose_R).as_quat()
-        t = det.pose_t.flatten()
-
         pose = PoseStamped()
         pose.header = header
+
+        t = det.pose_t.flatten()
+
+
         pose.pose.position.x = float(t[0])
         pose.pose.position.y = float(t[1])
         pose.pose.position.z = float(t[2])
+
+        q = self.mat_to_quat(det.pose_R)
         pose.pose.orientation.x = float(q[0])
         pose.pose.orientation.y = float(q[1])
         pose.pose.orientation.z = float(q[2])
         pose.pose.orientation.w = float(q[3])
+
         return pose
+
+    def mat_to_quat(self, R):
+        t = np.trace(R)
+        if t > 0:
+            s = np.sqrt(t + 1.0) * 2
+            w = 0.25 * s
+            x = (R[2,1] - R[1,2]) / s
+            y = (R[0,2] - R[2,0]) / s
+            z = (R[1,0] - R[0,1]) / s
+        elif R[0,0] > R[1,1] and R[0,0] > R[2,2]:
+            s = np.sqrt(1.0 + R[0,0] - R[1,1] - R[2,2]) * 2
+            w = (R[2,1] - R[1,2]) / s
+            x = 0.25 * s
+            y = (R[0,1] + R[1,0]) / s
+            z = (R[0,2] + R[2,0]) / s
+        elif R[1,1] > R[2,2]:
+            s = np.sqrt(1.0 + R[1,1] - R[0,0] - R[2,2]) * 2
+            w = (R[0,2] - R[2,0]) / s
+            x = (R[0,1] + R[1,0]) / s
+            y = 0.25 * s
+            z = (R[1,2] + R[2,1]) / s
+        else:
+            s = np.sqrt(1.0 + R[2,2] - R[0,0] - R[1,1]) * 2
+            w = (R[1,0] - R[0,1]) / s
+            x = (R[0,2] + R[2,0]) / s
+            y = (R[1,2] + R[2,1]) / s
+            z = 0.25 * s
+        return [x, y, z, w]
 
 
 def main(args=None):
