@@ -9,8 +9,8 @@ from launch_ros.actions import SetParameter
 from launch.conditions import UnlessCondition
 
 
-
 def generate_launch_description():
+
     
     use_sim = LaunchConfiguration('use_sim')
 
@@ -58,6 +58,12 @@ def generate_launch_description():
 
     )
 
+    apriltag_detector = Node(
+        package = 'puzzlebot_inference',
+        executable = 'apriltag_detector',
+
+    )
+
     pallet_inference = Node(
         package = 'puzzlebot_vision',
         executable = 'pallet_detection_engine',
@@ -72,6 +78,7 @@ def generate_launch_description():
         apriltag_node, 
         camera_noise, 
         camera_info,
+        apriltag_detector,
         qr_detection_srvr, 
         #pallet_inference,
         

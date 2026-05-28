@@ -48,7 +48,7 @@ rclcpp
 nav_msgs
 std_msgs
 tf2_geometry_msgs
-apriltag_msgs
+puzzlebot_interfaces
 tf2
 tf2_ros
 ament_index_cpp

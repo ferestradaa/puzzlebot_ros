@@ -38,8 +38,8 @@ which is:
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <rclcpp/timer.hpp>
 
-#include <apriltag_msgs/msg/april_tag_detection.hpp>
-#include <apriltag_msgs/msg/april_tag_detection_array.hpp>
+#include <puzzlebot_interfaces/msg/april_tag_detection.hpp>
+#include <puzzlebot_interfaces/msg/april_tag_detection_array.hpp>
 
 #include "puzzlebot_control/kalman_filter.hpp"
 #include "puzzlebot_control/math_utils.hpp"
@@ -65,8 +65,8 @@ class OdometryNode : public rclcpp::Node{
         std::bind(&OdometryNode::encoderR_callback, this, std::placeholders::_1));
 
 
-        aruco_sub = this -> create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>("/detections", 10, //this has to be aruco detection in 
-        std::bind(&OdometryNode::aruco_callback, this, std::placeholders::_1)); 
+        apriltag_sub = this -> create_subscription<puzzlebot_interfaces::msg::AprilTagDetectionArray>("/apriltag/camera_pose", 10, //this has to be aruco detection in 
+        std::bind(&OdometryNode::apriltag_callback, this, std::placeholders::_1)); 
 
         timer_ = rclcpp::create_timer(
             this,
@@ -81,7 +81,12 @@ class OdometryNode : public rclcpp::Node{
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-        Eigen::Matrix3d P0 = Eigen::Matrix3d::Identity() * 0.001;
+        //Eigen::Matrix3d P0 = Eigen::Matrix3d::Identity() * 0.001;
+
+        Eigen::Matrix3d P0 = Eigen::Matrix3d::Zero();
+        P0(0,0) = 100.0;
+        P0(1,1) = 100.0;
+        P0(2,2) = 10.0;
 
         kalman_ = std::make_unique<ExtendedKalmanFilter>(r_, L_, Eigen::Vector3d::Zero(), P0);
 
@@ -105,7 +110,7 @@ class OdometryNode : public rclcpp::Node{
             wheel_vel_right_rads_ = msg -> data; 
         }
 
-        void aruco_callback(const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg){
+        void apriltag_callback(const puzzlebot_interfaces::msg::AprilTagDetectionArray::SharedPtr msg){
             std::vector<Eigen::Vector2d> detected_positions; //list for xyyaw detected landmarks
             std::vector<Eigen::Vector2d> fixed_positions; //list for xyyaw known landmakrs in map
 
@@ -113,17 +118,16 @@ class OdometryNode : public rclcpp::Node{
 
 
             for (const auto& marker :msg->detections){ //using every detection in frame
-
-                auto iterator = landmark_map_.find(marker.id); //find() looks for the key in the map and returns where it is
+                auto iterator = landmark_map_.find(marker.tag_id); //find() looks for the key in the map and returns where it is
                 if (iterator == landmark_map_.end()){ // if not, iterator is end() == NULL
                     continue; }
                 auto landmark = iterator->second; //landmark has the value if found
-                std::string frame = "apriltag" + std::to_string(marker.id); //creates frame with detected landamark for tf
+                std::string frame = "tag_" + std::to_string(marker.tag_id); //creates frame with detected landamark for tf
 
                 try {
                     auto tf = tf_buffer_.lookupTransform(
-                        "base_link",
-                        frame, //used the detected frame
+                        "base_footprint",
+                        frame, //using camera frame that comes in raw detections
                         tf2::TimePointZero,
                         tf2::durationFromSec(0.1)
                     );
@@ -150,6 +154,10 @@ class OdometryNode : public rclcpp::Node{
                         fixed_positions[i],    // xy pf world landmark 
                         detected_positions[i]  // xy of runtime detection
                     );
+                }
+
+                if (!fixed_positions.empty()){
+                    localized_ = true; 
                 }
                 
         }
@@ -191,20 +199,20 @@ class OdometryNode : public rclcpp::Node{
 
             nav_msgs::msg::Odometry msg;
             msg.header.stamp    = stamp; 
-            msg.header.frame_id = "odom";
+            msg.header.frame_id = "map";
             msg.child_frame_id  = "base_footprint";
 
             msg.pose.pose.position.x = state(0);
             msg.pose.pose.position.y = state(1);
             msg.pose.pose.position.z = 0.0;
 
-            // orientación: theta -> quaternion
+            // theta oruienatation
             tf2::Quaternion q;
             q.setRPY(0.0, 0.0, state(2));
             msg.pose.pose.orientation = tf2::toMsg(q);
 
-            // covarianza de pose (6x6: x,y,z,roll,pitch,yaw)
-            // solo llenamos los términos que el EKF conoce
+            // cov of pose 
+            // using only correspondance for EKF
             msg.pose.covariance[0]  = cov(0,0); // x-x
             msg.pose.covariance[1]  = cov(0,1); // x-y
             msg.pose.covariance[5]  = cov(0,2); // x-yaw
@@ -217,6 +225,9 @@ class OdometryNode : public rclcpp::Node{
 
             odom_pub_->publish(msg);
 
+
+
+            //publish raw odometry
             nav_msgs::msg::Odometry raw_msg;
             raw_msg.header.stamp    = stamp; 
             raw_msg.header.frame_id = "odom";
@@ -228,17 +239,50 @@ class OdometryNode : public rclcpp::Node{
             raw_msg.pose.pose.orientation = tf2::toMsg(q_raw);
             odom_raw_pub_->publish(raw_msg);
 
-
+            //constant tf for basefootprint and odo
             geometry_msgs::msg::TransformStamped tf_msg;
             tf_msg.header.stamp    = stamp;
             tf_msg.header.frame_id = "odom";
             tf_msg.child_frame_id  = "base_footprint";
-            tf_msg.transform.translation.x = state(0);       // raw, no EKF
-            tf_msg.transform.translation.y = state(1);
+            tf_msg.transform.translation.x = x_;       // raw, no EKF
+            tf_msg.transform.translation.y = y_;
             tf_msg.transform.translation.z = 0.0;
-            tf_msg.transform.rotation = tf2::toMsg(q);  // q_raw ya existe arriba
+            tf_msg.transform.rotation = tf2::toMsg(q_raw);  //
 
             tf_broadcaster_->sendTransform(tf_msg);
+
+
+            if (localized_){
+                //compute inverse tf between odom and base
+                double c = std::cos(theta_); 
+                double s = std::sin(theta_); 
+                double xi = -(x_ * c + y_ *s); 
+                double yi = -(-x_ * s + y_ *c); 
+                double ti = -theta_; 
+
+                // compose: map->base (+) base->odom
+                double cm = std::cos(state(2));
+                double sm = std::sin(state(2));
+                double mo_x = state(0) + xi * cm - yi * sm;
+                double mo_y = state(1) + xi * sm + yi * cm;
+                double mo_t = std::atan2(std::sin(state(2) + ti),
+                                        std::cos(state(2) + ti));
+
+
+
+                geometry_msgs::msg::TransformStamped map_tf;
+                map_tf.header.stamp    = stamp;
+                map_tf.header.frame_id = "map";
+                map_tf.child_frame_id  = "odom";
+                map_tf.transform.translation.x = mo_x;
+                map_tf.transform.translation.y = mo_y;
+                map_tf.transform.translation.z = 0.0;
+                tf2::Quaternion q_corr;
+                q_corr.setRPY(0.0, 0.0, mo_t);
+                map_tf.transform.rotation = tf2::toMsg(q_corr);
+                tf_broadcaster_->sendTransform(map_tf);
+
+            }
         }
 
 
@@ -258,7 +302,7 @@ class OdometryNode : public rclcpp::Node{
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_raw_pub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encl_sub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encr_sub_; 
-        rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr aruco_sub; 
+        rclcpp::Subscription<puzzlebot_interfaces::msg::AprilTagDetectionArray>::SharedPtr apriltag_sub; 
         rclcpp::Time last_time_; 
         rclcpp::TimerBase::SharedPtr timer_;
 
@@ -271,7 +315,8 @@ class OdometryNode : public rclcpp::Node{
         std::unique_ptr<ExtendedKalmanFilter> kalman_; 
 
         const double r_, L_;
-        double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_; 
+        double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_;
+        bool localized_ = false;  
         
 }; 
 
