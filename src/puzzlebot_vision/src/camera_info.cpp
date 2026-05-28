@@ -33,7 +33,7 @@ public:
         pub_info_  = create_publisher<sensor_msgs::msg::CameraInfo>("/camera/camera_info", qos);
 
 
-        /*
+        
         sub_ = create_subscription<sensor_msgs::msg::Image>(
             "/video_source/raw", qos,
             [this](sensor_msgs::msg::Image::SharedPtr msg) {
@@ -46,8 +46,10 @@ public:
                 pub_info_->publish(camera_info_);
                 pub_image_->publish(std::move(*flipped_msg));
             }); 
-        */
+        
 
+
+        /*
         sub_ = create_subscription<sensor_msgs::msg::Image>(
             "/video_source/raw", qos,
             [this](sensor_msgs::msg::Image::SharedPtr msg) {
@@ -58,6 +60,7 @@ public:
                 pub_info_->publish(camera_info_);
                 pub_image_->publish(std::move(*msg));
             }); 
+        */
 
 
         

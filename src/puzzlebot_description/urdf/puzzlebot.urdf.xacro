@@ -325,17 +325,16 @@
     <parent link="${prefix}forks_link"/>
     <child  link="${prefix}camera_link"/>
     <origin xyz="${camera_x} ${camera_y} ${camera_z}"
-            rpy="0 0 0"/>
+            rpy="0 3.1416 3.1416"/>
   </joint>
 
 
 <!-- optical frame -->
   <link name="${prefix}camera_color_optical_frame"/>
-  <joint name="${prefix}optical_frame" type="fixed">
-    <parent link="${prefix}camera_link"/>
-    <child  link="${prefix}camera_color_optical_frame"/>
-    <origin xyz="0.0 0 0"
-            rpy="-${PI/2} -${PI/2} -${PI/2}"/>
-  </joint>
+<joint name="${prefix}optical_frame" type="fixed">
+  <parent link="${prefix}camera_link"/>
+  <child link="${prefix}camera_color_optical_frame"/>
+  <origin xyz="0.0 0 0" rpy="${-PI/2} 0 ${-PI/2}"/>
+</joint>
 
 </robot>
