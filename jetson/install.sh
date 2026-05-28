@@ -33,6 +33,7 @@ source ~/.bashrc
 
 echo "Installing pip dependencies (Humble on Focal workaround)"
 pip3 install xacro
+pip3 install pupil-apriltags
 
 echo "Removing unnecessary sttuff for clean cleaning RAM"
 sudo systemctl set-default multi-user.target
