@@ -1,17 +1,19 @@
-#!/usr/bin/env python3
-
 import rclpy
+import rclpy.time
+import rclpy.duration
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import PoseStamped
 from cv_bridge import CvBridge
 import numpy as np
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 import tf2_ros
 import tf2_geometry_msgs
+from geometry_msgs.msg import PoseStamped
 
 from pupil_apriltags import Detector
+
+from puzzlbeot_interfaces.msg import AprilTagDetection, AprilTagDetectionArray
 
 
 class AprilTagDetector(Node):
@@ -20,13 +22,12 @@ class AprilTagDetector(Node):
 
         self.bridge = CvBridge()
         self.camera_matrix = None
-        self.dist_coeffs = None
 
         self.declare_parameter('tag_size', 0.1)
         self.tag_size = self.get_parameter('tag_size').value
 
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+        self.tf_buffer = tf2_ros.Buffer(cache_time=rclpy.duration.Duration(seconds=10.0)) #giving 10 sec to tf buffer to get history
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self) 
 
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -43,13 +44,13 @@ class AprilTagDetector(Node):
             decode_sharpening=0.25,
         )
 
-        self.sub_image = self.create_subscription(
-            Image, 'camera/image_raw', self.image_cb, qos)
-        self.sub_info = self.create_subscription(
-            CameraInfo, 'camera/camera_info', self.info_cb, qos)
+        self.sub_image = self.create_subscription(Image, 'camera/image_raw', self.image_cb, qos)
 
-        self.pub_pose_cam = self.create_publisher(PoseStamped, 'apriltag/pose', 10)
-        self.pub_pose_base = self.create_publisher(PoseStamped, 'apriltag/pose_base_', 10)
+        self.sub_info = self.create_subscription(CameraInfo, 'camera/camera_info', self.info_cb, qos)
+
+        self.pub_camera = self.create_publisher(AprilTagDetectionArray, 'apriltag/camera_pose', 10)
+
+        self.pub_map = self.create_publisher(AprilTagDetectionArray, 'apriltag/map_pose', 10)
 
     def info_cb(self, msg: CameraInfo):
         if self.camera_matrix is not None:
@@ -60,7 +61,6 @@ class AprilTagDetector(Node):
             [k[3], k[4], k[5]],
             [k[6], k[7], k[8]],
         ], dtype=np.float64)
-        self.dist_coeffs = np.array(msg.d, dtype=np.float64)
         self.get_logger().info('Camera info recibida')
 
     def image_cb(self, msg: Image):
@@ -81,31 +81,62 @@ class AprilTagDetector(Node):
             tag_size=self.tag_size,
         )
 
+        cam_array = AprilTagDetectionArray()
+        cam_array.header = msg.header
+
+        map_array = AprilTagDetectionArray()
+        map_array.header.stamp = msg.header.stamp
+        map_array.header.frame_id = 'map'
+
         for det in detections:
             pose_cam = self._build_pose(det, msg.header)
-            self.pub_pose_cam.publish(pose_cam)
 
-            self._publish_in_base_footprint(pose_cam)
+            cam_det = AprilTagDetection()
+            cam_det.tag_id = int(det.tag_id)
+            cam_det.pose = pose_cam
+            cam_array.detections.append(cam_det)
 
-    def _publish_in_base_footprint(self, pose_cam: PoseStamped):
-        try:
-            pose_cam.header.stamp = rclpy.time.Time().to_msg()
-            pose_base = self.tf_buffer.transform(
-                pose_cam,
-                'base_link',
+            pose_map = self._transform_pose_at_time(pose_cam, 'map')
+            if pose_map is not None:
+                map_det = AprilTagDetection()
+                map_det.tag_id = int(det.tag_id)
+                map_det.pose = pose_map
+                map_array.detections.append(map_det)
+
+        self.pub_camera.publish(cam_array)
+
+        if map_array.detections:
+            self.pub_map.publish(map_array)
+
+    def _transform_pose_at_time(self, pose_cam: PoseStamped, target_frame: str):
+        source_frame = pose_cam.header.frame_id
+        source_time = rclpy.time.Time.from_msg(pose_cam.header.stamp)
+
+        try: #usiing look up transoform full looks for the transoform between source frame (map) and
+            #the exact time the image arrives. this considers robot motion since map frame is fixed
+
+            tf_stamped = self.tf_buffer.lookup_transform_full(
+                target_frame=target_frame,
+                target_time=rclpy.time.Time(),
+                source_frame=source_frame,
+                source_time=source_time,
+                fixed_frame='map',
                 timeout=rclpy.duration.Duration(seconds=0.1),
-            )
-            self.pub_pose_base.publish(pose_base)
-            self.get_logger().info(
-                f'base_link | '
-                f'x={pose_base.pose.position.x:.3f} '
-                f'y={pose_base.pose.position.y:.3f} '
-                f'z={pose_base.pose.position.z:.3f}'
             )
         except (tf2_ros.LookupException,
                 tf2_ros.ConnectivityException,
                 tf2_ros.ExtrapolationException) as e:
-            self.get_logger().warn(f'TF error: {e}')
+            self.get_logger().warn(f'TF {source_frame} -> {target_frame}: {e}')
+            return None
+
+
+        pose_out = tf2_geometry_msgs.do_transform_pose(pose_cam.pose, tf_stamped)
+
+        result = PoseStamped()
+        result.header.stamp = pose_cam.header.stamp
+        result.header.frame_id = target_frame
+        result.pose = pose_out
+        return result
 
     def _build_pose(self, det, header) -> PoseStamped:
         R = det.pose_R

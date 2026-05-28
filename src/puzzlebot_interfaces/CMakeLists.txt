@@ -19,6 +19,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/MoveForklift.action"
   "srv/PlanPath.srv"
   "srv/ForkliftHeight.srv"
+  "msg/AprilTagDetection.msg"
+  "msg/AprilTagDetectionArray.msg"
    DEPENDENCIES geometry_msgs nav_msgs
 )
 # uncomment the following section in order to fill in
