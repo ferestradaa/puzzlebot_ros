@@ -18,7 +18,7 @@ from puzzlebot_interfaces.msg import AprilTagDetection, AprilTagDetectionArray
 
 class AprilTagDetector(Node):
     def __init__(self):
-        super().__init__('apriltag_pose')
+        super().__init__('apriltag_detector')
 
         self.bridge = CvBridge()
         self.camera_matrix = None
