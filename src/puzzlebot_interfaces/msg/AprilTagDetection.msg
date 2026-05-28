@@ -1,4 +1,4 @@
 # AprilTagDetection.msg
 
-int32 apriltag_id
+int32 tag_id
 geometry_msgs/PoseStamped pose 
