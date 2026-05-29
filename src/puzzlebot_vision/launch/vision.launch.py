@@ -75,7 +75,7 @@ def generate_launch_description():
         use_sim_time_arg,
         sim_arg,
         SetParameter(name='use_sim_time', value=use_sim_time),
-        apriltag_node, 
+        #apriltag_node, 
         camera_noise, 
         camera_info,
         apriltag_detector,

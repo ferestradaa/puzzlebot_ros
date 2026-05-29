@@ -125,7 +125,7 @@ def generate_launch_description():
         desc_launch,
         control_launch, 
         vision_launch,
-        delayed_behavior
+        #delayed_behavior
 
     ])
 
