@@ -47,7 +47,7 @@ class ExtendedKalmanFilter{
             {}
 
         //predict method inputs the control input: (twist message)
-        void predict(double vL, double vR, double rvR, double rvL, double dt){ 
+        void predict(double vL, double vR, double rvL, double rvR, double dt){ 
 
             double theta_prev = mu_(2);
             double v = (vR + vL) / 2.0; //lineal vel of the robot
@@ -97,42 +97,56 @@ class ExtendedKalmanFilter{
             double xL = landmark_world(0);
             double yL = landmark_world(1);
             double delta_x = xL - mu_(0); //xL is x detection of landmark same as yL
-            double delta_y = yL - mu_(1); 
+            double delta_y = yL - mu_(1);
+            double d = z_detected.norm(); //distance detected to tag (norm for robot frame bc its originally in camera)
+
+
+            double r_var = sigma_base_sq + alpha *d *d; //noiise scales as distance distance is bigger
+            Eigen::Matrix2d R_adaptative = Eigen::Matrix2d::Identity() * r_var; //create matrix for noise
 
 
             Eigen::Vector2d h_mu;
             h_mu << std::cos(mu_(2)) * delta_x + std::sin(mu_(2)) * delta_y, // z_pred
                       - std::sin(mu_(2)) * delta_x + std::cos(mu_(2)) *delta_y; 
 
-            std::cout << "h_mu (prediccion): " << h_mu.transpose() << std::endl;
 
             Eigen::Vector2d y;
             y << z_detected(0) - h_mu(0), //inovation (xy landmark runtime detection - zpred)
                  z_detected(1) - h_mu(1); 
 
-            std::cout << "innovation y: " << y.transpose() << std::endl;
                         
             Eigen::Matrix<double, 2, 3> H;
             H << -std::cos(mu_(2)),     -std::sin(mu_(2)),  -delta_x * std::sin(mu_(2)) + delta_y * std::cos(mu_(2)), //jacobian
                   std::sin(mu_(2)),     -std::cos(mu_(2)),  -delta_x * std::cos(mu_(2)) - delta_y * std::sin(mu_(2)); //change betwwen state and suposed state (aruco fixed pos)
 
             
-            Eigen::Matrix2d S = H * P_ * H.transpose() + R_; //covariance of inovatation (combines covariance and sensor noise)
+            Eigen::Matrix2d S = H * P_ * H.transpose() + R_adaptative; //covariance of inovatation (combines covariance and adaaptative sensor noise)
 
+
+
+            // gating Mahalanobis using chi2 95% with 2 DoF = 5.9
+            double mahal = y.dot(S.inverse() * y);
+            if (mahal > 5.99) {
+                return;  // ddiscardting ouliers
+            }
+                        
             Eigen::Matrix<double, 3, 2> K = P_ * H.transpose() * S.inverse(); //kalman gain 
 
             mu_ += K * y; //update state
+
             mu_(2) = std::atan2(std::sin(mu_(2)), std::cos(mu_(2))); //normalize angle 
 
             //P_ = (Eigen::Matrix3d::Identity() - K * H) * P_; //update state covariance
 
             Eigen::Matrix3d I_KH = Eigen::Matrix3d::Identity() - K * H;
-            P_ = I_KH * P_ * I_KH.transpose() + K * R_ * K.transpose();
+            P_ = I_KH * P_ * I_KH.transpose() + K * R_adaptative * K.transpose();
  
         }
 
         Eigen::Vector3d getState()      const { return mu_; }
         Eigen::Matrix3d getCovariance() const { return P_;  }
+        double sigma_base_sq = 0.0025;  // 5cm std a 1m
+        double alpha = 0.01; 
 
 
     private:

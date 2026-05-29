@@ -143,6 +143,11 @@ class OdometryNode : public rclcpp::Node{
 
                     double yaw_detected = math_utils::getYaw(q);
 
+                    double dist = std::hypot(x_detected, y_detected);
+                    if (dist > 3.5){
+                        continue;                         
+                    }
+
                     fixed_positions.push_back(landmark); //once both lists have been validated, push them back
                     detected_positions.push_back(Eigen::Vector2d(x_detected, y_detected));
 
