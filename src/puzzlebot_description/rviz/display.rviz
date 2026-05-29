@@ -23,6 +23,7 @@ Panels:
 
 Visualization Manager:
   Class: ""
+
   Displays:
 
     - Class: rviz_default_plugins/TF
@@ -103,14 +104,6 @@ Visualization Manager:
 
     - Class: rviz_default_plugins/Odometry
       Enabled: true
-      Name: Sim Odom
-      Topic:
-        Value: /sim/odom
-        Reliability Policy: Reliable
-      Angle Tolerance: 0.10000000149011612ss
-
-    - Class: rviz_default_plugins/Odometry
-      Enabled: true
       Name: Odom
       Topic:
         Value: /odom
@@ -140,6 +133,30 @@ Visualization Manager:
         Reliability Policy: Reliable
 
       Use Timestamp: false
+
+  Tools:
+    - Class: rviz_default_plugins/Interact
+
+    - Class: rviz_default_plugins/MoveCamera
+
+    - Class: rviz_default_plugins/Select
+
+    - Class: rviz_default_plugins/FocusCamera
+
+    - Class: rviz_default_plugins/Measure
+
+    - Class: rviz_default_plugins/SetInitialPose
+      Topic:
+        Value: /initialpose
+
+    - Class: rviz_default_plugins/SetGoal
+      Topic:
+        Value: /goal_pose
+
+    - Class: rviz_default_plugins/PublishPoint
+      Single click: true
+      Topic:
+        Value: /clicked_point
 
   Enabled: true
 
