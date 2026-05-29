@@ -57,6 +57,12 @@ def generate_launch_description():
         executable='visual_servoing',
     )
 
+
+    fixed_april = Node(
+        package='puzzlebot_control', 
+        executable='fixed_aptiltags_node',
+    )
+
     
     return LaunchDescription([
             use_sim_time_arg,
@@ -67,7 +73,8 @@ def generate_launch_description():
             odom,
             #odom_raw,
             visual_servoing, 
-            drive_raw
+            drive_raw, 
+            fixed_april, 
         ])
 
 

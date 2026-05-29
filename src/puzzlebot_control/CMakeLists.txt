@@ -33,6 +33,8 @@ add_executable(pure_pursuit_node src/pure_pursuit_node.cpp
 
 add_executable(visual_servoing src/visual_servoing.cpp)
 add_executable(drive_raw_server src/drive_raw_server.cpp)
+add_executable(fixed_apriltags_node src/fixed_apriltags_node.cpp)
+
 
 
 
@@ -99,6 +101,17 @@ puzzlebot_interfaces
 sensor_msgs
 )
 
+
+ament_target_dependencies(fixed_apriltags_node
+rclcpp
+std_msgs
+geometry_msgs
+puzzlebot_interfaces
+tf2
+tf2_ros
+ament_index_cpp
+)
+
 target_include_directories(odometry PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -117,6 +130,8 @@ if(EXISTS "/opt/ros/humble/include/vision_msgs/vision_msgs")
 endif()
 
 target_link_libraries(odometry yaml-cpp Eigen3::Eigen)
+target_link_libraries(fixed_apriltags_node yaml-cpp Eigen3::Eigen)
+
 
 
 install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node visual_servoing drive_raw_server
