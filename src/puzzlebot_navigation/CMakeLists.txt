@@ -10,11 +10,7 @@ if(POLICY CMP0104)
   cmake_policy(SET CMP0104 NEW)
 endif()
 
-# -------------------------------------------------------------------
-# C++ / CUDA standards
-# -------------------------------------------------------------------
-# CMake 3.16 is supported on Jetson Nano.
-# The C++ nodes use C++17 features  
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -22,12 +18,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-# -------------------------------------------------------------------
-# CUDA architecture selection
-# -------------------------------------------------------------------
-# Jetson Nano uses NVIDIA Maxwell GPU architecture, compute capability 5.3.
-# On laptop/desktop builds, additional architectures are enabled so the same
-# package can also compile for newer NVIDIA GPUs.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
   message(STATUS "Building for Jetson Nano / ARM64")
   set(CMAKE_CUDA_ARCHITECTURES 53)
@@ -63,6 +53,7 @@ find_package(message_filters REQUIRED)
 # TF2 is required by the planner to read the robot pose from transforms.
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 # Used to locate files installed inside this package, such as maps.
 find_package(ament_index_cpp REQUIRED)
@@ -86,53 +77,11 @@ else()
   set(CUDA_LINK_LIBS CUDA::cudart)
 endif()
 
-# YAML parser used to read ROS occupancy grid map YAML files.
 find_package(yaml-cpp REQUIRED)
 
-# Custom service package that provides robot_interfaces/srv/PlanPath.
 find_package(puzzlebot_interfaces REQUIRED)
 
-# -------------------------------------------------------------------
-# CUDA kernels library
-# -------------------------------------------------------------------
-# This is not a ROS node. It is an internal static library that contains
-# CUDA kernels used by the MCL SLAM node.
 
-
-
-
-
-
-
-# -------------------------------------------------------------------
-# MCL SLAM node
-# -------------------------------------------------------------------
-# Executable:
-#   ros2 run puzzlebot_navigation slam_node
-#
-# Source file:
-#   src/slam_node.cpp
-#
-# This node corresponds to the Jetson/CUDA version of the MCL SLAM
-# implementation. It links against the CUDA kernels library.
-
-
-
-
-
-
-
-# # -------------------------------------------------------------------
-# # RRT path planner node
-# # -------------------------------------------------------------------
-# # Executable:
-# #   ros2 run puzzlebot_navigation path_planner_node
-# #
-# # Source file:
-# #   src/path_planner_node.cpp
-# #
-# # This node provides the RRT path planner as a ROS 2 service and can
-# # also publish the computed path and debug visualization markers.
 
 add_executable(path_planner_node
   src/path_planner_node.cpp
@@ -141,9 +90,15 @@ add_executable(path_planner_node
 
 add_executable(dynamic_map_node
   src/dynamic_map_node.cpp
+  src/occupancy_grid_map.cpp
+  src/scan_processor.cpp
 )
 
 target_include_directories(path_planner_node PRIVATE
+  include
+)
+
+target_include_directories(dynamic_map_node PRIVATE
   include
 )
 
@@ -160,6 +115,7 @@ ament_target_dependencies(
   visualization_msgs
   tf2
   tf2_ros
+  tf2_geometry_msgs
   ament_index_cpp
   OpenCV
   puzzlebot_interfaces
@@ -181,47 +137,22 @@ ament_target_dependencies(
   nav_msgs
   ament_index_cpp
   OpenCV
-
-
 )
 
-# # -------------------------------------------------------------------
-# # Dynamic map node
-# # -------------------------------------------------------------------
-# # Executable:
-# #   ros2 run puzzlebot_navigation dynamic_map_node
-# #
-# # Source file:
-# #   src/dynamic_map_node.cpp
-# #
-# # This node loads the static map manually from YAML/PGM, reads the corrected
-# # robot pose from TF, integrates LaserScan data into a dynamic obstacle layer,
-# # and publishes the combined dynamic map.
 
-# add_executable(dynamic_map_node
-#   src/dynamic_map_node.cpp
-# )
+ament_target_dependencies(
+  dynamic_map_node
+  rclcpp
+  nav_msgs
+  sensor_msgs
+  ament_index_cpp
+  OpenCV
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
 
-# target_include_directories(dynamic_map_node PRIVATE
-#   include
-# )
 
-# target_link_libraries(dynamic_map_node
-#   yaml-cpp
-#   ${OpenCV_LIBS}
-# )
-
-# ament_target_dependencies(
-#   dynamic_map_node
-#   rclcpp
-#   sensor_msgs
-#   nav_msgs
-#   geometry_msgs
-#   tf2
-#   tf2_ros
-#   ament_index_cpp
-#   OpenCV
-# )
 
 
 # With older GCC versions, std::filesystem may require linking stdc++fs.
@@ -230,11 +161,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_L
   target_link_libraries(dynamic_map_node stdc++fs)
 endif()
 
-# -------------------------------------------------------------------
-# Installation
-# -------------------------------------------------------------------
-# Install the executable nodes and the CUDA static library into the package
-# library directory so they can be launched with ros2 run.
 
 install(TARGETS
   path_planner_node
