@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+  cmake_minimum_required(VERSION 3.16)
 
 # Package name and enabled languages.
 # CUDA is enabled because the MCL SLAM node uses GPU kernels.
@@ -14,7 +14,7 @@ endif()
 # C++ / CUDA standards
 # -------------------------------------------------------------------
 # CMake 3.16 is supported on Jetson Nano.
-# The C++ nodes use C++17 features
+# The C++ nodes use C++17 features  
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -98,24 +98,11 @@ find_package(puzzlebot_interfaces REQUIRED)
 # This is not a ROS node. It is an internal static library that contains
 # CUDA kernels used by the MCL SLAM node.
 
-add_library(cuda_kernels STATIC
-  src/cuda_kernels.cu
-)
 
-set_target_properties(cuda_kernels PROPERTIES
-  CUDA_STANDARD 14
-  CUDA_STANDARD_REQUIRED ON
-  POSITION_INDEPENDENT_CODE ON
-)
 
-target_include_directories(cuda_kernels PRIVATE
-  include
-  ${CUDA_INCLUDE_PATHS}
-)
 
-target_link_libraries(cuda_kernels
-  ${CUDA_LINK_LIBS}
-)
+
+
 
 # -------------------------------------------------------------------
 # MCL SLAM node
@@ -129,42 +116,11 @@ target_link_libraries(cuda_kernels
 # This node corresponds to the Jetson/CUDA version of the MCL SLAM
 # implementation. It links against the CUDA kernels library.
 
-add_executable(slam_node
-  src/slam_node.cpp
-  src/scan_processor.cpp
-  src/motion_model.cpp
-  src/occupancy_grid_map.cpp
-  src/map_manager.cpp
-  src/likelihood_field.cpp
-  src/particle_filter_cuda.cpp
-  src/slam_state_machine.cpp
-  src/graph_slam.cpp
-)
 
-target_include_directories(slam_node PRIVATE
-  include
-  ${CUDA_INCLUDE_PATHS}
-)
 
-target_link_libraries(slam_node
-  cuda_kernels
-  ${CUDA_LINK_LIBS}
-  ${OpenCV_LIBS}
-  Eigen3::Eigen
-)
 
-ament_target_dependencies(
-  slam_node
-  rclcpp
-  sensor_msgs
-  nav_msgs
-  geometry_msgs
-  message_filters
-  tf2
-  tf2_ros
-  OpenCV
-  visualization_msgs
-)
+
+
 
 # # -------------------------------------------------------------------
 # # RRT path planner node
@@ -180,6 +136,11 @@ ament_target_dependencies(
 
 add_executable(path_planner_node
   src/path_planner_node.cpp
+)
+
+
+add_executable(dynamic_map_node
+  src/dynamic_map_node.cpp
 )
 
 target_include_directories(path_planner_node PRIVATE
@@ -265,9 +226,8 @@ ament_target_dependencies(
 
 # With older GCC versions, std::filesystem may require linking stdc++fs.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
-  target_link_libraries(slam_node stdc++fs)
   target_link_libraries(path_planner_node stdc++fs)
-  # target_link_libraries(dynamic_map_node stdc++fs)
+  target_link_libraries(dynamic_map_node stdc++fs)
 endif()
 
 # -------------------------------------------------------------------
@@ -277,18 +237,12 @@ endif()
 # library directory so they can be launched with ros2 run.
 
 install(TARGETS
-  slam_node
   path_planner_node
-  # dynamic_map_node
-  cuda_kernels
+  dynamic_map_node
   map_server_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(PROGRAMS
-  scripts/map_pose_visualizer.py
-  DESTINATION lib/${PROJECT_NAME}
-)
 
 # Install public headers.
 install(DIRECTORY include/
