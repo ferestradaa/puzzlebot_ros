@@ -128,7 +128,7 @@ class OdometryNode : public rclcpp::Node{
                     auto tf = tf_buffer_.lookupTransform(
                         "base_footprint",
                         frame, //using camera frame that comes in raw detections
-                        tf2::TimePointZero,
+                        detection_time, 
                         tf2::durationFromSec(0.1)
                     );
 
