@@ -110,6 +110,7 @@ geometry_msgs
 puzzlebot_interfaces
 tf2
 tf2_ros
+tf2_geometry_msgs
 ament_index_cpp
 )
 
