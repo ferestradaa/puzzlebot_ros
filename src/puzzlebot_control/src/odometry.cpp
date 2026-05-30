@@ -97,6 +97,11 @@ class OdometryNode : public rclcpp::Node{
         this->get_parameter("landmark_map_path", map_path);
         loadLandmarkMap(map_path);
 
+        // localization timeout param + init the staleness clock.
+        this->declare_parameter("localization_timeout", 2.0);
+        this->get_parameter("localization_timeout", localization_timeout_);
+        last_correction_time_ = this->get_clock()->now();
+
         RCLCPP_INFO(this->get_logger(), "Reading encoder velocities");
         
     }
@@ -117,6 +122,10 @@ class OdometryNode : public rclcpp::Node{
             std::vector<Eigen::Vector3d> fixed_landmarks;
 
             rclcpp::Time detection_time = msg->header.stamp;
+
+            // measurement latency: detection refers to the pose at detection_time,
+            // but the update is applied to the current state.
+            double meas_latency = (this->get_clock()->now() - detection_time).seconds();
 
 
             for (const auto& marker :msg->detections){ //using every detection in frame
@@ -154,19 +163,59 @@ class OdometryNode : public rclcpp::Node{
                     // pack xy + yaw_rel together
                     detected_landmarks.push_back(Eigen::Vector3d(x_detected, y_detected, yaw_detected));
 
-                } catch (tf2::TransformException &ex) {
+                } catch (tf2::TransformException &ex) {   // was 'TransfsormException' (would not compile / silently miss)
+                    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                        "tf lookup failed for %s: %s", frame.c_str(), ex.what());
                     continue; }
             }
+                int accepted_count = 0;
+                int yaw_used_count = 0;
                 for (size_t i = 0; i < fixed_landmarks.size(); i++){
-                    kalman_->update(
+                    auto info = kalman_->update(
                         fixed_landmarks[i],              // x, y, theta of world landmark
                         detected_landmarks[i].head<2>(), // xy of runtime detection
-                        detected_landmarks[i](2)         // yaw_rel
+                        detected_landmarks[i](2),        // yaw_rel
+                        last_w_robot_                    // turn rate so yaw_var inflates while turning
                     );
+
+                    // CALIBRATION LOG: park the robot at a known pose facing a tag of known map yaw,
+                    // read the stable 'offset' value, then set ExtendedKalmanFilter::yaw_offset to it.
+                    // offset = wrap(yaw_rel_raw - yaw_rel_expected)
+                    double offset = std::atan2(
+                        std::sin(info.yaw_rel_raw - info.yaw_rel_expected),
+                        std::cos(info.yaw_rel_raw - info.yaw_rel_expected));
+                    if (!info.used_yaw) {
+                        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                            "yaw flip: meas_world=%.2f map=%.2f | raw=%.2f expected=%.2f OFFSET=%.2f",
+                            info.yaw_world_meas, info.yaw_world_map,
+                            info.yaw_rel_raw, info.yaw_rel_expected, offset);
+                    }
+
+                    if (info.relocalized) {
+                        RCLCPP_WARN(this->get_logger(),
+                            "RELOCALIZED from tag (hard pose reset after consecutive rejections)");
+                    } else if (!info.accepted) {
+                        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                            "detection rejected by Mahalanobis gate: d2=%.2f", info.mahalanobis);
+                    }
+
+                    if (info.accepted) {
+                        accepted_count++;
+                        if (info.used_yaw) yaw_used_count++;
+                    }
                 }
 
-                if (!fixed_landmarks.empty()){
+                // summary: want accepted ~ matched, and yaw_used ~ accepted once yaw_offset is right.
+                if (!fixed_landmarks.empty()) {
+                    RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                        "landmarks matched=%zu accepted=%d yaw_used=%d meas_latency=%.3fs",
+                        fixed_landmarks.size(), accepted_count, yaw_used_count, meas_latency);
+                }
+
+                // localized_ driven by accepted corrections (includes relocalization), not by matching alone.
+                if (accepted_count > 0){
                     localized_ = true; 
+                    last_correction_time_ = this->get_clock()->now();
                 }
                 
         }
@@ -188,6 +237,8 @@ class OdometryNode : public rclcpp::Node{
             double d_translation = v_robot * dt; //distance instead of velocity
             double d_rot = w_robot * dt; //angular distance instead of velocity
 
+            last_w_robot_ = w_robot;
+
 
             x_ += d_translation * std::cos(theta_ + d_rot / 2.0); // x pos of the robot
             y_ += d_translation * std::sin(theta_ + d_rot / 2.0);  // y pos of the robot
@@ -202,6 +253,18 @@ class OdometryNode : public rclcpp::Node{
 
             auto stamp = this->get_clock()->now();
             get_odom(stamp);
+
+            // staleness check: if we were localized but no valid correction arrived within
+            // the timeout, declare the robot lost so downstream stops trusting map->odom.
+            if (localized_) {
+                double since_corr = (stamp - last_correction_time_).seconds();
+                if (since_corr > localization_timeout_) {
+                    localized_ = false;
+                    RCLCPP_WARN(this->get_logger(),
+                        "localization lost: no valid landmark for %.1f s (running on odometry only)",
+                        since_corr);
+                }
+            }
 
             Eigen::Vector3d state = kalman_->getState();
             Eigen::Matrix3d cov   = kalman_->getCovariance();
@@ -327,7 +390,12 @@ class OdometryNode : public rclcpp::Node{
 
         const double r_, L_;
         double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_;
+        double last_w_robot_ = 0.0;            // used in get_odom (was never declared before)
         bool localized_ = false;  
+
+        // localization staleness tracking (set in apriltag_callback, checked in publish_odometry)
+        rclcpp::Time last_correction_time_;
+        double localization_timeout_ = 2.0;    // seconds without a valid landmark update before "lost"
         
 }; 
 
