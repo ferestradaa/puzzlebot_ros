@@ -22,7 +22,7 @@
 
 <!-- Distance from base link to the front edge of the chasis -->
   <xacro:property name="baselink_2_front"   value="0.09"/>
-  <xacro:property name="front_2_forklift"   value="0.03"/>
+  <xacro:property name="front_2_forklift"   value="0.05"/>
 
 
   <xacro:property name="caster_radius" value="0.0065"/>
@@ -45,7 +45,7 @@
 
 
   <xacro:property name="lidar_mass"   value="0.1"/>
-  <xacro:property name="lidar_x"      value="0.05"/>
+  <xacro:property name="lidar_x"      value="0.03"/>
   <xacro:property name="lidar_y"      value="0.0"/>
   <xacro:property name="lidar_z"      value="0.115"/>
 

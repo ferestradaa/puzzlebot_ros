@@ -50,14 +50,14 @@ private:
         for (const auto& [id, xytheta] : landmarks_)
         {
             geometry_msgs::msg::Pose pose;
-            pose.position.x = xytheta[0]-0.10;
+            pose.position.x = xytheta[0]-0.0;
             pose.position.y = xytheta[1]-0.20;
             pose.position.z = 0.0;
             tf2::Quaternion q;
             q.setRPY(0.0, 0.0, xytheta[2]);
 
             pose.orientation = tf2::toMsg(q);
-            msg.poses.push_back(pose);
+            msg.poses.push_back(pose);  
         }
 
         pose_array_pub_->publish(msg);
