@@ -111,8 +111,10 @@ class OdometryNode : public rclcpp::Node{
         }
 
         void apriltag_callback(const puzzlebot_interfaces::msg::AprilTagDetectionArray::SharedPtr msg){
-            std::vector<Eigen::Vector2d> detected_positions; //list for xyyaw detected landmarks
-            std::vector<Eigen::Vector2d> fixed_positions; //list for xyyaw known landmakrs in map
+            // x, y in robot frame + yaw_rel packed as Vector3d
+            std::vector<Eigen::Vector3d> detected_landmarks;
+            // x, y, theta from map
+            std::vector<Eigen::Vector3d> fixed_landmarks;
 
             rclcpp::Time detection_time = msg->header.stamp;
 
@@ -148,20 +150,22 @@ class OdometryNode : public rclcpp::Node{
                         continue;                         
                     }
 
-                    fixed_positions.push_back(landmark); //once both lists have been validated, push them back
-                    detected_positions.push_back(Eigen::Vector2d(x_detected, y_detected));
+                    fixed_landmarks.push_back(landmark); //once both lists have been validated, push them back
+                    // pack xy + yaw_rel together
+                    detected_landmarks.push_back(Eigen::Vector3d(x_detected, y_detected, yaw_detected));
 
                 } catch (tf2::TransformException &ex) {
                     continue; }
             }
-                for (size_t i = 0; i < fixed_positions.size(); i++){
+                for (size_t i = 0; i < fixed_landmarks.size(); i++){
                     kalman_->update(
-                        fixed_positions[i],    // xy pf world landmark 
-                        detected_positions[i]  // xy of runtime detection
+                        fixed_landmarks[i],              // x, y, theta of world landmark
+                        detected_landmarks[i].head<2>(), // xy of runtime detection
+                        detected_landmarks[i](2)         // yaw_rel
                     );
                 }
 
-                if (!fixed_positions.empty()){
+                if (!fixed_landmarks.empty()){
                     localized_ = true; 
                 }
                 
@@ -297,7 +301,8 @@ class OdometryNode : public rclcpp::Node{
             for (auto it = config["landmarks"].begin(); it != config["landmarks"].end(); ++it) {
                 int id = it->first.as<int>();
                 auto v = it->second.as<std::vector<double>>();
-                landmark_map_[id] = Eigen::Vector2d(v[0], v[1]);
+                // expects [x, y, theta] per landmark; theta is the known yaw of the tag in world frame
+                landmark_map_[id] = Eigen::Vector3d(v[0], v[1], v[2]);
             }
             RCLCPP_INFO(this->get_logger(), "Loaded %zu landmarks", landmark_map_.size());
         }   
@@ -311,7 +316,8 @@ class OdometryNode : public rclcpp::Node{
         rclcpp::Time last_time_; 
         rclcpp::TimerBase::SharedPtr timer_;
 
-        std::unordered_map<int, Eigen::Vector2d> landmark_map_; 
+        // stores x, y, theta (world yaw) per landmark id
+        std::unordered_map<int, Eigen::Vector3d> landmark_map_; 
 
         tf2_ros::Buffer tf_buffer_{this->get_clock()};
         std::shared_ptr<tf2_ros::TransformListener> tf_listener_;

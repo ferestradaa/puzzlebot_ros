@@ -1,31 +1,3 @@
-
-/*
-S sigma is covariance for EKF
-
-F is jacobian for linearize the robots model [x, y, theta]
-F = [1      0       -v*sin(theta + d_theta/2)]
-    [0      1       v*cos(theta + d_theta/2)]
-    [0      0       1                        ]
-
-W is jacobian for input noise for EACH wheel (used for computing Q (kinmatics model confidence))
-W = [[dt·R/2·cos(θ),   dt·R/2·cos(θ)],
-     [dt·R/2·sin(θ),   dt·R/2·sin(θ)],
-     [dt·R/L,          -dt·R/L       ]]
-
-Both F and W uses the same model, but the partial derivative changes 
-
-M is covariance of wheels noise
-M = [[sigma²·|ωR|,     0         ],
-     [    0   ,    sigma²·|ωL|  ]]
-
-sigma squared is computed empiricamente so just change it depending on you
-
-So Q = W @ K @ W.T
-
-Now, covariance can be computed as 
-S = F @ S @ F.T + Q
-             
-*/
 #pragma once
 #include <Eigen/Dense>
 #include <unordered_map>
@@ -80,73 +52,84 @@ class ExtendedKalmanFilter{
         }
 
 
-        void update(const Eigen::Vector2d& landmark_world,   // known pos of landmark
-                    const Eigen::Vector2d& z_detected){      // detected in robot frame
+        // wraps angle to [-pi, pi]
+        static inline double wrap(double a){ return std::atan2(std::sin(a), std::cos(a)); }
 
-            //the node recieves arcuo pose in camera frame
-            //decide to or not to use the orientation as input for filter, bc sould get a good cov that 
-            //consideres yaw orientation (it is noise and probablu instroduces more noise
-            //rather than improving the filter)
-
-            /*
-            std::cout << "mu antes: " << mu_.transpose() << std::endl;
-            std::cout << "landmark_world: " << landmark_world.transpose() << std::endl;
-            std::cout << "z_detected (base_link): " << z_detected.transpose() << std::endl;
-            */
-
+        // landmark_world: x, y, theta del tag en el mundo (del mapa)
+        // z_xy: x, y del tag en frame robot
+        // yaw_rel: yaw del tag relativo al robot (ruidoso)
+        void update(const Eigen::Vector3d& landmark_world,
+                    const Eigen::Vector2d& z_xy,
+                    double yaw_rel)
+        {
             double xL = landmark_world(0);
             double yL = landmark_world(1);
-            double delta_x = xL - mu_(0); //xL is x detection of landmark same as yL
-            double delta_y = yL - mu_(1);
-            double d = z_detected.norm(); //distance detected to tag (norm for robot frame bc its originally in camera)
-
-
-            double r_var = sigma_base_sq + alpha *d *d; //noiise scales as distance distance is bigger
-            Eigen::Matrix2d R_adaptative = Eigen::Matrix2d::Identity() * r_var; //create matrix for noise
-
-
-            Eigen::Vector2d h_mu;
-            h_mu << std::cos(mu_(2)) * delta_x + std::sin(mu_(2)) * delta_y, // z_pred
-                      - std::sin(mu_(2)) * delta_x + std::cos(mu_(2)) *delta_y; 
-
-
-            Eigen::Vector2d y;
-            y << z_detected(0) - h_mu(0), //inovation (xy landmark runtime detection - zpred)
-                 z_detected(1) - h_mu(1); 
-
-                        
-            Eigen::Matrix<double, 2, 3> H;
-            H << -std::cos(mu_(2)),     -std::sin(mu_(2)),  -delta_x * std::sin(mu_(2)) + delta_y * std::cos(mu_(2)), //jacobian
-                  std::sin(mu_(2)),     -std::cos(mu_(2)),  -delta_x * std::cos(mu_(2)) - delta_y * std::sin(mu_(2)); //change betwwen state and suposed state (aruco fixed pos)
-
-            
-            Eigen::Matrix2d S = H * P_ * H.transpose() + R_adaptative; //covariance of inovatation (combines covariance and adaaptative sensor noise)
-
-
-
-            // gating Mahalanobis using chi2 95% with 2 DoF = 5.9
-            double mahal = y.dot(S.inverse() * y);
-            if (mahal > 5.99) {
-                return;  // ddiscardting ouliers
+            double thetaL = landmark_world(2);
+            double dx = xL - mu_(0);
+            double dy = yL - mu_(1);
+            double d  = std::hypot(z_xy(0), z_xy(1));
+            double c = std::cos(mu_(2));
+            double s = std::sin(mu_(2));
+            // prediccion de la posicion del tag en frame robot
+            double hx =  c * dx + s * dy;
+            double hy = -s * dx + c * dy;
+            double r_xy = sigma_base_sq + alpha * d * d;
+            // chequeo de flip: el yaw medido implica una orientacion de tag en el mundo
+            // que debe coincidir con la conocida. si no, la deteccion esta flippeada
+            double yaw_world_meas = wrap(mu_(2) + yaw_rel);  // ajustar signo segun tu detector
+            double dot = std::cos(thetaL) * std::cos(yaw_world_meas)
+                       + std::sin(thetaL) * std::sin(yaw_world_meas);
+            bool use_yaw = (dot > 0.7);  // discrepancia < ~45 grados
+            if (use_yaw) {
+                // update 3D: posicion + yaw
+                Eigen::Vector3d h;
+                h << hx, hy, wrap(thetaL - mu_(2));  // mismo signo que el chequeo de arriba
+                Eigen::Vector3d z;
+                z << z_xy(0), z_xy(1), yaw_rel;
+                Eigen::Vector3d y;
+                y(0) = z(0) - h(0);
+                y(1) = z(1) - h(1);
+                y(2) = wrap(z(2) - h(2));
+                Eigen::Matrix3d H;
+                H << -c, -s, -dx*s + dy*c,
+                      s, -c, -dx*c - dy*s,
+                      0,  0, -1.0;  // revisar signo de esta fila junto con h(2)
+                Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
+                R(0,0) = r_xy;
+                R(1,1) = r_xy;
+                R(2,2) = sigma_yaw_sq;  // grande a proposito: 0.05 - 0.1 rad^2
+                Eigen::Matrix3d S = H * P_ * H.transpose() + R;
+                double mahal = y.dot(S.inverse() * y);
+                if (mahal > 7.81) return;  // chi2 95% con 3 DoF
+                Eigen::Matrix3d K = P_ * H.transpose() * S.inverse();
+                mu_ += K * y;
+                mu_(2) = wrap(mu_(2));
+                Eigen::Matrix3d I_KH = Eigen::Matrix3d::Identity() - K * H;
+                P_ = I_KH * P_ * I_KH.transpose() + K * R * K.transpose();
+            } else {
+                // update 2D: solo posicion (yaw no confiable este frame)
+                Eigen::Vector2d h(hx, hy);
+                Eigen::Vector2d y = z_xy - h;
+                Eigen::Matrix<double,2,3> H;
+                H << -c, -s, -dx*s + dy*c,
+                      s, -c, -dx*c - dy*s;
+                Eigen::Matrix2d R = Eigen::Matrix2d::Identity() * r_xy;
+                Eigen::Matrix2d S = H * P_ * H.transpose() + R;
+                double mahal = y.dot(S.inverse() * y);
+                if (mahal > 5.99) return;  // chi2 95% con 2 DoF
+                Eigen::Matrix<double,3,2> K = P_ * H.transpose() * S.inverse();
+                mu_ += K * y;
+                mu_(2) = wrap(mu_(2));
+                Eigen::Matrix3d I_KH = Eigen::Matrix3d::Identity() - K * H;
+                P_ = I_KH * P_ * I_KH.transpose() + K * R * K.transpose();
             }
-                        
-            Eigen::Matrix<double, 3, 2> K = P_ * H.transpose() * S.inverse(); //kalman gain 
-
-            mu_ += K * y; //update state
-
-            mu_(2) = std::atan2(std::sin(mu_(2)), std::cos(mu_(2))); //normalize angle 
-
-            //P_ = (Eigen::Matrix3d::Identity() - K * H) * P_; //update state covariance
-
-            Eigen::Matrix3d I_KH = Eigen::Matrix3d::Identity() - K * H;
-            P_ = I_KH * P_ * I_KH.transpose() + K * R_adaptative * K.transpose();
- 
         }
 
         Eigen::Vector3d getState()      const { return mu_; }
         Eigen::Matrix3d getCovariance() const { return P_;  }
         double sigma_base_sq = 0.0025;  // 5cm std a 1m
-        double alpha = 0.01; 
+        double alpha = 0.01;
+        double sigma_yaw_sq = 0.05;  // tunable: start high, tighten if yaw is reliable
 
 
     private:
@@ -161,4 +144,4 @@ class ExtendedKalmanFilter{
         double r_, L_; 
    
 
-    }; 
+    };

@@ -51,7 +51,7 @@ private:
         {
             geometry_msgs::msg::Pose pose;
             pose.position.x = xytheta[0];
-            pose.position.y = xytheta[1];
+            pose.position.y = xytheta[1]-0.20;
             pose.position.z = 0.0;
             tf2::Quaternion q;
             q.setRPY(0.0, 0.0, xytheta[2]);
