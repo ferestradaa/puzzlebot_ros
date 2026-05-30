@@ -22,162 +22,203 @@ Panels:
       - /Current View1
 
 Visualization Manager:
-  Class: ""
+        caster_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
 
-  Displays:
+        chassis_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
 
-    - Class: rviz_default_plugins/TF
-      Enabled: true
+        fork_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+
+        forks_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+
+        inner_mast_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+
+        left_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+
+        outer_mast_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+
+        right_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+
       Frame Timeout: 15
+      Frames:
+        All Enabled: true
+
+        base_footprint:
+          Value: true
+
+        base_link:
+          Value: true
+
+        camera_link:
+          Value: true
+
+        caster_wheel_link:
+          Value: true
+
+        chassis_link:
+          Value: true
+
+        fork_tip_link:
+          Value: true
+
+        forks_link:
+          Value: true
+
+        inner_mast_link:
+          Value: true
+
+        left_wheel_link:
+          Value: true
+
+        lidar_link:
+          Value: true
+
+        map:
+          Value: true
+
+        odom:
+          Value: true
+
+        outer_mast_link:
+          Value: true
+
+        right_wheel_link:
+          Value: true
+
       Marker Scale: 0.30000001192092896
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: false
-      Update Interval: 0
-
-      Frames:
-        All Enabled: true
-        base_footprint:
-          Value: true
-        base_link:
-          Value: true
-        camera_link:
-          Value: true
-        caster_wheel_link:
-          Value: true
-        chassis_link:
-          Value: true
-        fork_tip_link:
-          Value: true
-        forks_link:
-          Value: true
-        inner_mast_link:
-          Value: true
-        left_wheel_link:
-          Value: true
-        lidar_link:
-          Value: true
-        map:
-          Value: true
-        odom:
-          Value: true
-        outer_mast_link:
-          Value: true
-        right_wheel_link:
-          Value: true
 
       Tree:
         map:
-          odom:
-            base_footprint:
-              base_link:
-                chassis_link:
-                  caster_wheel_link: {}
-                  left_wheel_link: {}
-                  lidar_link: {}
-                  outer_mast_link:
-                    inner_mast_link:
-                      forks_link:
-                        camera_link:
-                          camera_color_optical_frame: {}
-                        fork_tip_link: {}
-                  right_wheel_link: {}
+          {}
+
+        odom:
+          base_footprint:
+            base_link:
+              chassis_link:
+                caster_wheel_link:
+                  {}
+
+                left_wheel_link:
+                  {}
+
+                lidar_link:
+                  {}
+
+                outer_mast_link:
+                  inner_mast_link:
+                    forks_link:
+                      camera_link:
+                        camera_color_optical_frame:
+                          {}
+
+                      fork_tip_link:
+                        {}
+
+                right_wheel_link:
+                  {}
+
+      Update Interval: 0
+      Value: true
 
     - Class: rviz_default_plugins/Image
-      Enabled: true
-      Name: Camera
+
       Topic:
-        Value: /camera/image_raw
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
+        Value: /camera/image_raw
+      Value: true
 
-    - Class: rviz_default_plugins/Odometry
-      Enabled: true
-      Name: Odom Raw
-      Topic:
-        Value: /odom_raw
-        Reliability Policy: Reliable
-      Angle Tolerance: 0.10000000149011612
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz_default_plugins/Odometry
 
-    - Class: rviz_default_plugins/Odometry
-      Enabled: true
-      Name: Odom
-      Topic:
-        Value: /odom
-        Reliability Policy: Reliable
-      Angle Tolerance: 0.10000000149011612
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz_default_plugins/Odometry
 
-    - Class: rviz_default_plugins/Map
-      Enabled: true
-      Name: Map
-      Alpha: 0.699999988079071
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz_default_plugins/Odometry
+
+    - Alpha: 0.699999988079071
+      Class: rviz_default_plugins/Map
       Color Scheme: map
       Draw Behind: false
+      Enabled: true
+      Name: Map
 
       Topic:
-        Value: /map
         Depth: 5
         Durability Policy: Transient Local
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
+        Value: /map
 
       Update Topic:
-        Value: /map_updates
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
+        Value: /map_updates
 
       Use Timestamp: false
-
-  Tools:
-    - Class: rviz_default_plugins/Interact
-
-    - Class: rviz_default_plugins/MoveCamera
-
-    - Class: rviz_default_plugins/Select
-
-    - Class: rviz_default_plugins/FocusCamera
-
-    - Class: rviz_default_plugins/Measure
-
-    - Class: rviz_default_plugins/SetInitialPose
-      Topic:
-        Value: /initialpose
-
-    - Class: rviz_default_plugins/SetGoal
-      Topic:
-        Value: /goal_pose
-
-    - Class: rviz_default_plugins/PublishPoint
-      Single click: true
-      Topic:
-        Value: /clicked_point
+      Value: true
 
   Enabled: true
 
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: map
 
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
       Distance: 4.211832046508789
-      Invert Z Axis: false
-      Name: Current View
-      Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7553979158401489
-      Target Frame: map
-      Yaw: 3.1872081756591797
 
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
+
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.7553979158401489
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz_default_plugins)
+      Yaw: 3.1872081756591797
+
+    Saved: ~
 
 Window Geometry:
   Camera:
@@ -186,22 +227,15 @@ Window Geometry:
   Displays:
     collapsed: false
 
-  Views:
-    collapsed: false
-
   Height: 2002
-  Width: 3408
-  X: 0
-  Y: 54
-
   Hide Left Dock: false
   Hide Right Dock: false
 
-  QMainWindow State: >
-    000000ff00000000fd0000000100000000000002d800000740fc0200000003
-    fb0000000c00430061006d00650072006101000000690000027c0000004500
-    fffffffb000000100044006900730070006c00610079007301000002f10000
-    01d70000017800fffffffb0000000a0056006900650077007301000004d400
-    0002d50000012300ffffff00000a6c00000740000000040000000400000008
-    00000008fc0000000100000002000000010000000a0054006f006f006c0073
-    0100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000100000000000002d800000740fc0200000003fb0000000c00430061006d00650072006101000000690000027c0000004500fffffffb000000100044006900730070006c00610079007301000002f1000001d70000017800fffffffb0000000a0056006900650077007301000004d4000002d50000012300ffffff00000a6c0000074000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+
+  Views:
+    collapsed: false
+
+  Width: 3408
+  X: 0
+  Y: 54

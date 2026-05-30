@@ -21,6 +21,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(puzzlebot_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 
 
@@ -134,7 +135,7 @@ target_link_libraries(fixed_apriltags_node yaml-cpp Eigen3::Eigen)
 
 
 
-install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node visual_servoing drive_raw_server
+install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node visual_servoing drive_raw_server fixed_apriltags_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

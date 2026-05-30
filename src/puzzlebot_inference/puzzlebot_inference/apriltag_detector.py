@@ -13,6 +13,9 @@ from geometry_msgs.msg import TransformStamped, PoseStamped
 from pupil_apriltags import Detector
 from puzzlebot_interfaces.msg import AprilTagDetection, AprilTagDetectionArray
 
+import os
+import sys
+
 
 class AprilTagDetector(Node):
     def __init__(self):
@@ -89,12 +92,23 @@ class AprilTagDetector(Node):
         cx = self.camera_matrix[0, 2]
         cy = self.camera_matrix[1, 2]
 
-        detections = self.detector.detect(
-            frame,
-            estimate_tag_pose=True,
-            camera_params=(fx, fy, cx, cy),
-            tag_size=self.tag_size,
-        )
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        old_stderr = os.dup(2)
+
+        try:
+            os.dup2(devnull, 2)
+
+            detections = self.detector.detect(
+                frame,
+                estimate_tag_pose=True,
+                camera_params=(fx, fy, cx, cy),
+                tag_size=self.tag_size,
+            )
+
+        finally:
+            os.dup2(old_stderr, 2)
+            os.close(old_stderr)
+            os.close(devnull)
 
         cam_array = AprilTagDetectionArray()
         cam_array.header = msg.header

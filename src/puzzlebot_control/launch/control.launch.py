@@ -60,7 +60,7 @@ def generate_launch_description():
 
     fixed_april = Node(
         package='puzzlebot_control', 
-        executable='fixed_aptiltags_node',
+        executable='fixed_apriltags_node',
     )
 
     
