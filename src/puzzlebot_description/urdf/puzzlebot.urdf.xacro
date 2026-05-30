@@ -170,7 +170,7 @@
 
 
   <!-- lidar -->
-  <link name="${prefix}lidar_link">
+  <link name="${prefix}laser">
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -189,8 +189,8 @@
   </link>
   <joint name="${prefix}chassis_to_lidar" type="fixed">
     <parent link="${prefix}chassis_link"/>
-    <child  link="${prefix}lidar_link"/>
-    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 0"/>
+    <child  link="${prefix}laser"/>
+    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 3.14"/>
   </joint>
 
 

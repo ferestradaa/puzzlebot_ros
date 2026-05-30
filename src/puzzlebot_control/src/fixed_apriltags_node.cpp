@@ -50,7 +50,7 @@ private:
         for (const auto& [id, xytheta] : landmarks_)
         {
             geometry_msgs::msg::Pose pose;
-            pose.position.x = xytheta[0];
+            pose.position.x = xytheta[0]-0.10;
             pose.position.y = xytheta[1]-0.20;
             pose.position.z = 0.0;
             tf2::Quaternion q;
