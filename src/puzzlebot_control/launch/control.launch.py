@@ -63,6 +63,12 @@ def generate_launch_description():
         executable='fixed_apriltags_node',
     )
 
+
+    pure_pursuit = Node(
+        package = 'puzzlebot_control', 
+        executable= 'pure_pursuit_node', 
+    )
+
     
     return LaunchDescription([
             use_sim_time_arg,
@@ -71,6 +77,7 @@ def generate_launch_description():
             js_pub,
             encoders_sim,
             odom,
+            pure_pursuit,
             #odom_raw,
             visual_servoing, 
             drive_raw, 

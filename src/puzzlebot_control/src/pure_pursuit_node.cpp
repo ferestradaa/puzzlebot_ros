@@ -24,13 +24,13 @@ class PurePursuitNode : public rclcpp::Node{
             Params p;
             p.ld_min       = 0.3;
             p.ld_k         = 0.5;
-            p.v_max        = 0.2;
+            p.v_max        = 0.15;
             p.k_curvature  = 2.0;
             p.k_crosstrack = 0.4;
             p.wheelbase    = 0.18; 
             p.goal_tol     = 0.12;
             p.stop_dist    = 0.5;
-            p.a_max        = 0.3;
+            p.a_max        = 0.2;
 
             controller_ = std::make_unique<PurePursuitController>(p);
 
@@ -40,7 +40,7 @@ class PurePursuitNode : public rclcpp::Node{
             //pendiente revisar como usar la orientacion del robot para llegar al ultimo waypoint
             auto qos_path = rclcpp::QoS(1).transient_local();
             path_sub_ = create_subscription<nav_msgs::msg::Path>(
-                "path", qos_path,
+                "path", 10,
                 std::bind(&PurePursuitNode::pathCallback, this, std::placeholders::_1));
 
             odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(

@@ -155,7 +155,7 @@ class OdometryNode : public rclcpp::Node{
                     double yaw_detected = math_utils::getYaw(q);
 
                     double dist = std::hypot(x_detected, y_detected);
-                    if (dist > 3.5){
+                    if (dist > 2.5){
                         continue;                         
                     }
 
@@ -163,7 +163,7 @@ class OdometryNode : public rclcpp::Node{
                     // pack xy + yaw_rel together
                     detected_landmarks.push_back(Eigen::Vector3d(x_detected, y_detected, yaw_detected));
 
-                } catch (tf2::TransformException &ex) {   // was 'TransfsormException' (would not compile / silently miss)
+                } catch (tf2::TransformException &ex) {  
                     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
                         "tf lookup failed for %s: %s", frame.c_str(), ex.what());
                     continue; }
@@ -205,7 +205,7 @@ class OdometryNode : public rclcpp::Node{
                     }
                 }
 
-                // summary: want accepted ~ matched, and yaw_used ~ accepted once yaw_offset is right.
+                // summary: want accepted - matched, and yaw_used - accepted once yaw_offset is right
                 if (!fixed_landmarks.empty()) {
                     RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
                         "landmarks matched=%zu accepted=%d yaw_used=%d meas_latency=%.3fs",
@@ -280,7 +280,7 @@ class OdometryNode : public rclcpp::Node{
 
             // theta oruienatation
             tf2::Quaternion q;
-            q.setRPY(0.0, 0.0, state(2));
+            q.setRPY(0.0, 0.0, state(2)+0.2);
             msg.pose.pose.orientation = tf2::toMsg(q);
 
             // cov of pose 
@@ -390,7 +390,7 @@ class OdometryNode : public rclcpp::Node{
 
         const double r_, L_;
         double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_;
-        double last_w_robot_ = 0.0;            // used in get_odom (was never declared before)
+        double last_w_robot_ = 0.0;           
         bool localized_ = false;  
 
         // localization staleness tracking (set in apriltag_callback, checked in publish_odometry)

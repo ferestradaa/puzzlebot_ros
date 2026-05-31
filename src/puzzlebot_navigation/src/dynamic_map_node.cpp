@@ -29,7 +29,6 @@ public:
 
     map_pub_ = create_publisher<nav_msgs::msg::OccupancyGrid>(map_topic_, 10);
 
-    // transient_local para recibir el ultimo mensaje aunque nos suscribamos tarde
     rclcpp::QoS static_map_qos(1);
     static_map_qos.reliable();
     static_map_qos.transient_local();
@@ -64,7 +63,7 @@ private:
   void declare_and_load_parameters()
   {
     declare_parameter<std::string>("global_frame",  "map");
-    declare_parameter<std::string>("robot_frame",   "base_link");
+    declare_parameter<std::string>("robot_frame",   "odom");
     declare_parameter<std::string>("static_map_topic", "/map");
     declare_parameter<std::string>("scan_topic",    "/scan");
     declare_parameter<std::string>("map_topic",     "/dynamic_map");

@@ -19,10 +19,22 @@ def generate_launch_description():
 
 
 
+    dynamic_map = Node(
+        package = 'puzzlebot_navigation', 
+        executable = 'dynamic_map_node', 
+    
+    )
+
+    path_planner = Node(
+        package= 'puzzlebot_navigation', 
+        executable= 'path_planner_node', 
+    )
 
     return LaunchDescription([
 
         map_pub, 
+        path_planner,
+       #dynamic_map, 
 
     ])
 

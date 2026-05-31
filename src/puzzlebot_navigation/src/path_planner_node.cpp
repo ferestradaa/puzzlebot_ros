@@ -45,8 +45,8 @@ public:
     rng_(std::random_device{}())
   {
     declare_parameter<std::string>("global_frame",      "map");
-    declare_parameter<std::string>("robot_frame",       "base_link");
-    declare_parameter<std::string>("dynamic_map_topic", "/dynamic_map");
+    declare_parameter<std::string>("robot_frame",       "odom");
+    declare_parameter<std::string>("dynamic_map_topic", "/map");
     declare_parameter<double>("robot_radius",     0.20);
     declare_parameter<bool>  ("smooth_path",      true);
     declare_parameter<double>("waypoint_spacing", 0.05);
@@ -85,6 +85,10 @@ public:
     debug_visualize_every_   = static_cast<int>(get_parameter("debug_visualize_every").as_int());
     debug_pub_unsmoothed_    = get_parameter("debug_publish_unsmoothed_path").as_bool();
 
+    rclcpp::QoS map_qos(1);
+    map_qos.reliable();
+    map_qos.transient_local();
+
     const int seed = static_cast<int>(get_parameter("random_seed").as_int());
     if (seed != 0) {
       rng_.seed(static_cast<std::mt19937::result_type>(seed));
@@ -101,7 +105,7 @@ public:
 
     dynamic_map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
       dynamic_map_topic_,
-      rclcpp::QoS(10),
+      map_qos,
       std::bind(&PathPlannerNode::dynamic_map_callback, this, std::placeholders::_1));
 
     goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
