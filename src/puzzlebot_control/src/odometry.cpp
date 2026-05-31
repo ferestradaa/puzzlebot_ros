@@ -116,108 +116,95 @@ class OdometryNode : public rclcpp::Node{
         }
 
         void apriltag_callback(const puzzlebot_interfaces::msg::AprilTagDetectionArray::SharedPtr msg){
-            // x, y in robot frame + yaw_rel packed as Vector3d
             std::vector<Eigen::Vector3d> detected_landmarks;
-            // x, y, theta from map
             std::vector<Eigen::Vector3d> fixed_landmarks;
+            std::vector<int> tag_ids;        // LOG: para saber que tag es cada uno
+            std::vector<double> tag_dists;   // LOG: distancia de cada tag
 
             rclcpp::Time detection_time = msg->header.stamp;
 
-            // measurement latency: detection refers to the pose at detection_time,
-            // but the update is applied to the current state.
+            // LOG: latencia de medicion en milisegundos
             double meas_latency = (this->get_clock()->now() - detection_time).seconds();
 
-
-            for (const auto& marker :msg->detections){ //using every detection in frame
-                auto iterator = landmark_map_.find(marker.tag_id); //find() looks for the key in the map and returns where it is
-                if (iterator == landmark_map_.end()){ // if not, iterator is end() == NULL
-                    continue; }
-                auto landmark = iterator->second; //landmark has the value if found
-                std::string frame = "tag_" + std::to_string(marker.tag_id); //creates frame with detected landamark for tf
+            for (const auto& marker : msg->detections){
+                auto iterator = landmark_map_.find(marker.tag_id);
+                if (iterator == landmark_map_.end()){ continue; }
+                auto landmark = iterator->second;
+                std::string frame = "tag_" + std::to_string(marker.tag_id);
 
                 try {
                     auto tf = tf_buffer_.lookupTransform(
-                        "base_footprint",
-                        frame, //using camera frame that comes in raw detections
-                        detection_time, 
-                        tf2::durationFromSec(0.1)
-                    );
+                        "base_footprint", frame, detection_time, tf2::durationFromSec(0.1));
 
                     double x_detected = tf.transform.translation.x;
                     double y_detected = tf.transform.translation.y;
                     math_utils::Quaternion q{
-                        tf.transform.rotation.x,
-                        tf.transform.rotation.y,
-                        tf.transform.rotation.z,
-                        tf.transform.rotation.w
-                    };
-
+                        tf.transform.rotation.x, tf.transform.rotation.y,
+                        tf.transform.rotation.z, tf.transform.rotation.w};
                     double yaw_detected = math_utils::getYaw(q);
 
                     double dist = std::hypot(x_detected, y_detected);
-                    if (dist > 2.5){
-                        continue;                         
-                    }
+                    if (dist > 6.0){ continue; }
 
-                    fixed_landmarks.push_back(landmark); //once both lists have been validated, push them back
-                    // pack xy + yaw_rel together
+                    fixed_landmarks.push_back(landmark);
                     detected_landmarks.push_back(Eigen::Vector3d(x_detected, y_detected, yaw_detected));
+                    tag_ids.push_back(marker.tag_id);   // LOG
+                    tag_dists.push_back(dist);          // LOG
 
-                } catch (tf2::TransformException &ex) {  
-                    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-                        "tf lookup failed for %s: %s", frame.c_str(), ex.what());
-                    continue; }
+                } catch (tf2::TransformException &ex) {
+                    // LOG: si falla el lookup de tf lo veremos aqui
+                    RCLCPP_WARN(this->get_logger(), "tf lookup FAIL %s: %s", frame.c_str(), ex.what());
+                    continue;
+                }
             }
-                int accepted_count = 0;
-                int yaw_used_count = 0;
-                for (size_t i = 0; i < fixed_landmarks.size(); i++){
-                    auto info = kalman_->update(
-                        fixed_landmarks[i],              // x, y, theta of world landmark
-                        detected_landmarks[i].head<2>(), // xy of runtime detection
-                        detected_landmarks[i](2),        // yaw_rel
-                        last_w_robot_                    // turn rate so yaw_var inflates while turning
-                    );
 
-                    // CALIBRATION LOG: park the robot at a known pose facing a tag of known map yaw,
-                    // read the stable 'offset' value, then set ExtendedKalmanFilter::yaw_offset to it.
-                    // offset = wrap(yaw_rel_raw - yaw_rel_expected)
-                    double offset = std::atan2(
-                        std::sin(info.yaw_rel_raw - info.yaw_rel_expected),
-                        std::cos(info.yaw_rel_raw - info.yaw_rel_expected));
-                    if (!info.used_yaw) {
-                        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-                            "yaw flip: meas_world=%.2f map=%.2f | raw=%.2f expected=%.2f OFFSET=%.2f",
-                            info.yaw_world_meas, info.yaw_world_map,
-                            info.yaw_rel_raw, info.yaw_rel_expected, offset);
-                    }
+            // LOG: cuantos tags llegaron en el mensaje vs cuantos matchearon el mapa y pasaron el filtro de distancia
+            RCLCPP_INFO(this->get_logger(),
+                "FRAME: detections_in_msg=%zu matched_in_map=%zu meas_latency=%.1fms",
+                msg->detections.size(), fixed_landmarks.size(), meas_latency * 1000.0);
 
-                    if (info.relocalized) {
-                        RCLCPP_WARN(this->get_logger(),
-                            "RELOCALIZED from tag (hard pose reset after consecutive rejections)");
-                    } else if (!info.accepted) {
-                        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-                            "detection rejected by Mahalanobis gate: d2=%.2f", info.mahalanobis);
-                    }
+            int accepted_count = 0;
+            int yaw_used_count = 0;
+            for (size_t i = 0; i < fixed_landmarks.size(); i++){
+                auto info = kalman_->update(
+                    fixed_landmarks[i],
+                    detected_landmarks[i].head<2>(),
+                    detected_landmarks[i](2),
+                    last_w_robot_);
 
-                    if (info.accepted) {
-                        accepted_count++;
-                        if (info.used_yaw) yaw_used_count++;
-                    }
+                // offset para calibrar yaw_offset
+                double offset = std::atan2(
+                    std::sin(info.yaw_rel_raw - info.yaw_rel_expected),
+                    std::cos(info.yaw_rel_raw - info.yaw_rel_expected));
+
+                // LOG: una linea por deteccion con todo lo importante
+                RCLCPP_INFO(this->get_logger(),
+                    "  tag=%d dist=%.2fm | accepted=%d used_yaw=%d reloc=%d | mahal=%.2f | "
+                    "yaw_meas=%.2f yaw_map=%.2f raw=%.2f expected=%.2f OFFSET=%.3f",
+                    tag_ids[i], tag_dists[i],
+                    info.accepted, info.used_yaw, info.relocalized,
+                    info.mahalanobis,
+                    info.yaw_world_meas, info.yaw_world_map,
+                    info.yaw_rel_raw, info.yaw_rel_expected, offset);
+
+                if (info.accepted) {
+                    accepted_count++;
+                    if (info.used_yaw) yaw_used_count++;
                 }
+            }
 
-                // summary: want accepted - matched, and yaw_used - accepted once yaw_offset is right
-                if (!fixed_landmarks.empty()) {
-                    RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-                        "landmarks matched=%zu accepted=%d yaw_used=%d meas_latency=%.3fs",
-                        fixed_landmarks.size(), accepted_count, yaw_used_count, meas_latency);
-                }
+            if (accepted_count > 0){
+                localized_ = true;
+                last_correction_time_ = this->get_clock()->now();
+            }
 
-                // localized_ driven by accepted corrections (includes relocalization), not by matching alone.
-                if (accepted_count > 0){
-                    localized_ = true; 
-                    last_correction_time_ = this->get_clock()->now();
-                }
-                
+            // LOG: estado del EKF despues de procesar el frame
+            Eigen::Vector3d s = kalman_->getState();
+            Eigen::Matrix3d P = kalman_->getCovariance();
+            RCLCPP_INFO(this->get_logger(),
+                "  -> accepted=%d yaw_used=%d | pose=(%.2f, %.2f, %.2f) | P_diag=(%.3f, %.3f, %.3f)",
+                accepted_count, yaw_used_count,
+                s(0), s(1), s(2), P(0,0), P(1,1), P(2,2));
         }
 
 

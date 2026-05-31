@@ -84,6 +84,29 @@ class ExtendedKalmanFilter{
             info.yaw_rel_raw      = yaw_rel;
             info.yaw_rel_expected = wrap(thetaL - mu_(2));  // what yaw_rel should be at this pose
 
+
+            if (!localized_) {
+                double th = wrap(thetaL - yaw_rel_c);
+                double cr = std::cos(th), sr = std::sin(th);
+                mu_(0) = landmark_world(0) - (cr * z_xy(0) - sr * z_xy(1));
+                mu_(1) = landmark_world(1) - (sr * z_xy(0) + cr * z_xy(1));
+                mu_(2) = th;
+
+                // covarianza moderada: confiamos en el tag pero dejamos margen
+                // para que las siguientes detecciones refinen
+                P_ = Eigen::Matrix3d::Zero();
+                P_(0,0) = 0.05;
+                P_(1,1) = 0.05;
+                P_(2,2) = 0.02;
+
+                localized_ = true;
+                info.accepted    = true;
+                info.relocalized = true;
+                info.used_yaw    = true;
+                info.yaw_world_meas = wrap(mu_(2) + yaw_rel_c);
+                return info;
+}
+
             double dx = xL - mu_(0);
             double dy = yL - mu_(1);
             double d  = std::hypot(z_xy(0), z_xy(1));
@@ -99,7 +122,8 @@ class ExtendedKalmanFilter{
             info.yaw_world_meas = yaw_world_meas;
             double dot = std::cos(thetaL) * std::cos(yaw_world_meas)
                        + std::sin(thetaL) * std::sin(yaw_world_meas);
-            bool use_yaw = (dot > 0.7);  // discrepancia < ~45 grados
+            bool use_yaw = just_initialized_ ? true : (dot > 0.7);
+            just_initialized_ = false; // consume the flag
             info.used_yaw = use_yaw;
             if (use_yaw) {
                 // update 3D: posicion + yaw
@@ -168,6 +192,19 @@ class ExtendedKalmanFilter{
         }
         Eigen::Vector3d getState()      const { return mu_; }
         Eigen::Matrix3d getCovariance() const { return P_;  }
+
+        void setState(const Eigen::Vector3d& s) {
+            mu_ = s;
+            // post-init covariance: confident but not zero
+            P_ = Eigen::Matrix3d::Zero();
+            P_(0,0) = 0.1;
+            P_(1,1) = 0.1;
+            P_(2,2) = 0.05;
+            just_initialized_ = true;
+        }
+
+
+        
         double sigma_base_sq = 0.0025;  // 5cm std a 1m
         double alpha = 0.01;
         double sigma_yaw_sq = 0.05;  // tunable: start high, tighten if yaw is reliable
@@ -175,6 +212,8 @@ class ExtendedKalmanFilter{
         double yaw_offset = M_PI / 2.0;  // CALIBRATE from logs; set to the stable offset you read
         int    reloc_after = 5;          // consecutive rejected detections before a hard reset
         double reloc_cov   = 1.0;        // P diagonal after relocalizing (1.0 -> std 1m / 1rad)
+
+
     private:
         // NEW: hard pose reset from a single tag when the filter is stuck rejecting.
         // A full relative-pose observation makes the global robot pose directly solvable:
@@ -216,5 +255,7 @@ class ExtendedKalmanFilter{
         double pos_density_   = 0.01;  // m^2/s,   piso de incertidumbre de posicion
         double theta_density_ = 0.05;  // rad^2/s, piso de incertidumbre de yaw 
         int consecutive_rejections_ = 0;  // NEW: drives the relocalization trigger
+        bool just_initialized_ = false;
+        bool localized_ = false;
    
     };

@@ -49,7 +49,7 @@ public:
     declare_parameter<std::string>("dynamic_map_topic", "/map");
     declare_parameter<double>("robot_radius",     0.20);
     declare_parameter<bool>  ("smooth_path",      true);
-    declare_parameter<double>("waypoint_spacing", 0.05);
+    declare_parameter<double>("waypoint_spacing", 0.25);
     declare_parameter<int>   ("max_iter",          5000);
     declare_parameter<int>   ("step_size",         2);
     declare_parameter<int>   ("connect_step_size", 2);
@@ -85,9 +85,7 @@ public:
     debug_visualize_every_   = static_cast<int>(get_parameter("debug_visualize_every").as_int());
     debug_pub_unsmoothed_    = get_parameter("debug_publish_unsmoothed_path").as_bool();
 
-    rclcpp::QoS map_qos(1);
-    map_qos.reliable();
-    map_qos.transient_local();
+    auto qos = rclcpp::QoS(1).transient_local().reliable();
 
     const int seed = static_cast<int>(get_parameter("random_seed").as_int());
     if (seed != 0) {
@@ -97,7 +95,7 @@ public:
     tf_buffer_   = std::make_shared<tf2_ros::Buffer>(get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-    path_pub_ = create_publisher<nav_msgs::msg::Path>("/path", 10);
+    path_pub_ = create_publisher<nav_msgs::msg::Path>("/path", qos);
     unsmoothed_path_pub_ =
       create_publisher<nav_msgs::msg::Path>("/path_planner_debug/unsmoothed_path", 10);
     tree_pub_ =
@@ -105,7 +103,7 @@ public:
 
     dynamic_map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
       dynamic_map_topic_,
-      map_qos,
+      qos,
       std::bind(&PathPlannerNode::dynamic_map_callback, this, std::placeholders::_1));
 
     goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(

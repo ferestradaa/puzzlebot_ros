@@ -27,7 +27,7 @@ public:
 
         load_camera_info(yaml_path);
 
-        auto qos = rclcpp::SensorDataQoS();
+        auto qos = rclcpp::SensorDataQoS().keep_last(1);
 
         pub_image_ = create_publisher<sensor_msgs::msg::Image>("/camera/image_raw", qos);
         pub_info_  = create_publisher<sensor_msgs::msg::CameraInfo>("/camera/camera_info", qos);

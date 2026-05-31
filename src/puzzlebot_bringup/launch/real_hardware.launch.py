@@ -112,6 +112,17 @@ def generate_launch_description():
         actions = [behavior]
     )
 
+    
+    path_planner = Node(
+        package= 'puzzlebot_navigation', 
+        executable= 'path_planner_node', 
+    )
+
+    pure_pursuit = Node(
+        package = 'puzzlebot_control', 
+        executable= 'pure_pursuit_node', 
+    )
+
 
     return LaunchDescription([
         use_sim_arg,
@@ -120,6 +131,8 @@ def generate_launch_description():
         micro_ros_agent,
         puzzlebot_cam,
         lidar,
+        #pure_pursuit,
+        #path_planner,
         navigation_launch,         
         move_forklift, 
         desc_launch,

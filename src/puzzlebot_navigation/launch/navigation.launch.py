@@ -30,10 +30,15 @@ def generate_launch_description():
         executable= 'path_planner_node', 
     )
 
+    pure_pursuit = Node(
+        package = 'puzzlebot_control', 
+        executable= 'pure_pursuit_node', 
+    )
+
     return LaunchDescription([
 
         map_pub, 
-        path_planner,
+        #path_planner,
        #dynamic_map, 
 
     ])

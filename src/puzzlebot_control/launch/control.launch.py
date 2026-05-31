@@ -77,7 +77,7 @@ def generate_launch_description():
             js_pub,
             encoders_sim,
             odom,
-            pure_pursuit,
+            #pure_pursuit,
             #odom_raw,
             visual_servoing, 
             drive_raw, 

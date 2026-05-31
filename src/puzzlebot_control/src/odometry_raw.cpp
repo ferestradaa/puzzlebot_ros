@@ -125,6 +125,7 @@ class OdometryNode : public rclcpp::Node{
         rclcpp::Time last_time_; 
         const double r_, L_;
         double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_;
+        bool localized_ = false;
         
 }; 
 
