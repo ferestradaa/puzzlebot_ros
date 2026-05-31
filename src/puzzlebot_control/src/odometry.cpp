@@ -280,7 +280,7 @@ class OdometryNode : public rclcpp::Node{
 
             // theta oruienatation
             tf2::Quaternion q;
-            q.setRPY(0.0, 0.0, state(2)+0.2);
+            q.setRPY(0.0, 0.0, state(2));
             msg.pose.pose.orientation = tf2::toMsg(q);
 
             // cov of pose 
