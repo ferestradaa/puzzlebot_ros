@@ -16,7 +16,7 @@ public:
     {
         std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_control");
         std::string map_path;
-        this->declare_parameter("landmark_map_path", pkg_path + "/config/real_fixed.yaml");
+        this->declare_parameter("landmark_map_path", pkg_path + "/config/real_fixed_2.yaml");
         this->get_parameter("landmark_map_path", map_path);
 
         loadLandmarkMap(map_path);
@@ -51,7 +51,7 @@ private:
         {
             geometry_msgs::msg::Pose pose;
             pose.position.x = xytheta[0]-0.0;
-            pose.position.y = xytheta[1]-0.20;
+            pose.position.y = xytheta[1]-0.0;
             pose.position.z = 0.0;
             tf2::Quaternion q;
             q.setRPY(0.0, 0.0, xytheta[2]);

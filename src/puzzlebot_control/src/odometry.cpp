@@ -56,7 +56,7 @@ class OdometryNode : public rclcpp::Node{
             wheel_vel_left_rads_(0.0), wheel_vel_right_rads_(0.0),
             last_time_(rclcpp::Time(0, 0, this->get_clock()->get_clock_type())){
 
-        auto qos = rclcpp::QoS(rclcpp::KeepLast(10)).best_effort();
+        auto qos = rclcpp::QoS(rclcpp::KeepLast(5)).best_effort();
 
         encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncL", qos,
             std::bind(&OdometryNode::encoderL_callback, this, std::placeholders::_1));
@@ -158,10 +158,9 @@ class OdometryNode : public rclcpp::Node{
                 }
             }
 
-            // LOG: cuantos tags llegaron en el mensaje vs cuantos matchearon el mapa y pasaron el filtro de distancia
-            RCLCPP_INFO(this->get_logger(),
+            /*RCLCPP_INFO(this->get_logger(),
                 "FRAME: detections_in_msg=%zu matched_in_map=%zu meas_latency=%.1fms",
-                msg->detections.size(), fixed_landmarks.size(), meas_latency * 1000.0);
+                msg->detections.size(), fixed_landmarks.size(), meas_latency * 1000.0); */
 
             int accepted_count = 0;
             int yaw_used_count = 0;
@@ -177,15 +176,14 @@ class OdometryNode : public rclcpp::Node{
                     std::sin(info.yaw_rel_raw - info.yaw_rel_expected),
                     std::cos(info.yaw_rel_raw - info.yaw_rel_expected));
 
-                // LOG: una linea por deteccion con todo lo importante
-                RCLCPP_INFO(this->get_logger(),
+                /*RCLCPP_INFO(this->get_logger(),
                     "  tag=%d dist=%.2fm | accepted=%d used_yaw=%d reloc=%d | mahal=%.2f | "
                     "yaw_meas=%.2f yaw_map=%.2f raw=%.2f expected=%.2f OFFSET=%.3f",
                     tag_ids[i], tag_dists[i],
                     info.accepted, info.used_yaw, info.relocalized,
                     info.mahalanobis,
                     info.yaw_world_meas, info.yaw_world_map,
-                    info.yaw_rel_raw, info.yaw_rel_expected, offset);
+                    info.yaw_rel_raw, info.yaw_rel_expected, offset);*/
 
                 if (info.accepted) {
                     accepted_count++;
@@ -201,10 +199,11 @@ class OdometryNode : public rclcpp::Node{
             // LOG: estado del EKF despues de procesar el frame
             Eigen::Vector3d s = kalman_->getState();
             Eigen::Matrix3d P = kalman_->getCovariance();
-            RCLCPP_INFO(this->get_logger(),
+           /* RCLCPP_INFO(this->get_logger(),
                 "  -> accepted=%d yaw_used=%d | pose=(%.2f, %.2f, %.2f) | P_diag=(%.3f, %.3f, %.3f)",
                 accepted_count, yaw_used_count,
                 s(0), s(1), s(2), P(0,0), P(1,1), P(2,2));
+                */
         }
 
 
@@ -354,7 +353,7 @@ class OdometryNode : public rclcpp::Node{
                 // expects [x, y, theta] per landmark; theta is the known yaw of the tag in world frame
                 landmark_map_[id] = Eigen::Vector3d(v[0], v[1], v[2]);
             }
-            RCLCPP_INFO(this->get_logger(), "Loaded %zu landmarks", landmark_map_.size());
+            //RCLCPP_INFO(this->get_logger(), "Loaded %zu landmarks", landmark_map_.size());
         }   
 
 
