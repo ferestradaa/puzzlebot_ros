@@ -76,6 +76,13 @@ def generate_launch_description():
 
     )
 
+    camera_info = Node(
+        package = 'puzzlebot_inference',
+        executable = 'apriltag_detector',
+
+    )
+
+
     desc_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(description, 'launch', 'display.launch.py')),
