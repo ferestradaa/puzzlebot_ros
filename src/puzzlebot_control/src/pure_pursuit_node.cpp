@@ -24,13 +24,14 @@ class PurePursuitNode : public rclcpp::Node{
             Params p;
             p.ld_min       = 0.3;
             p.ld_k         = 0.5;
-            p.v_max        = 0.2;
-            p.k_curvature  = 2.0;
-            p.k_crosstrack = 0.4;
+            p.v_max        = 0.1;
+            p.k_curvature  = 1.0;
+            p.k_crosstrack = 0.2;
             p.wheelbase    = 0.18;
-            p.goal_tol     = 0.12;
+            p.goal_tol     = 0.22;
             p.stop_dist    = 0.5;
             p.a_max        = 0.3;
+            
 
             controller_ = std::make_unique<PurePursuitController>(p);
 
@@ -38,7 +39,10 @@ class PurePursuitNode : public rclcpp::Node{
 
             //once the path has been recieved, creates subscription to path (pose stamped)
             //pendiente revisar como usar la orientacion del robot para llegar al ultimo waypoint
-            auto qos_path = rclcpp::QoS(1).transient_local();
+            //auto qos_path = rclcpp::QoS(1).transient_local();
+
+            auto qos_path = rclcpp::QoS(1).reliable();
+
             path_sub_ = create_subscription<nav_msgs::msg::Path>(
                 "path", qos_path,
                 std::bind(&PurePursuitNode::pathCallback, this, std::placeholders::_1));
@@ -46,6 +50,11 @@ class PurePursuitNode : public rclcpp::Node{
             odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
                 "odom", 10,
                 std::bind(&PurePursuitNode::odomCallback, this, std::placeholders::_1));
+
+
+            control_timer_ = create_wall_timer(
+                std::chrono::milliseconds(50), // 20 Hz
+                std::bind(&PurePursuitNode::controlLoop, this)); 
 
             RCLCPP_INFO(get_logger(), "Pure Pursuit Node initialized. Path ready?");
         }
@@ -77,47 +86,43 @@ class PurePursuitNode : public rclcpp::Node{
 
 
         void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
-            // if the path has not been recieved
-            if (!path_received_) {
-                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 3000,
-                    "Read odom but no path yet.");
-                return;
-            }
-
-            if (controller_->goalReached()) { //if flag, return 
-                cmd_pub_->publish(geometry_msgs::msg::Twist{});
-                RCLCPP_INFO_ONCE(get_logger(), "Goal Reached.");
-                return;
-            }
-
-            RobotState state; //if path recieved and goal not reached: give the controller the current state
-            state.x     = msg->pose.pose.position.x;
-            state.y     = msg->pose.pose.position.y;
-            state.theta = quaternionToYaw(msg->pose.pose.orientation);
-            state.v     = msg->twist.twist.linear.x;
-
-            const ControlOutput cmd = controller_->compute(state); //call compute with the current state
-
-            geometry_msgs::msg::Twist twist; //create twist message
-            twist.linear.x  = cmd.v;
-            twist.angular.z = cmd.omega;
-            cmd_pub_->publish(twist);
-
-            RCLCPP_DEBUG(get_logger(),
-                "v=%.3f  ω=%.3f  cte=%.3f  ld=%.3f",
-                cmd.v, cmd.omega,
-                controller_->getCrossTrackError(),
-                controller_->getCurrentLd());
+            // solo guarda estado, no publica nada
+            current_state_.x     = msg->pose.pose.position.x;
+            current_state_.y     = msg->pose.pose.position.y;
+            
+            current_state_.theta = quaternionToYaw(msg->pose.pose.orientation);
+            current_state_.v     = msg->twist.twist.linear.x;
+            odom_received_       = true;
         }
 
 
+        void controlLoop() {
+                if (!path_received_ || !odom_received_) return;
 
-        bool path_received_;
-        std::unique_ptr<PurePursuitController> controller_;
-        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr    cmd_pub_;
-        rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr   odom_sub_;
-        rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr       path_sub_;
-};
+                if (controller_->goalReached()) {
+                    cmd_pub_->publish(geometry_msgs::msg::Twist{});
+                    return;
+                }
+
+                const ControlOutput cmd = controller_->compute(current_state_);
+
+                geometry_msgs::msg::Twist twist;
+                twist.linear.x  = cmd.v;
+                twist.angular.z = std::clamp(cmd.omega, -OMEGA_MAX, OMEGA_MAX);
+                cmd_pub_->publish(twist);
+            }
+
+            bool path_received_;
+            bool odom_received_{false};
+            RobotState current_state_{};
+            const double OMEGA_MAX = 1.2; // 
+
+            std::unique_ptr<PurePursuitController> controller_;
+            rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr  cmd_pub_;
+            rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+            rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr     path_sub_;
+            rclcpp::TimerBase::SharedPtr                             control_timer_;
+        };
 
 
 int main(int argc, char* argv[])

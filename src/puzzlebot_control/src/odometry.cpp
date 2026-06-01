@@ -144,7 +144,7 @@ class OdometryNode : public rclcpp::Node{
                     double yaw_detected = math_utils::getYaw(q);
 
                     double dist = std::hypot(x_detected, y_detected);
-                    if (dist > 6.0){ continue; }
+                    if (dist > 7.0){ continue; }
 
                     fixed_landmarks.push_back(landmark);
                     detected_landmarks.push_back(Eigen::Vector3d(x_detected, y_detected, yaw_detected));
@@ -311,14 +311,12 @@ class OdometryNode : public rclcpp::Node{
 
 
             if (localized_){
-                //compute inverse tf between odom and base
                 double c = std::cos(theta_); 
                 double s = std::sin(theta_); 
                 double xi = -(x_ * c + y_ *s); 
                 double yi = -(-x_ * s + y_ *c); 
                 double ti = -theta_; 
 
-                // compose: map->base (+) base->odom
                 double cm = std::cos(state(2));
                 double sm = std::sin(state(2));
                 double mo_x = state(0) + xi * cm - yi * sm;
@@ -326,23 +324,22 @@ class OdometryNode : public rclcpp::Node{
                 double mo_t = std::atan2(std::sin(state(2) + ti),
                                         std::cos(state(2) + ti));
 
-
-
-                geometry_msgs::msg::TransformStamped map_tf;
-                map_tf.header.stamp    = stamp;
-                map_tf.header.frame_id = "map";
-                map_tf.child_frame_id  = "odom";
-                map_tf.transform.translation.x = mo_x;
-                map_tf.transform.translation.y = mo_y;
-                map_tf.transform.translation.z = 0.0;
                 tf2::Quaternion q_corr;
                 q_corr.setRPY(0.0, 0.0, mo_t);
-                map_tf.transform.rotation = tf2::toMsg(q_corr);
-                tf_broadcaster_->sendTransform(map_tf);
 
+                last_map_tf_.transform.translation.x = mo_x;
+                last_map_tf_.transform.translation.y = mo_y;
+                last_map_tf_.transform.translation.z = 0.0;
+                last_map_tf_.transform.rotation = tf2::toMsg(q_corr);
+                last_map_tf_.header.frame_id = "map";
+                last_map_tf_.child_frame_id  = "odom";
             }
-        }
 
+            // siempre publica, con stamp actual para que no expire
+            last_map_tf_.header.stamp = stamp;
+            tf_broadcaster_->sendTransform(last_map_tf_);
+
+        }
 
         void loadLandmarkMap(const std::string& path)
         {
@@ -382,6 +379,9 @@ class OdometryNode : public rclcpp::Node{
         // localization staleness tracking (set in apriltag_callback, checked in publish_odometry)
         rclcpp::Time last_correction_time_;
         double localization_timeout_ = 2.0;    // seconds without a valid landmark update before "lost"
+
+        geometry_msgs::msg::TransformStamped last_map_tf_;
+        
         
 }; 
 

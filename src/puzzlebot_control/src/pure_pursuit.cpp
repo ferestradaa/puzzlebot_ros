@@ -116,21 +116,25 @@ double PurePursuitController::computeLd(double v) const //computeLd
 // nunca regrese aunque el robot se desvee lateralmente.
 void PurePursuitController::updateClosestIdx(const RobotState& state)
 {
-    const int n = static_cast<int>(path_.size()); //get size of path
+    const int n = static_cast<int>(path_.size());
 
-    while (closest_idx_ + 1 < n) {
-        const double d_current = std::hypot( //compute distance between current state and next waypopint
-            path_[closest_idx_].x - state.x, //closest indx is path elements iteration
-            path_[closest_idx_].y - state.y);
+    while (closest_idx_ + 1 < n - 1) {
+        const Point2D& p1 = path_[closest_idx_];
+        const Point2D& p2 = path_[closest_idx_ + 1];
 
-        const double d_next = std::hypot( //distance between current state and next waypoint 
-            path_[closest_idx_ + 1].x - state.x,
-            path_[closest_idx_ + 1].y - state.y);
+        const double dx = p2.x - p1.x;
+        const double dy = p2.y - p1.y;
+        const double seg_len_sq = dx*dx + dy*dy;
 
-        if (d_next < d_current) { //if distance for next wp, the robot goes forward (avoid going backwards)
-            ++closest_idx_;   
+        if (seg_len_sq < 1e-9) { ++closest_idx_; continue; }
+
+        // proyeccion escalar del robot sobre el segmento, normalizada [0,1]
+        const double t = ((state.x - p1.x)*dx + (state.y - p1.y)*dy) / seg_len_sq;
+
+        if (t > 1.0) {
+            ++closest_idx_;  // el robot paso este segmento, avanza
         } else {
-            break;   // else, stop 
+            break;
         }
     }
 }
