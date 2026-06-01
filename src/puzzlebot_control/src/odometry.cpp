@@ -84,8 +84,8 @@ class OdometryNode : public rclcpp::Node{
         //Eigen::Matrix3d P0 = Eigen::Matrix3d::Identity() * 0.001;
 
         Eigen::Matrix3d P0 = Eigen::Matrix3d::Zero();
-        P0(0,0) = 100.0;
-        P0(1,1) = 100.0;
+        P0(0,0) = 10.0;
+        P0(1,1) = 10.0;
         P0(2,2) = 10.0;
 
         kalman_ = std::make_unique<ExtendedKalmanFilter>(r_, L_, Eigen::Vector3d::Zero(), P0);
@@ -104,7 +104,7 @@ class OdometryNode : public rclcpp::Node{
         std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_control");
         std::string map_path;
         //this->declare_parameter("landmark_map_path", pkg_path + "/config/fixed_apriltags.yaml");
-        this->declare_parameter("landmark_map_path", pkg_path + "/config/real_fixed.yaml");
+        this->declare_parameter("landmark_map_path", pkg_path + "/config/real_fixed_2.yaml");
         this->get_parameter("landmark_map_path", map_path);
         loadLandmarkMap(map_path);
 
@@ -112,6 +112,15 @@ class OdometryNode : public rclcpp::Node{
         this->declare_parameter("localization_timeout", 2.0);
         this->get_parameter("localization_timeout", localization_timeout_);
         last_correction_time_ = this->get_clock()->now();
+
+        // anti-jump params: slew limit on the published map->odom correction and a
+        // latency gate so stale detections never get applied to the current state.
+        this->declare_parameter("max_lin_step", 0.02);
+        this->declare_parameter("max_ang_step", 0.02);
+        this->declare_parameter("max_meas_latency", 0.3);
+        this->get_parameter("max_lin_step", max_lin_step_);
+        this->get_parameter("max_ang_step", max_ang_step_);
+        this->get_parameter("max_meas_latency", max_meas_latency_);
 
         RCLCPP_INFO(this->get_logger(), "Reading encoder velocities");
         
@@ -136,6 +145,15 @@ class OdometryNode : public rclcpp::Node{
 
             // LOG: latencia de medicion en milisegundos
             double meas_latency = (this->get_clock()->now() - detection_time).seconds();
+
+            // latency gate: applying an old detection to the current state injects a jump.
+            // negative latency (future stamp) is not rejected. note: with use_sim_time make
+            // sure stamps are consistent or this can drop every frame.
+            if (meas_latency > max_meas_latency_) {
+                RCLCPP_WARN(this->get_logger(), "apriltag frame dropped, latency %.0f ms",
+                            meas_latency * 1000.0);
+                return;
+            }
 
             for (const auto& marker : msg->detections){
                 auto iterator = landmark_map_.find(marker.tag_id);
@@ -269,21 +287,100 @@ class OdometryNode : public rclcpp::Node{
             Eigen::Vector3d state = kalman_->getState();
             Eigen::Matrix3d cov   = kalman_->getCovariance();
 
+            // raw odometry (odom frame), always continuous
+            nav_msgs::msg::Odometry raw_msg;
+            raw_msg.header.stamp    = stamp; 
+            raw_msg.header.frame_id = "odom";
+            raw_msg.child_frame_id  = "base_footprint";
+            raw_msg.pose.pose.position.x = x_;
+            raw_msg.pose.pose.position.y = y_;
+            tf2::Quaternion q_raw;
+            q_raw.setRPY(0.0, 0.0, theta_);
+            raw_msg.pose.pose.orientation = tf2::toMsg(q_raw);
+            odom_raw_pub_->publish(raw_msg);
+
+            // tf odom->base_footprint (raw, no EKF), always continuous
+            geometry_msgs::msg::TransformStamped tf_msg;
+            tf_msg.header.stamp    = stamp;
+            tf_msg.header.frame_id = "odom";
+            tf_msg.child_frame_id  = "base_footprint";
+            tf_msg.transform.translation.x = x_;
+            tf_msg.transform.translation.y = y_;
+            tf_msg.transform.translation.z = 0.0;
+            tf_msg.transform.rotation = tf2::toMsg(q_raw);
+            tf_broadcaster_->sendTransform(tf_msg);
+
+            // target map->odom correction: EKF pose composed with the inverse of raw odom.
+            // T_map_odom = T_map_base * inverse(T_odom_base)
+            if (localized_){
+                double c = std::cos(theta_); 
+                double s = std::sin(theta_); 
+                double xi = -(x_ * c + y_ *s); 
+                double yi = -(-x_ * s + y_ *c); 
+                double ti = -theta_; 
+
+                double cm = std::cos(state(2));
+                double sm = std::sin(state(2));
+                double tgt_x = state(0) + xi * cm - yi * sm;
+                double tgt_y = state(1) + xi * sm + yi * cm;
+                double tgt_t = ExtendedKalmanFilter::wrap(state(2) + ti);
+
+                if (!mo_initialized_) {
+                    // first fix: snap the correction in place, it is a legit global pose set
+                    cur_mo_x_ = tgt_x;
+                    cur_mo_y_ = tgt_y;
+                    cur_mo_t_ = tgt_t;
+                    mo_initialized_ = true;
+                } else {
+                    // slew limit: the correction approaches the target gradually, never teleports.
+                    // an internal EKF jump (reloc, big correction) now converges over several
+                    // cycles instead of hitting the controller in one frame.
+                    double dx = tgt_x - cur_mo_x_;
+                    double dy = tgt_y - cur_mo_y_;
+                    double dth = ExtendedKalmanFilter::wrap(tgt_t - cur_mo_t_);
+                    double dlin = std::hypot(dx, dy);
+                    if (dlin > max_lin_step_) { dx *= max_lin_step_ / dlin; dy *= max_lin_step_ / dlin; }
+                    if (std::abs(dth) > max_ang_step_) dth = std::copysign(max_ang_step_, dth);
+                    cur_mo_x_ += dx;
+                    cur_mo_y_ += dy;
+                    cur_mo_t_  = ExtendedKalmanFilter::wrap(cur_mo_t_ + dth);
+                }
+            }
+
+            // tf map->odom with the smoothed correction
+            tf2::Quaternion q_corr;
+            q_corr.setRPY(0.0, 0.0, cur_mo_t_);
+            last_map_tf_.header.stamp    = stamp;
+            last_map_tf_.header.frame_id = "map";
+            last_map_tf_.child_frame_id  = "odom";
+            last_map_tf_.transform.translation.x = cur_mo_x_;
+            last_map_tf_.transform.translation.y = cur_mo_y_;
+            last_map_tf_.transform.translation.z = 0.0;
+            last_map_tf_.transform.rotation = tf2::toMsg(q_corr);
+            tf_broadcaster_->sendTransform(last_map_tf_);
+
+            // /odom in map frame: smoothed correction composed with raw odom.
+            // this is what the controller consumes, continuous even when the EKF jumps,
+            // and consistent with the published map->odom->base_footprint tf chain.
+            double cmo = std::cos(cur_mo_t_);
+            double smo = std::sin(cur_mo_t_);
+            double pose_x = cur_mo_x_ + cmo * x_ - smo * y_;
+            double pose_y = cur_mo_y_ + smo * x_ + cmo * y_;
+            double pose_t = ExtendedKalmanFilter::wrap(cur_mo_t_ + theta_);
+
             nav_msgs::msg::Odometry msg;
             msg.header.stamp    = stamp; 
             msg.header.frame_id = "map";
             msg.child_frame_id  = "base_footprint";
-
-            msg.pose.pose.position.x = state(0);
-            msg.pose.pose.position.y = state(1);
+            msg.pose.pose.position.x = pose_x;
+            msg.pose.pose.position.y = pose_y;
             msg.pose.pose.position.z = 0.0;
 
-            // theta oruienatation
             tf2::Quaternion q;
-            q.setRPY(0.0, 0.0, state(2));
+            q.setRPY(0.0, 0.0, pose_t);
             msg.pose.pose.orientation = tf2::toMsg(q);
 
-            // cov of pose 
+            // cov of pose, from the EKF (unsmoothed, reflects true confidence)
             // using only correspondance for EKF
             msg.pose.covariance[0]  = cov(0,0); // x-x
             msg.pose.covariance[1]  = cov(0,1); // x-y
@@ -296,63 +393,6 @@ class OdometryNode : public rclcpp::Node{
             msg.pose.covariance[35] = cov(2,2); // yaw-yaw
 
             odom_pub_->publish(msg);
-
-
-
-            //publish raw odometry
-            nav_msgs::msg::Odometry raw_msg;
-            raw_msg.header.stamp    = stamp; 
-            raw_msg.header.frame_id = "odom";
-            raw_msg.child_frame_id  = "base_footprint";
-            raw_msg.pose.pose.position.x = x_;
-            raw_msg.pose.pose.position.y = y_;
-            tf2::Quaternion q_raw;
-            q_raw.setRPY(0.0, 0.0, theta_);
-            raw_msg.pose.pose.orientation = tf2::toMsg(q_raw);
-            odom_raw_pub_->publish(raw_msg);
-
-            //constant tf for basefootprint and odo
-            geometry_msgs::msg::TransformStamped tf_msg;
-            tf_msg.header.stamp    = stamp;
-            tf_msg.header.frame_id = "odom";
-            tf_msg.child_frame_id  = "base_footprint";
-            tf_msg.transform.translation.x = x_;       // raw, no EKF
-            tf_msg.transform.translation.y = y_;
-            tf_msg.transform.translation.z = 0.0;
-            tf_msg.transform.rotation = tf2::toMsg(q_raw);  //
-
-            tf_broadcaster_->sendTransform(tf_msg);
-
-
-            if (localized_){
-                double c = std::cos(theta_); 
-                double s = std::sin(theta_); 
-                double xi = -(x_ * c + y_ *s); 
-                double yi = -(-x_ * s + y_ *c); 
-                double ti = -theta_; 
-
-                double cm = std::cos(state(2));
-                double sm = std::sin(state(2));
-                double mo_x = state(0) + xi * cm - yi * sm;
-                double mo_y = state(1) + xi * sm + yi * cm;
-                double mo_t = std::atan2(std::sin(state(2) + ti),
-                                        std::cos(state(2) + ti));
-
-                tf2::Quaternion q_corr;
-                q_corr.setRPY(0.0, 0.0, mo_t);
-
-                last_map_tf_.transform.translation.x = mo_x;
-                last_map_tf_.transform.translation.y = mo_y;
-                last_map_tf_.transform.translation.z = 0.0;
-                last_map_tf_.transform.rotation = tf2::toMsg(q_corr);
-                last_map_tf_.header.frame_id = "map";
-                last_map_tf_.child_frame_id  = "odom";
-            }
-
-            // siempre publica, con stamp actual para que no expire
-            last_map_tf_.header.stamp = stamp;
-            tf_broadcaster_->sendTransform(last_map_tf_);
-
         }
 
         void loadLandmarkMap(const std::string& path)
@@ -395,6 +435,14 @@ class OdometryNode : public rclcpp::Node{
         double localization_timeout_ = 2.0;    // seconds without a valid landmark update before "lost"
 
         geometry_msgs::msg::TransformStamped last_map_tf_;
+
+        // smoothed map->odom correction (the one actually published). the EKF may jump
+        // internally; this state slews toward it so the controller never sees a teleport.
+        double cur_mo_x_ = 0.0, cur_mo_y_ = 0.0, cur_mo_t_ = 0.0;
+        bool   mo_initialized_ = false;
+        double max_lin_step_ = 0.02;     // m per cycle, cap on correction step
+        double max_ang_step_ = 0.02;     // rad per cycle, cap on correction step
+        double max_meas_latency_ = 0.3;  // s, drop detections older than this
         
         
 }; 

@@ -115,7 +115,19 @@ class ExtendedKalmanFilter{
             // prediccion de la posicion del tag en frame robot
             double hx =  c * dx + s * dy;
             double hy = -s * dx + c * dy;
-            double r_xy = sigma_base_sq + alpha * d * d;
+
+            // anisotropic tag noise: depth (radial) is much noisier than lateral, and
+            // both grow with range. build R_xy in robot frame by rotating a polar
+            // covariance (radial, lateral) by the bearing to the tag. this stops the
+            // filter from snapping along the depth axis on noisy single-tag depth.
+            double brg = std::atan2(z_xy(1), z_xy(0));      // bearing to the tag
+            double s_rad = sigma_base_sq + alpha     * d * d;  // radial (depth) variance
+            double s_lat = sigma_lat_sq  + alpha_lat * d * d;  // lateral variance, smaller
+            double cbr = std::cos(brg), sbr = std::sin(brg);
+            Eigen::Matrix2d Rot; Rot << cbr, -sbr, sbr, cbr;
+            Eigen::Matrix2d Dd;  Dd  << s_rad, 0.0, 0.0, s_lat;
+            Eigen::Matrix2d R_xy = Rot * Dd * Rot.transpose();
+
             // chequeo de flip: el yaw medido implica una orientacion de tag en el mundo
             // que debe coincidir con la conocida. si no, la deteccion esta flippeada
             double yaw_world_meas = wrap(mu_(2) + yaw_rel_c);  // NEW: uses corrected yaw
@@ -140,11 +152,9 @@ class ExtendedKalmanFilter{
                       s, -c, -dx*c - dy*s,
                       0,  0, -1.0;  // revisar signo de esta fila junto con h(2)
                 Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
-                R(0,0) = r_xy;
-                R(1,1) = r_xy;
-                R(2,2) = sigma_yaw_sq;  // grande a proposito: 0.05 - 0.1 rad^2
+                R.block<2,2>(0,0) = R_xy;          // anisotropic xy block
                 // yaw_var derived from sigma_yaw_sq, inflated while turning fast.
-                double yaw_var = sigma_yaw_sq;
+                double yaw_var = sigma_yaw_sq;     // grande a proposito: 0.05 - 0.1 rad^2
                 if (std::abs(w_robot) > 0.5) yaw_var *= 4.0;
                 R(2,2) = yaw_var; 
                 Eigen::Matrix3d S = H * P_ * H.transpose() + R;
@@ -170,7 +180,7 @@ class ExtendedKalmanFilter{
                 Eigen::Matrix<double,2,3> H;
                 H << -c, -s, -dx*s + dy*c,
                       s, -c, -dx*c - dy*s;
-                Eigen::Matrix2d R = Eigen::Matrix2d::Identity() * r_xy;
+                Eigen::Matrix2d R = R_xy;          // anisotropic xy block
                 Eigen::Matrix2d S = H * P_ * H.transpose() + R;
                 double mahal = y.dot(S.inverse() * y);
                 info.mahalanobis = mahal;
@@ -205,9 +215,13 @@ class ExtendedKalmanFilter{
 
 
         
-        double sigma_base_sq = 0.0025;  // 5cm std a 1m
-        double alpha = 0.01;
-        double sigma_yaw_sq = 0.05;  // tunable: start high, tighten if yaw is reliable
+        double sigma_base_sq = 0.0025;  // 5cm std a 1m (radial/depth base variance)
+        double alpha = 0.01;            // radial growth with distance squared
+        // NEW: lateral noise model. lateral is more accurate than depth, so smaller base
+        // and slower growth. tune sigma_lat_sq down if lateral is very reliable.
+        double sigma_lat_sq = 0.0009;   // ~3cm std lateral close range
+        double alpha_lat = 0.002;       // lateral growth, smaller than alpha
+        double sigma_yaw_sq = 0.25;  // tunable: start high, tighten if yaw is reliable
         // NEW: tunables for the yaw offset and the relocalization mode
         double yaw_offset = M_PI / 2.0;  // CALIBRATE from logs; set to the stable offset you read
         int    reloc_after = 5;          // consecutive rejected detections before a hard reset
@@ -220,6 +234,8 @@ class ExtendedKalmanFilter{
         //   p_tag_world = p_robot + R(theta) * p_tag_in_robot
         // so p_robot = p_tag - R(theta) * z_xy, with theta = thetaL - yaw_rel_c.
         // NOTE: this trusts yaw_offset, so calibrate yaw first or the reset heading is wrong.
+        // The internal jump here no longer reaches the controller: the node slew-limits
+        // the published map->odom correction, so a reset converges smoothly on the topic side.
         bool maybeRelocalize(const Eigen::Vector3d& landmark_world,
                              const Eigen::Vector2d& z_xy,
                              double yaw_rel_c, UpdateInfo& info)
@@ -252,8 +268,8 @@ class ExtendedKalmanFilter{
         Eigen::Matrix<double,3,2> W_; 
         double sigma_squared_ = 0.1;
         double r_, L_; 
-        double pos_density_   = 0.01;  // m^2/s,   piso de incertidumbre de posicion
-        double theta_density_ = 0.05;  // rad^2/s, piso de incertidumbre de yaw 
+        double pos_density_   = 0.005;  // m^2/s,   piso de incertidumbre de posicion
+        double theta_density_ = 0.005;  // rad^2/s, piso de incertidumbre de yaw 
         int consecutive_rejections_ = 0;  // NEW: drives the relocalization trigger
         bool just_initialized_ = false;
         bool localized_ = false;
