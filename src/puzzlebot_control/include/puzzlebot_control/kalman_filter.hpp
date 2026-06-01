@@ -27,7 +27,7 @@ class ExtendedKalmanFilter{
             R_(initial_R),
             r_(r),
             L_(L_)
-            {}
+            {}  
         //predict method inputs the control input: (twist message)
         void predict(double vL, double vR, double rvL, double rvR, double dt){ 
             double theta_prev = mu_(2);

@@ -90,6 +90,17 @@ class OdometryNode : public rclcpp::Node{
 
         kalman_ = std::make_unique<ExtendedKalmanFilter>(r_, L_, Eigen::Vector3d::Zero(), P0);
 
+
+        last_map_tf_.header.frame_id = "map";
+        last_map_tf_.child_frame_id  = "odom";  
+        last_map_tf_.transform.translation.x = 0.0;
+        last_map_tf_.transform.translation.y = 0.0;
+        last_map_tf_.transform.translation.z = 0.0;
+        last_map_tf_.transform.rotation.x    = 0.0;
+        last_map_tf_.transform.rotation.y    = 0.0;
+        last_map_tf_.transform.rotation.z    = 0.0;
+        last_map_tf_.transform.rotation.w    = 1.0;
+
         std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_control");
         std::string map_path;
         //this->declare_parameter("landmark_map_path", pkg_path + "/config/fixed_apriltags.yaml");
@@ -134,7 +145,7 @@ class OdometryNode : public rclcpp::Node{
 
                 try {
                     auto tf = tf_buffer_.lookupTransform(
-                        "base_footprint", frame, detection_time, tf2::durationFromSec(0.1));
+                        "base_footprint", frame, tf2::TimePointZero);
 
                     double x_detected = tf.transform.translation.x;
                     double y_detected = tf.transform.translation.y;
@@ -152,7 +163,6 @@ class OdometryNode : public rclcpp::Node{
                     tag_dists.push_back(dist);          // LOG
 
                 } catch (tf2::TransformException &ex) {
-                    // LOG: si falla el lookup de tf lo veremos aqui
                     RCLCPP_WARN(this->get_logger(), "tf lookup FAIL %s: %s", frame.c_str(), ex.what());
                     continue;
                 }
@@ -175,8 +185,8 @@ class OdometryNode : public rclcpp::Node{
                 double offset = std::atan2(
                     std::sin(info.yaw_rel_raw - info.yaw_rel_expected),
                     std::cos(info.yaw_rel_raw - info.yaw_rel_expected));
-
-                /*RCLCPP_INFO(this->get_logger(),
+                /*
+                RCLCPP_INFO(this->get_logger(),
                     "  tag=%d dist=%.2fm | accepted=%d used_yaw=%d reloc=%d | mahal=%.2f | "
                     "yaw_meas=%.2f yaw_map=%.2f raw=%.2f expected=%.2f OFFSET=%.3f",
                     tag_ids[i], tag_dists[i],
@@ -210,9 +220,13 @@ class OdometryNode : public rclcpp::Node{
 
 
         void get_odom(const rclcpp::Time& now){
+            if (last_time_.nanoseconds() == 0) {
+                last_time_ = now;
+                return;
+            }
             double dt = (now - last_time_).seconds();
-            last_time_ = now; 
-            if (dt <= 0.0 || dt > 1.0) return; //avoid invalid dt 
+            last_time_ = now;
+            if (dt <= 0.0 || dt > 1.0) return;
 
             double vL = wheel_vel_left_rads_ * r_; //lineal velocity for each wheel
             double vR = wheel_vel_right_rads_ * r_; 
