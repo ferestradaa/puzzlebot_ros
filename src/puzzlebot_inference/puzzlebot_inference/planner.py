@@ -30,7 +30,7 @@ class SmoothPlanner(Node):
 
         self.map_sub  = self.create_subscription(OccupancyGrid, map_topic, self._on_map, map_qos)
         self.goal_sub = self.create_subscription(PoseStamped, '/goal_pose', self._on_goal, 10)
-        self.path_pub = self.create_publisher(Path, 'smooth_path', 10)
+        self.path_pub = self.create_publisher(Path, 'path', 10)
 
     # ---------------------------------------------------------------------------
     # mapa

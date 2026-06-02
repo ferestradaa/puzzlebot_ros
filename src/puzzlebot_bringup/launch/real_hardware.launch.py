@@ -132,7 +132,7 @@ def generate_launch_description():
         puzzlebot_cam,
         lidar,
         #pure_pursuit,
-        #path_planner,
+        path_planner,
         navigation_launch,         
         move_forklift, 
         desc_launch,

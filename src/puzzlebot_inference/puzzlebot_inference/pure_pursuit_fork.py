@@ -20,7 +20,7 @@ def clamp(v, lo, hi):
 class PurePursuit(Node):
     def __init__(self):
         super().__init__('pure_pursuit')
-        self.declare_parameter('v_max', 0.08)
+        self.declare_parameter('v_max', 0.1)
         self.declare_parameter('w_max', 0.06)
         self.declare_parameter('a_lin', 0.10)
         self.declare_parameter('a_ang', 1.20)
@@ -66,7 +66,7 @@ class PurePursuit(Node):
         self.prev_w    = 0.0
 
         self.create_subscription(Path, '/path', self.path_cb, 10)
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel_desired', 10)
         self.create_timer(self.dt, self.control_loop)
         self.get_logger().info('pure pursuit ready, controlling fork_tip_link')
 
