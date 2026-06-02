@@ -23,7 +23,7 @@ class AprilTagDetector(Node):
         self.bridge = CvBridge()
         self.camera_matrix = None
 
-        self.declare_parameter('tag_size', 0.1)
+        self.declare_parameter('tag_size', 0.095)
         self.declare_parameter('base_frame', 'base_link')
         self.tag_size = self.get_parameter('tag_size').value
         self.base_frame = self.get_parameter('base_frame').value

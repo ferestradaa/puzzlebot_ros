@@ -123,6 +123,11 @@ def generate_launch_description():
         executable= 'pure_pursuit_node', 
     )
 
+    pure_pursuit_py = Node(
+        package = 'puzzlebot_inference', 
+        executable= 'pure_pursuit_fork', 
+    )
+
 
     return LaunchDescription([
         use_sim_arg,
@@ -131,7 +136,7 @@ def generate_launch_description():
         micro_ros_agent,
         puzzlebot_cam,
         lidar,
-        #pure_pursuit,
+        pure_pursuit_py,
         path_planner,
         navigation_launch,         
         move_forklift, 

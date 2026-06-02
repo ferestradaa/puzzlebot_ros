@@ -6,21 +6,26 @@ from geometry_msgs.msg import Twist
 import tf2_ros
 from tf2_ros import Buffer, TransformListener
 from rclpy.duration import Duration
-
 def clamp(v, lo, hi):
     return max(lo, min(hi, v))
-
 class ReactiveLayer(Node):
     def __init__(self):
         super().__init__('reactive_layer')
-        self.declare_parameter('tip_offset',      0.3)
-        self.declare_parameter('clearance',       0.08)
-        self.declare_parameter('ramp_start',      0.5)
+        self.declare_parameter('tip_offset',      0.2)
+        self.declare_parameter('clearance',       0.15)
+        self.declare_parameter('ramp_start',      0.8)
         self.declare_parameter('cone_half_angle', 0.524)
         self.declare_parameter('evasion_gain',    1.5)
-        self.declare_parameter('w_max',           0.18)
+        self.declare_parameter('w_max',           0.15)
         self.declare_parameter('base_frame',      'base_link')
+        self.declare_parameter('corridor_half_width', 0.25)  # medio ancho del robot + margen
 
+        self.a_lin_up   = 0.15   # acelerar gentil, protege el Jetson
+        self.a_lin_down = 0.6    # frenar agresivo, usa la zona de rampa
+        self.a_ang      = 1.0
+        self.corridor_half_width = self.get_parameter('corridor_half_width').value
+
+        
         self.tip_offset      = self.get_parameter('tip_offset').value
         self.clearance       = self.get_parameter('clearance').value
         self.ramp_start      = self.get_parameter('ramp_start').value
@@ -29,53 +34,43 @@ class ReactiveLayer(Node):
         self.w_max           = self.get_parameter('w_max').value
         self.base_frame      = self.get_parameter('base_frame').value
 
-        self.hard_stop = self.tip_offset + self.clearance
 
+        self.declare_parameter('corridor_min_x', 0.15)  # ignora puntos mas cerca que esto (ruido/self/lado)
+        self.corridor_min_x = self.get_parameter('corridor_min_x').value
+        # hard_stop = 0.35m, ramp desde 0.8m -> 65cm de margen
+        self.hard_stop = self.tip_offset + self.clearance
         self.tf_buffer   = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
-
-        self.latest_scan    = None
-        self.latest_desired = None
+        self.latest_scan       = None
+        self.latest_desired    = None
         self.last_desired_time = None
-        self.desired_timeout = Duration(seconds=0.5)
-
+        self.desired_timeout   = Duration(seconds=0.5)
         self.prev_v = 0.0
         self.prev_w = 0.0
-        self.a_lin  = 0.15
-        self.a_ang  = 1.0
-
-        # diagnostics
-        self._loop_count      = 0
-        self._last_scan_time  = None
-        self._last_cmd_v      = 0.0
-        self._last_cmd_w      = 0.0
-
-        self.create_subscription(LaserScan, '/scan',           self.scan_cb,    10)
+        self.a_lin  = 0.05
+        self.a_ang  = 0.8
+        self._loop_count     = 0
+        self._last_scan_time = None
+        self._last_cmd_v     = 0.0
+        self._last_cmd_w     = 0.0
+        self.create_subscription(LaserScan, '/scan',            self.scan_cb,    10)
         self.create_subscription(Twist,     '/cmd_vel_desired', self.desired_cb, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
-
         self.create_timer(0.033, self.control_loop)
-        self.get_logger().info(
-            f'reactive_layer init | hard_stop={self.hard_stop:.3f}m '
-            f'ramp_start={self.ramp_start:.3f}m cone={math.degrees(self.cone_half_angle):.1f}deg'
-        )
+
+
 
     def scan_cb(self, msg):
         now = self.get_clock().now()
         if self._last_scan_time is not None:
             dt = (now - self._last_scan_time).nanoseconds * 1e-9
             if dt > 0.15:
-                self.get_logger().warn(f'scan gap {dt:.3f}s (expected ~0.1s)')
+                self.get_logger().warn(f'scan gap {dt:.3f}s')
         self._last_scan_time = now
         self.latest_scan = msg
-
     def desired_cb(self, msg):
-        self.get_logger().debug(
-            f'desired_cb | v={msg.linear.x:.3f} w={msg.angular.z:.3f}'
-        )
-        self.latest_desired = msg
+        self.latest_desired    = msg
         self.last_desired_time = self.get_clock().now()
-
     def get_laser_to_base_tf(self, frame_id):
         try:
             tf = self.tf_buffer.lookup_transform(
@@ -90,25 +85,19 @@ class ReactiveLayer(Node):
                 tf.transform.rotation.w
             )
             return tx, ty, yaw
-        except tf2_ros.LookupException as e:
-            self.get_logger().warn(f'TF lookup failed ({frame_id}->{self.base_frame}): {e}', throttle_duration_sec=2.0)
+        except (tf2_ros.LookupException, tf2_ros.ExtrapolationException):
             return None
-        except tf2_ros.ExtrapolationException as e:
-            self.get_logger().warn(f'TF extrapolation failed: {e}', throttle_duration_sec=2.0)
-            return None
-
+        
     def analyze_cone(self, scan):
         tf = self.get_laser_to_base_tf(scan.header.frame_id)
         if tf is None:
-            self.get_logger().warn('analyze_cone: no TF, returning inf', throttle_duration_sec=2.0)
             return float('inf'), 0, 0
 
         tx, ty, yaw_offset = tf
-        min_dist    = float('inf')
-        left_count  = 0
-        right_count = 0
-        valid_pts   = 0
-        angle       = scan.angle_min
+        forward_dist = float('inf')   # distancia frontal solo dentro del corredor del robot
+        left_count   = 0
+        right_count  = 0
+        angle        = scan.angle_min
 
         for r in scan.ranges:
             angle += scan.angle_increment
@@ -119,120 +108,111 @@ class ReactiveLayer(Node):
             ly = r * math.sin(angle)
             bx = tx + math.cos(yaw_offset) * lx - math.sin(yaw_offset) * ly
             by = ty + math.sin(yaw_offset) * lx + math.cos(yaw_offset) * ly
-            bearing = math.atan2(by, bx)
+
+            if bx <= self.corridor_min_x:
+                continue  # demasiado cerca, probablemente al lado o auto-deteccion
+
+            # frenado: solo puntos dentro del ancho del robot bloquean el avance
+            # un punto de lado no frena, se esquiva con el giro
+            if abs(by) <= self.corridor_half_width and bx < forward_dist:
+                forward_dist = bx
+
+            # conteo lateral para decidir hacia donde esquivar, cono mas amplio
             dist    = math.hypot(bx, by)
+            bearing = math.atan2(by, bx)
+            if abs(bearing) <= self.cone_half_angle and dist < self.ramp_start:
+                if by >= 0.0:
+                    left_count += 1
+                else:
+                    right_count += 1
 
-            if abs(bearing) <= self.cone_half_angle:
-                valid_pts += 1
-                if dist < min_dist:
-                    min_dist = dist
-                if dist < self.ramp_start:
-                    if by >= 0.0:
-                        left_count += 1
-                    else:
-                        right_count += 1
+        return forward_dist, left_count, right_count
+    
 
-        self.get_logger().debug(
-            f'cone | valid_pts={valid_pts} min_dist={min_dist:.3f}m '
-            f'left={left_count} right={right_count}'
-        )
-        return min_dist, left_count, right_count
-
-    def evasion_w(self, min_dist, left_count, right_count):
+    def evasion_w(self, min_dist, left_count, right_count, desired_w):
         proximity = 1.0 - (min_dist - self.hard_stop) / (self.ramp_start - self.hard_stop)
         proximity = clamp(proximity, 0.0, 1.0)
         magnitude = self.evasion_gain * proximity
-
         if left_count == 0 and right_count == 0:
-            return 0.0
+            # no hay puntos laterales en la zona de peligro, pasa el giro deseado
+            return desired_w
         if left_count <= right_count:
-            w = clamp(magnitude, 0.0, self.w_max)
+            evasion = clamp(magnitude, 0.0, self.w_max)
         else:
-            w = clamp(-magnitude, -self.w_max, 0.0)
+            evasion = clamp(-magnitude, -self.w_max, 0.0)
+        # blend: a mayor proximidad, domina evasion; a menor, domina desired_w
+        # esto evita el flip de signo que causaba la oscilacion en arco
+        blend = clamp(proximity, 0.0, 1.0)
+        return blend * evasion + (1.0 - blend) * desired_w
+    
 
-        self.get_logger().debug(
-            f'evasion_w | prox={proximity:.2f} mag={magnitude:.3f} -> w={w:.3f}'
-        )
-        return w
-
-    def ramp(self, target, prev, accel):
-        step = accel * 0.033
-        return prev + clamp(target - prev, -step, step)
+    def ramp(self, target, prev, a_up, a_down):
+        delta = target - prev
+        # frenar (reducir magnitud o acercarse a cero) puede ser rapido
+        braking = (prev >= 0 and delta < 0) or (prev <= 0 and delta > 0)
+        step = (a_down if braking else a_up) * 0.033
+        return prev + clamp(delta, -step, step)
+    
 
     def control_loop(self):
         self._loop_count += 1
-        log_this = (self._loop_count % 30 == 0)  # log a summary every ~1s
-
+        log_this = (self._loop_count % 30 == 0)
         if self.latest_scan is None:
             if log_this:
-                self.get_logger().warn('control_loop: no scan received yet')
+                self.get_logger().warn('no scan received yet')
             return
-        if self.latest_desired is None:
-            if log_this:
-                self.get_logger().warn('control_loop: no /cmd_vel_desired received yet')
+        if self.latest_desired is None or self.last_desired_time is None:
             return
-        if self.last_desired_time is None:
-            return
-
         desired_age = (self.get_clock().now() - self.last_desired_time).nanoseconds * 1e-9
         if desired_age > self.desired_timeout.nanoseconds * 1e-9:
-            if log_this:
-                self.get_logger().warn(f'desired timeout ({desired_age:.2f}s) -> publishing zero')
             self.prev_v = 0.0
             self.prev_w = 0.0
             self.cmd_pub.publish(Twist())
             return
-
         min_dist, left_count, right_count = self.analyze_cone(self.latest_scan)
-
-        if min_dist <= self.hard_stop:
+        desired_v = self.latest_desired.linear.x
+        desired_w = self.latest_desired.angular.z
+        is_pivoting = abs(desired_v) < 0.05 and abs(desired_w) > 0.05 and min_dist > self.hard_stop
+        if is_pivoting:
+            # giro en lugar: no frenar por obstaculo frontal, rotar saca de la esquina
+            v_target = desired_v
+            w_target = desired_w
+        elif min_dist <= self.hard_stop:
             v_target = 0.0
             w_target = 0.0
-            self.get_logger().warn(
-                f'HARD STOP | dist={min_dist:.3f}m <= {self.hard_stop:.3f}m | '
-                f'prev_v={self.prev_v:.3f} -> 0 | left={left_count} right={right_count}'
-            )
-            # freeze desired so upstream controller resumes cleanly
+
             self.latest_desired.linear.x  = 0.0
             self.latest_desired.angular.z = 0.0
         elif min_dist < self.ramp_start:
             scale    = (min_dist - self.hard_stop) / (self.ramp_start - self.hard_stop)
             scale    = clamp(scale, 0.0, 1.0)
-            v_target = self.latest_desired.linear.x * scale
-            w_target = self.evasion_w(min_dist, left_count, right_count)
-            self.get_logger().info(
-                f'RAMP ZONE | dist={min_dist:.3f}m scale={scale:.2f} '
-                f'v_target={v_target:.3f} w_target={w_target:.3f}'
-            )
+            v_target = desired_v * scale
+            w_target = self.evasion_w(min_dist, left_count, right_count, desired_w)
         else:
-            v_target = self.latest_desired.linear.x
-            w_target = self.latest_desired.angular.z
-            if log_this:
-                self.get_logger().debug(
-                    f'FREE | dist={min_dist:.3f}m v={v_target:.3f} w={w_target:.3f}'
-                )
+            v_target = desired_v
+            w_target = desired_w
+        # al final de control_loop, antes de publicar
 
         cmd = Twist()
-        cmd.linear.x  = self.ramp(v_target, self.prev_v, self.a_lin)
-        cmd.angular.z = self.ramp(w_target, self.prev_w, self.a_ang)
-
-        # log large velocity jumps (potential overcurrent trigger)
-        dv = abs(cmd.linear.x - self._last_cmd_v)
-        dw = abs(cmd.angular.z - self._last_cmd_w)
-        if dv > 0.05 or dw > 0.15:
-            self.get_logger().warn(
-                f'VELOCITY JUMP | dv={dv:.3f} dw={dw:.3f} | '
-                f'cmd v={cmd.linear.x:.3f} w={cmd.angular.z:.3f} | '
-                f'prev v={self.prev_v:.3f} w={self.prev_w:.3f}'
-            )
-
+# en control_loop al publicar
+        cmd.linear.x  = self.ramp(v_target, self.prev_v, self.a_lin_up, self.a_lin_down)
+        cmd.angular.z = self.ramp(w_target, self.prev_w, self.a_ang, self.a_ang)
         self._last_cmd_v = cmd.linear.x
         self._last_cmd_w = cmd.angular.z
         self.prev_v      = cmd.linear.x
         self.prev_w      = cmd.angular.z
+
+
+
+        if log_this:
+            branch = ('PIVOT' if is_pivoting else
+                    'HARDSTOP' if min_dist <= self.hard_stop else
+                    'RAMP' if min_dist < self.ramp_start else 'FREE')
+            self.get_logger().info(
+                f'{branch} | fwd={min_dist:.3f} desv=({desired_v:.3f},{desired_w:.3f}) '
+                f'cmd=({cmd.linear.x:.3f},{cmd.angular.z:.3f}) L={left_count} R={right_count}'
+            )
         self.cmd_pub.publish(cmd)
-
-
 def main():
     rclpy.init()
     node = ReactiveLayer()
@@ -243,6 +223,5 @@ def main():
     finally:
         node.destroy_node()
         rclpy.shutdown()
-
 if __name__ == '__main__':
     main()

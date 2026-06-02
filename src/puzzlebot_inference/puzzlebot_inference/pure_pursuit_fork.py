@@ -19,9 +19,9 @@ def clamp(v, lo, hi):
 
 class PurePursuit(Node):
     def __init__(self):
-        super().__init__('pure_pursuit')
+        super().__init__('pure_pursuit_fork')
         self.declare_parameter('v_max', 0.1)
-        self.declare_parameter('w_max', 0.06)
+        self.declare_parameter('w_max', 0.13)
         self.declare_parameter('a_lin', 0.10)
         self.declare_parameter('a_ang', 1.20)
         self.declare_parameter('ld_min', 0.25)
@@ -30,7 +30,7 @@ class PurePursuit(Node):
         self.declare_parameter('goal_tol', 0.10)
         self.declare_parameter('pivot_angle', 1.2)
         self.declare_parameter('pivot_gain', 1.0)
-        self.declare_parameter('align_band', 0.05)
+        self.declare_parameter('align_band', 0.15)
         self.declare_parameter('final_yaw_tol', 0.05)
         self.declare_parameter('final_yaw_gain', 0.8)
         self.declare_parameter('map_frame', 'map')
@@ -66,7 +66,7 @@ class PurePursuit(Node):
         self.prev_w    = 0.0
 
         self.create_subscription(Path, '/path', self.path_cb, 10)
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel_desired', 10)
+        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.create_timer(self.dt, self.control_loop)
         self.get_logger().info('pure pursuit ready, controlling fork_tip_link')
 
@@ -183,10 +183,6 @@ class PurePursuit(Node):
         alpha = math.atan2(y_r, x_r)
         dist  = math.hypot(x_r, y_r)
 
-        self.get_logger().info(
-            'th=%.2f alpha=%.2f look=(%.2f,%.2f) dist=%.2f' % (th, alpha, lx, ly, dist),
-            throttle_duration_sec=0.5)
-
         if abs(alpha) < self.align_band:
             v_target = self.v_max
             w_target = 0.0
@@ -195,7 +191,7 @@ class PurePursuit(Node):
             w_target = clamp(self.pivot_gain * alpha, -self.w_max, self.w_max)
         else:
             curvature = 2.0 * math.sin(alpha) / max(dist, 1e-3)
-            v_target  = self.v_max * max(0.15, math.cos(alpha))
+            v_target = self.v_max * max(0.3, math.cos(alpha))
             w_target  = clamp(curvature * v_target, -self.w_max, self.w_max)
 
         self.publish_cmd(v_target, w_target)

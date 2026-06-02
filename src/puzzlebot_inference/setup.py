@@ -31,6 +31,7 @@ setup(
             'pallet_detection_gpu = puzzlebot_inference.pallet_detection_gpu:main',
             'pallet_detection_sim = puzzlebot_inference.pallet_detection_sim:main',
             'apriltag_detector = puzzlebot_inference.apriltag_detector:main',
+            'pure_pursuit_fork = puzzlebot_inference.pure_pursuit_fork:main'
             
         ],
     },
