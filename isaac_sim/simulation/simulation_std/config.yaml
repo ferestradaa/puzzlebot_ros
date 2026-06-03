@@ -1,5 +1,5 @@
 paths:
- urdf: "assets/puzzlebot/urdf/test6.urdf"
+ urdf: "assets/puzzlebot/urdf/test5.urdf"
  usd_output: "simulation/simulation_std/generated_usd/puzzlebot.usd" 
 
 robot:
