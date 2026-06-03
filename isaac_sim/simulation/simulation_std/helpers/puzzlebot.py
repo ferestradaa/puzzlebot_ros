@@ -228,7 +228,7 @@ class Puzzlebot():
         if self.lidar_sensor_path:
             self._rp_lidar = rep.create.render_product(self.lidar_sensor_path, [1, 1], name="Lidar")
             writer = rep.writers.get("RtxLidarROS2PublishLaserScan")
-            writer.initialize(topicName="scan", frameId="lidar_link")
+            writer.initialize(topicName="scan", frameId="laser")
             writer.attach([self._rp_lidar])
             print(f"[sim] Lidar writer attached: {self._rp_lidar.path}")
 

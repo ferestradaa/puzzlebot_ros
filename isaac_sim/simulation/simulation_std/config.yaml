@@ -12,8 +12,8 @@ robot:
 
 sensors:
   camera:
-    width: 320
-    height: 240
+    width: 640
+    height: 360
     focal_length: 30.4
     horizontal_aperture: 36.8
     vertical_aperture: 27.6
@@ -25,7 +25,7 @@ sensors:
   lidar:
     config: "RPLIDAR_S2E"
     topic: "scan"
-    frame_id: "lidar_link"
+    frame_id: "laser"
 
 ros2:
   graph_path: "/World/ActionGraph/ROS2"

@@ -192,7 +192,7 @@ def load_robot(usd_path: str, robot_prim_path):
     if not prim.IsValid():
         raise RuntimeError(f"No valid prim: {robot_prim_path}")
     xform = UsdGeom.XformCommonAPI(prim)
-    xform.SetTranslate(Gf.Vec3d(0.0, 0.0, 0.0))
+    xform.SetTranslate(Gf.Vec3d(0.5, 0.5, 0.0))
 
 
 def main():
@@ -222,7 +222,7 @@ def main():
     CAMERA_HEIGHT     = _cfg["sensors"]["camera"]["height"]
 
     CAMERA_LINK_PATH  = f"{ROBOT_PRIM_PATH}/camera_link"    
-    LIDAR_LINK_PATH   = f"{ROBOT_PRIM_PATH}/lidar_link"
+    LIDAR_LINK_PATH   = f"{ROBOT_PRIM_PATH}/laser"
     CAMERA_PRIM_PATH  = f"{CAMERA_LINK_PATH}/Camera"
     LIDAR_SENSOR_PATH = f"{LIDAR_LINK_PATH}/Lidar/{_cfg['sensors']['lidar']['config']}"
 

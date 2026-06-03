@@ -11,13 +11,14 @@ def generate_launch_description():
     description = get_package_share_directory('puzzlebot_description')
     control     = get_package_share_directory('puzzlebot_control')
     vision      = get_package_share_directory('puzzlebot_vision')
+    navigation  = get_package_share_directory('puzzlebot_navigation')
 
     use_sim      = LaunchConfiguration('use_sim')
     rviz         = LaunchConfiguration('rviz')
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     use_sim_arg      = DeclareLaunchArgument('use_sim',      default_value='true')  
-    rviz_arg         = DeclareLaunchArgument('rviz',         default_value='true')
+    rviz_arg         = DeclareLaunchArgument('rviz',         default_value='false')
     use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='true')  
 
 
@@ -37,6 +38,12 @@ def generate_launch_description():
         launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
     )
 
+    navigation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(navigation, 'launch', "navigation.launch.py")), 
+
+    )
+
     
 
     return LaunchDescription([
@@ -47,4 +54,5 @@ def generate_launch_description():
         desc_launch,
         control_launch,
         vision_launch,
+        navigation_launch,  
     ])
