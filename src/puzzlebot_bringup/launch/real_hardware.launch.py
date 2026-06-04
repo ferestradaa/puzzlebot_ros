@@ -136,7 +136,7 @@ def generate_launch_description():
         micro_ros_agent,
         puzzlebot_cam,
         lidar,
-        pure_pursuit_py,
+        #pure_pursuit_py,
         path_planner,
         navigation_launch,         
         move_forklift, 

@@ -12,6 +12,8 @@ import tf2_geometry_msgs
 from geometry_msgs.msg import TransformStamped, PoseStamped
 from pupil_apriltags import Detector
 from puzzlebot_interfaces.msg import AprilTagDetection, AprilTagDetectionArray
+import cv2
+
 
 import os
 import sys
@@ -23,7 +25,7 @@ class AprilTagDetector(Node):
         self.bridge = CvBridge()
         self.camera_matrix = None
 
-        self.declare_parameter('tag_size', 0.095)
+        self.declare_parameter('tag_size', 0.125)
         self.declare_parameter('base_frame', 'base_link')
         self.tag_size = self.get_parameter('tag_size').value
         self.base_frame = self.get_parameter('base_frame').value
@@ -86,6 +88,7 @@ class AprilTagDetector(Node):
         extrinsic = self._get_extrinsic(msg.header.frame_id)
 
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='mono8')
+        frame = self._preprocess(frame)  
 
         fx = self.camera_matrix[0, 0]
         fy = self.camera_matrix[1, 1]
@@ -201,6 +204,17 @@ class AprilTagDetector(Node):
             y = (R[1,2] + R[2,1]) / s
             z = 0.25 * s
         return [x, y, z, w]
+    
+
+    def _preprocess(self, frame: np.ndarray) -> np.ndarray:
+        # Stretch el rango dinámico al maximo
+        min_val = np.percentile(frame, 2)
+        max_val = np.percentile(frame, 98)
+        stretched = np.clip((frame - min_val) / (max_val - min_val + 1e-6) * 255, 0, 255).astype(np.uint8)
+
+        # CLAHE para contraste local
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        return clahe.apply(stretched)
 
 
 def main(args=None):
