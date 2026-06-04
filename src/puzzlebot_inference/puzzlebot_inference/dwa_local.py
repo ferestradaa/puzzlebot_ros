@@ -28,6 +28,7 @@ class DWALocalPlanner(Node):
     def __init__(self):
         super().__init__('dwa_local_planner')
 
+<<<<<<< HEAD
         # limites cinematicos
         # v_max moderado: reduce distancia de frenado y corriente de stall si llega a tocar.
         # w_max ALTO a proposito: es tu capacidad de reaccion. sin esto no esquiva.
@@ -38,6 +39,21 @@ class DWALocalPlanner(Node):
         self.declare_parameter('a_lin_up',   0.3)
         self.declare_parameter('a_lin_down', 0.5)
         self.declare_parameter('a_ang',      1.5)
+=======
+        # limites cinematicos — conservadores para prueba inicial
+        self.declare_parameter('v_max', 0.08)
+        self.declare_parameter('w_max', 0.8)
+
+        # rampas de aceleracion en la ventana dinamica
+        self.declare_parameter('a_lin_up',   0.3)
+        self.declare_parameter('a_lin_down', 0.5)
+        self.declare_parameter('a_ang',      1.5)
+
+        # rampa de salida — limita el delta real enviado al motor por ciclo
+        # esto evita saturacion independientemente de lo que elija DWA
+        self.declare_parameter('ramp_v', 0.04)   # m/s por ciclo maximo
+        self.declare_parameter('ramp_w', 0.3)    # rad/s por ciclo maximo
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
 
         # rampa de salida — limita el delta real por ciclo (suaviza jerk)
         self.declare_parameter('ramp_v', 0.04)
@@ -51,6 +67,7 @@ class DWALocalPlanner(Node):
         self.declare_parameter('v_samples', 10)
         self.declare_parameter('w_samples', 41)
 
+<<<<<<< HEAD
         # horizonte de simulacion. a v_max=0.12, sim_time=4.0 mira ~0.48 m adelante.
         self.declare_parameter('sim_time', 4.0)
         self.declare_parameter('sim_dt',   0.1)
@@ -69,6 +86,16 @@ class DWALocalPlanner(Node):
         self.declare_parameter('stall_v_cmd',   0.04)  # comando minimo para considerar que "intenta avanzar"
         self.declare_parameter('stall_v_meas',  0.015) # umbral de velocidad medida
         self.declare_parameter('stall_cycles',  4)     # ciclos consecutivos para declarar stall
+=======
+        # horizonte de simulacion
+        self.declare_parameter('sim_time', 2.0)
+        self.declare_parameter('sim_dt',   0.1)
+
+        # geometria y seguridad
+        self.declare_parameter('robot_radius', 0.15)
+        self.declare_parameter('clear_cap',    1.0)
+        self.declare_parameter('scan_stride',  3)
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
 
         # seguimiento de path
         self.declare_parameter('lookahead', 0.4)
@@ -85,10 +112,17 @@ class DWALocalPlanner(Node):
         self.declare_parameter('k_smooth', 0.4)
 
         # frames y rate
+<<<<<<< HEAD
         self.declare_parameter('map_frame',    'map')
         self.declare_parameter('base_frame',   'base_link')
         self.declare_parameter('sensor_frame', 'laser')
         self.declare_parameter('rate',         15.0)
+=======
+        self.declare_parameter('map_frame',     'map')
+        self.declare_parameter('base_frame',    'base_link')
+        self.declare_parameter('sensor_frame',  'laser')   # frame del scan
+        self.declare_parameter('rate',          15.0)
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
 
         g = self.get_parameter
         self.v_max          = g('v_max').value
@@ -98,8 +132,11 @@ class DWALocalPlanner(Node):
         self.a_ang          = g('a_ang').value
         self.ramp_v         = g('ramp_v').value
         self.ramp_w         = g('ramp_w').value
+<<<<<<< HEAD
         self.wheel_base     = g('wheel_base').value
         self.wheel_v_max    = g('wheel_v_max').value
+=======
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
         self.v_samples      = g('v_samples').value
         self.w_samples      = g('w_samples').value
         self.sim_time       = g('sim_time').value
@@ -123,9 +160,12 @@ class DWALocalPlanner(Node):
         self.map_frame      = g('map_frame').value
         self.base_frame     = g('base_frame').value
         self.sensor_frame   = g('sensor_frame').value
+<<<<<<< HEAD
 
         # umbral de colision efectivo: radio fisico + margen
         self.collision_thresh = self.robot_radius + self.safety_margin
+=======
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
 
         rate     = g('rate').value
         self.dt  = 1.0 / rate
@@ -139,6 +179,7 @@ class DWALocalPlanner(Node):
         self.aligning    = False
         self.latest_scan = None
 
+<<<<<<< HEAD
         self.sent_v = 0.0
         self.sent_w = 0.0
         self.odom_v = 0.0
@@ -146,6 +187,17 @@ class DWALocalPlanner(Node):
 
         self.stall_count = 0
 
+=======
+        # velocidades realmente enviadas al robot (para la rampa de salida)
+        self.sent_v = 0.0
+        self.sent_w = 0.0
+
+        # velocidades reportadas por odometria (para la ventana dinamica)
+        self.odom_v = 0.0
+        self.odom_w = 0.0
+
+        # QoS best effort depth 1 para el scan
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
         scan_qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             history=HistoryPolicy.KEEP_LAST,
@@ -189,11 +241,19 @@ class DWALocalPlanner(Node):
 
     def get_obstacles_base_link(self):
         """
+<<<<<<< HEAD
         Transforma el scan a base_link (extrinseca fija, sin ruido de localizacion).
+=======
+        Transforma el scan a base_link.
+        Los obstaculos quedan en coordenadas del robot — ground truth de deteccion
+        independiente del ruido de localizacion en el mapa.
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
         """
         scan = self.latest_scan
         if scan is None:
             return None
+
+        # transform del frame del sensor a base_link (extrinseca fija, no depende de odom/map)
         try:
             t = self.tf_buffer.lookup_transform(
                 self.base_frame, scan.header.frame_id, rclpy.time.Time())
@@ -218,8 +278,10 @@ class DWALocalPlanner(Node):
         if ranges.shape[0] == 0:
             return np.empty((0, 2))
 
+        # coordenadas en frame del sensor
         lx = ranges * np.cos(angles)
         ly = ranges * np.sin(angles)
+<<<<<<< HEAD
         bx = tx + math.cos(yaw) * lx - math.sin(yaw) * ly
         by = ty + math.sin(yaw) * lx + math.cos(yaw) * ly
         return np.stack([bx, by], axis=1)
@@ -238,12 +300,30 @@ class DWALocalPlanner(Node):
     def nearest_index(self, rx, ry):
         best_i, best_d = 0, float('inf')
         for i, (px, py) in enumerate(self.path):
+=======
+
+        # rotar y trasladar a base_link
+        bx = tx + math.cos(yaw) * lx - math.sin(yaw) * ly
+        by = ty + math.sin(yaw) * lx + math.cos(yaw) * ly
+        return np.stack([bx, by], axis=1)
+
+    def nearest_index(self, rx, ry, robot_yaw):
+        """
+        Busca el punto mas cercano en el path expresado en base_link.
+        rx, ry son las coordenadas del robot en map (para convertir el path).
+        Devuelve el indice en self.path.
+        """
+        best_i, best_d = 0, float('inf')
+        for i, (px, py) in enumerate(self.path):
+            # distancia en map — suficiente para encontrar el mas cercano
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
             d = (px - rx) ** 2 + (py - ry) ** 2
             if d < best_d:
                 best_d, best_i = d, i
         return best_i
 
     def lookahead_target_base(self, robot_x, robot_y, robot_yaw):
+<<<<<<< HEAD
         near = self.nearest_index(robot_x, robot_y)
         for i in range(near, len(self.path)):
             px, py = self.path[i]
@@ -253,31 +333,76 @@ class DWALocalPlanner(Node):
                 return c * dx - s * dy, s * dx + c * dy
         px, py = self.path[-1]
         dx, dy = px - robot_x, py - robot_y
+=======
+        """
+        Devuelve el punto lookahead en coordenadas de base_link.
+        """
+        near = self.nearest_index(robot_x, robot_y, robot_yaw)
+        for i in range(near, len(self.path)):
+            px, py = self.path[i]
+            if math.hypot(px - robot_x, py - robot_y) >= self.lookahead:
+                # convertir a base_link
+                dx = px - robot_x
+                dy = py - robot_y
+                c, s = math.cos(-robot_yaw), math.sin(-robot_yaw)
+                return c * dx - s * dy, s * dx + c * dy
+        # ultimo punto del path en base_link
+        px, py = self.path[-1]
+        dx = px - robot_x
+        dy = py - robot_y
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
         c, s = math.cos(-robot_yaw), math.sin(-robot_yaw)
         return c * dx - s * dy, s * dx + c * dy
 
     def dynamic_window(self):
+<<<<<<< HEAD
         # muestreo amplio del rango completo. evalua giros cerrados para esquivar.
         # la suavidad/feasibilidad se garantiza en publish() (rampa + clamp rueda).
         vs = np.linspace(0.0,        self.v_max, self.v_samples)
         ws = np.linspace(-self.w_max, self.w_max, self.w_samples)
+=======
+        # usa velocidades de odometria como estado actual
+        v_lo = max(0.0,        self.odom_v - self.a_lin_down * self.dt)
+        v_hi = min(self.v_max, self.odom_v + self.a_lin_up   * self.dt)
+        w_lo = max(-self.w_max, self.odom_w - self.a_ang * self.dt)
+        w_hi = min( self.w_max, self.odom_w + self.a_ang * self.dt)
+
+        vs = np.linspace(v_lo, v_hi, self.v_samples)
+        ws = np.linspace(w_lo, w_hi, self.w_samples)
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
         vv, ww = np.meshgrid(vs, ws)
         return vv.ravel(), ww.ravel()
 
     def rollout(self, vs, ws):
+<<<<<<< HEAD
         # rollout en frame local (x=0, y=0, th=0); obstaculos ya estan en base_link
+=======
+        """
+        Rollout en frame local del robot (parte de x=0, y=0, th=0).
+        Esto es correcto porque los obstaculos ya estan en base_link.
+        """
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
         T   = self.n_steps
         ks  = np.arange(1, T + 1)
         dt  = self.sim_dt
         v   = vs[:, None]
         w   = ws[:, None]
 
+<<<<<<< HEAD
         th       = w * ks * dt
         straight = np.abs(w) < 1e-4
         w_safe   = np.where(straight, 1.0, w)
 
         x_arc = (v / w_safe) * np.sin(th)
         y_arc = (v / w_safe) * (1.0 - np.cos(th))
+=======
+        th       = w * ks * dt                      # th0 = 0
+        straight = np.abs(w) < 1e-4
+        w_safe   = np.where(straight, 1.0, w)
+
+        x_arc = (v / w_safe) * np.sin(th)           # x0=0, sin(th0)=0
+        y_arc = (v / w_safe) * (1.0 - np.cos(th))   # y0=0, cos(th0)=1 → -cos+1
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
         x_str = v * ks * dt
         y_str = np.zeros_like(x_str)
 
@@ -322,6 +447,7 @@ class DWALocalPlanner(Node):
         rx, ry, ryaw = pose
         gx, gy       = self.path[-1]
         dist_to_goal = math.hypot(gx - rx, gy - ry)
+<<<<<<< HEAD
 
         # deteccion de stall: comandamos avanzar pero el robot no se mueve.
         # corta motores YA para que la corriente de stall no reinicie el micro.
@@ -339,6 +465,8 @@ class DWALocalPlanner(Node):
             else:
                 self.publish(0.0, 0.0)
             return
+=======
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
 
         if self.aligning:
             if self.goal_yaw is None:
@@ -369,6 +497,7 @@ class DWALocalPlanner(Node):
             self.publish(0.0, 0.0)
             return
 
+<<<<<<< HEAD
         # burbuja de emergencia: si algo esta demasiado cerca, NO avanzar.
         # gira en el lugar alejandose. nunca empuja contra una pared.
         d_near, ang_near = self.nearest_obstacle(obs)
@@ -393,11 +522,27 @@ class DWALocalPlanner(Node):
         v_l = vs - ws * half_L
         wheel_ok = (np.abs(v_r) <= self.wheel_v_max) & (np.abs(v_l) <= self.wheel_v_max)
         valid = valid & wheel_ok
+=======
+        # target lookahead en base_link (coordenadas locales del robot)
+        tgt_x, tgt_y = self.lookahead_target_base(rx, ry, ryaw)
+
+        vs, ws          = self.dynamic_window()
+        xs, ys, ths     = self.rollout(vs, ws)
+        clr             = self.clearances(xs, ys, obs)
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
 
         if not np.any(valid):
+<<<<<<< HEAD
             # ninguna trayectoria libre: gira hacia el target sin avanzar
             self.rotate_away(ang_near)
             self.get_logger().warn('sin trayectoria libre, girando')
+=======
+            # recovery: gira hacia el target
+            bearing = math.atan2(tgt_y, tgt_x)  # ya en base_link, th0=0
+            w = clamp(math.copysign(0.4, bearing), -self.w_max, self.w_max)
+            self.publish(0.0, w)
+            self.get_logger().warn('sin trayectoria libre, recovery girando')
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
             return
 
         end_x, end_y = xs[:, -1], ys[:, -1]
@@ -421,6 +566,7 @@ class DWALocalPlanner(Node):
         best = int(np.argmax(score))
         self.publish(float(vs[best]), float(ws[best]))
 
+<<<<<<< HEAD
     def clamp_wheel(self, v, w):
         L = self.wheel_base
         v_r = v + w * L / 2.0
@@ -446,6 +592,26 @@ class DWALocalPlanner(Node):
         v_out = self.sent_v + dv
         w_out = self.sent_w + dw
         v_out, w_out = self.clamp_wheel(v_out, w_out)
+=======
+    def publish(self, v_des, w_des):
+        """
+        Aplica rampa de salida antes de publicar.
+        Limita el delta de velocidad por ciclo para no saturar motores.
+        """
+        dv = clamp(v_des - self.sent_v, -self.ramp_v, self.ramp_v)
+        dw = clamp(w_des - self.sent_w, -self.ramp_w, self.ramp_w)
+
+        v_out = self.sent_v + dv
+        w_out = self.sent_w + dw
+
+        # si el destino es detenerse, permite bajar mas rapido (freno)
+        if v_des == 0.0 and w_des == 0.0:
+            v_out = clamp(self.sent_v - self.ramp_v * 2, 0.0, self.sent_v)
+            w_out = clamp(self.sent_w - math.copysign(self.ramp_w * 2,
+                                                       self.sent_w),
+                          -abs(self.sent_w), abs(self.sent_w))
+            w_out = 0.0 if abs(w_out) < 0.01 else w_out
+>>>>>>> 4f78c633a037c6f54ef781c49b4809723440a993
 
         self.sent_v = v_out
         self.sent_w = w_out
