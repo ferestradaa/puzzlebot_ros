@@ -52,9 +52,9 @@ def generate_launch_description():
 
     
 
-    qr_detection_srvr = Node(
+    qr_detection = Node(
         package = 'puzzlebot_vision',
-        executable = 'qr_detection_node',
+        executable = 'qr_detection_node_test', #detection as topic not service
 
     )
 
@@ -79,7 +79,7 @@ def generate_launch_description():
         camera_noise, 
         camera_info,
         apriltag_detector,
-        qr_detection_srvr, 
+        qr_detection, 
         #pallet_inference,
         
 

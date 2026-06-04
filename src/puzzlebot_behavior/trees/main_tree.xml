@@ -3,6 +3,7 @@
     <Sequence name="MainSequence">
       <CheckMapAvailable timeout_sec="10.0"/> 
       <!--<Sequence name="SequencePickPlace"> -->
+        <WaitForQRPose timeout="5.0" qr_pose="{qr_pose}"/>
         <!-- <QrDetectionAction consecutive_detections="3" qr_data="{qr_data}" z="{z}"/> -->
         <!--<MoveForklift target_height="0.03"/> -->
         <!--<EnableDetections enable="true"/>-->

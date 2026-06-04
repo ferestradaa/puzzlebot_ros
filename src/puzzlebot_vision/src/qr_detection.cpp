@@ -10,7 +10,8 @@
 class QrDetectionNode : public rclcpp::Node {
 public:
     QrDetectionNode() : Node("qr_detection_node_test") {
-        qr_size_ = 0.10;
+        //qr_size_ = 0.10;
+        qr_size_ = 0.035;
         qr_detection_ = std::make_unique<Qr_detection>(qr_size_, 3);
 
         rclcpp::QoS info_qos(10);
@@ -35,7 +36,7 @@ private:
         K_ = cv::Mat(3, 3, CV_64F, const_cast<double*>(msg->k.data())).clone();
         dist_ = cv::Mat(1, (int)msg->d.size(), CV_64F, const_cast<double*>(msg->d.data())).clone();
         has_camera_info_ = true;
-        RCLCPP_INFO(this->get_logger(), "Camera info recibida");
+        RCLCPP_INFO(this->get_logger(), "Camera info recievecd");
     }
 
     void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr msg) {
@@ -75,13 +76,16 @@ private:
 
         pose_pub_->publish(pose_msg);
 
+
+        /*
         RCLCPP_INFO(get_logger(), "QR: %s | x=%.3f y=%.3f z=%.3f | conf:%d",
             qr_result.data.c_str(),
             qr_result.tvec[0],
             qr_result.tvec[1],
             qr_result.tvec[2],
             qr_detection_->get_detection_count());
-    }
+        */ 
+        }
 
     std::unique_ptr<Qr_detection> qr_detection_;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
