@@ -1,26 +1,33 @@
 zones:
   inspect:
-    x: 1.2
-    y: 0.6
+    x: 1.15
+    y: 2.9
     yaw: 1.5
 
-  dropoff:
-    x: 3.0
-    y: 2.0
-    yaw: 1.57
-    
   home:
-    x: 1.0
-    y: 1.0
+    x: 1.15
+    y: 1.7
+    yaw: 1.5
+
+  emezon:
+    x: 4.1
+    y: 2.8
+    yaw: 0.0
+
+  wolmor:
+    x: 4.1
+    y: 2.35
     yaw: 0.0
 
   popsi:
-    x: 3.5
-    y: 4.1
+    x: 4.1
+    y: 1.8
     yaw: 0.0
 
-  emezon:
-    x: 1.0
-    y: 1.0
+  dropoff:
+    x: 4.2
+    y: 2.0
     yaw: 0.0
+
+
 
