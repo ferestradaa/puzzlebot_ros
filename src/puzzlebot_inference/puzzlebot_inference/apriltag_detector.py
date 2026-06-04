@@ -13,6 +13,7 @@ from geometry_msgs.msg import TransformStamped, PoseStamped
 from pupil_apriltags import Detector
 from puzzlebot_interfaces.msg import AprilTagDetection, AprilTagDetectionArray
 import cv2
+import contextlib
 
 
 import os
@@ -34,6 +35,8 @@ class AprilTagDetector(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
 
+        self.last_detection_time = 0.0
+
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             history=HistoryPolicy.KEEP_LAST,
@@ -43,8 +46,8 @@ class AprilTagDetector(Node):
         self.detector = Detector(
             families='tag36h11',
             nthreads=2,
-            quad_decimate=2.0,
-            quad_sigma=0.0,
+            quad_decimate=1.0,
+            quad_sigma=0.8,
             refine_edges=True,
             decode_sharpening=0.25,
         )
@@ -84,34 +87,28 @@ class AprilTagDetector(Node):
     def image_cb(self, msg: Image):
         if self.camera_matrix is None:
             return
+        
+        now = self.get_clock().now().nanoseconds / 1e9
+        if now - self.last_detection_time < 0.1: 
+            return 
+        self.last_detection_time = now
 
         extrinsic = self._get_extrinsic(msg.header.frame_id)
-
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='mono8')
-        #frame = self._preprocess(frame)  
 
         fx = self.camera_matrix[0, 0]
         fy = self.camera_matrix[1, 1]
         cx = self.camera_matrix[0, 2]
         cy = self.camera_matrix[1, 2]
 
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        old_stderr = os.dup(2)
-
-        try:
-            os.dup2(devnull, 2)
-
-            detections = self.detector.detect(
-                frame,
-                estimate_tag_pose=True,
-                camera_params=(fx, fy, cx, cy),
-                tag_size=self.tag_size,
-            )
-
-        finally:
-            os.dup2(old_stderr, 2)
-            os.close(old_stderr)
-            os.close(devnull)
+        with open(os.devnull, 'w') as devnull:
+            with contextlib.redirect_stderr(devnull):
+                detections = self.detector.detect(
+                    frame,
+                    estimate_tag_pose=True,
+                    camera_params=(fx, fy, cx, cy),
+                    tag_size=self.tag_size,
+                )
 
         cam_array = AprilTagDetectionArray()
         cam_array.header = msg.header

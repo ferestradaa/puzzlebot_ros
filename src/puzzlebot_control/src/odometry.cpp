@@ -233,15 +233,16 @@ class OdometryNode : public rclcpp::Node{
                 }
             }
 
-            if (accepted_count > 0 && !localized_) {
-                localized_ = true;
+            if (accepted_count > 0) {
                 last_correction_time_ = this->get_clock()->now();
-                std_msgs::msg::Bool flag;
-                flag.data = true;
-                localized_pub_->publish(flag);
-                RCLCPP_INFO(this->get_logger(), "initial localization acquired");
+                if (!localized_) {
+                    localized_ = true;
+                    std_msgs::msg::Bool flag;
+                    flag.data = true;
+                    localized_pub_->publish(flag);
+                    RCLCPP_INFO(this->get_logger(), "initial localization acquired");
+                }
             }
-
             // LOG: estado del EKF despues de procesar el frame
             Eigen::Vector3d s = kalman_->getState();
             Eigen::Matrix3d P = kalman_->getCovariance();
