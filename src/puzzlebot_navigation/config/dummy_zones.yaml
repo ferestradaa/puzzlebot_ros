@@ -13,3 +13,14 @@ zones:
     x: 1.0
     y: 1.0
     yaw: 0.0
+
+  popsi:
+    x: 3.5
+    y: 4.1
+    yaw: 0.0
+
+  emezon:
+    x: 1.0
+    y: 1.0
+    yaw: 0.0
+

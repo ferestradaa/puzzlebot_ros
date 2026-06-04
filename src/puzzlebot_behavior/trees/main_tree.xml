@@ -11,7 +11,8 @@
      <Sequence name="PickPlace">
       <!--<Sequence name="SequencePickPlace"> -->
         <GoToAction zone="inspect"/>
-        <GoToAction zone="home"/>
+        <GetTargetPose />
+        <GoToAction zone="popsi"/>
         <WaitForQRPose timeout_sec="5.0" qr_pose="{qr_pose}"/>
         
         <!-- <GoTo pose="{qr_pose}"/> -->
