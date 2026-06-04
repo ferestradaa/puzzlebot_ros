@@ -88,7 +88,7 @@ class AprilTagDetector(Node):
         extrinsic = self._get_extrinsic(msg.header.frame_id)
 
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='mono8')
-        frame = self._preprocess(frame)  
+        #frame = self._preprocess(frame)  
 
         fx = self.camera_matrix[0, 0]
         fy = self.camera_matrix[1, 1]
@@ -207,12 +207,10 @@ class AprilTagDetector(Node):
     
 
     def _preprocess(self, frame: np.ndarray) -> np.ndarray:
-        # Stretch el rango dinámico al maximo
         min_val = np.percentile(frame, 2)
         max_val = np.percentile(frame, 98)
         stretched = np.clip((frame - min_val) / (max_val - min_val + 1e-6) * 255, 0, 255).astype(np.uint8)
 
-        # CLAHE para contraste local
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         return clahe.apply(stretched)
 

@@ -11,6 +11,7 @@
 #include "drive_raw.hpp"
 #include "visual_servoing.hpp"
 #include "move_forklift.hpp"
+#include "map_available.hpp"
 
 
 
@@ -19,6 +20,13 @@ class BTexecutor : public  rclcpp::Node{
     public: 
         explicit BTexecutor(rclcpp::Node::SharedPtr bt_node)
         : Node("bt_executor"), bt_node_(bt_node){
+
+
+            factory_.registerBuilder<puzzlebot_bt::CheckMapAvailable>(
+                "CheckMapAvailable",
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::CheckMapAvailable>(name, conf, bt_node_);
+                });
 
             factory_.registerBuilder<puzzlebot_bt::QrDetectionAction>(
                 "QrDetectionAction", 
@@ -63,7 +71,7 @@ class BTexecutor : public  rclcpp::Node{
             YAML::Node config = YAML::LoadFile(pkg_path + "/config/config.yaml"); 
 
             //std::string relative_tree_path = config["path_trees"]["main_tree"].as<std::string>();
-            std::string relative_tree_path = config["path_trees"]["debug_tree"].as<std::string>();
+            std::string relative_tree_path = config["path_trees"]["main_tree"].as<std::string>();
 
             std::string xml_path = pkg_path + "/" + relative_tree_path;
 

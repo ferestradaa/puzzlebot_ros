@@ -82,51 +82,10 @@ def generate_launch_description():
         launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
     )
 
-    navigation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(navigation, 'launch', "navigation.launch.py")), 
 
-    )
-    
-    
-    vision_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(vision, 'launch', 'vision.launch.py')),
-        launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
-    )
 
-    behavior = Node(
-        package='puzzlebot_behavior',
-        executable='bt_executor',
-        output='screen'
-    )
-
-    move_forklift = Node(
-        package='puzzlebot_forklift',
-        executable='forklift_spi_service',
-        output='screen'
-    )
-
-    delayed_behavior = TimerAction(
-        period = 10.0, 
-        actions = [behavior]
-    )
 
     
-    path_planner = Node(
-        package= 'puzzlebot_navigation', 
-        executable= 'path_planner_node', 
-    )
-
-    pure_pursuit = Node(
-        package = 'puzzlebot_control', 
-        executable= 'pure_pursuit_node', 
-    )
-
-    pure_pursuit_py = Node(
-        package = 'puzzlebot_inference', 
-        executable= 'pure_pursuit_fork', 
-    )
 
 
     return LaunchDescription([
@@ -135,15 +94,8 @@ def generate_launch_description():
         use_sim_time_arg,
         micro_ros_agent,
         puzzlebot_cam,
-        lidar,
-        #pure_pursuit_py,
-        path_planner,
-        navigation_launch,         
-        move_forklift, 
+        lidar,       
         desc_launch,
-        control_launch, 
-        vision_launch,
-        delayed_behavior
 
     ])
 

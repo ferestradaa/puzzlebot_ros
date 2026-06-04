@@ -62,6 +62,7 @@ find_package(ament_index_cpp REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+
 # CUDA runtime and toolkit support for GPU-accelerated MCL.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
   message(STATUS "Using legacy FindCUDA for Jetson")
@@ -94,6 +95,17 @@ add_executable(dynamic_map_node
   src/scan_processor.cpp
 )
 
+
+add_executable(go_to_server
+  src/go_to_server.cpp
+
+)
+
+add_executable(map_server_node
+  src/map_server.cpp
+)
+
+
 target_include_directories(path_planner_node PRIVATE
   include
 )
@@ -106,6 +118,15 @@ target_link_libraries(path_planner_node
   yaml-cpp
   ${OpenCV_LIBS}
 )
+
+target_link_libraries(go_to_server
+  yaml-cpp
+)
+
+target_link_libraries(map_server_node
+  yaml-cpp
+  ${OpenCV_LIBS})
+
 
 ament_target_dependencies(
   path_planner_node
@@ -120,16 +141,6 @@ ament_target_dependencies(
   OpenCV
   puzzlebot_interfaces
 )
-
-
-add_executable(map_server_node
-  src/map_server.cpp
-)
-
-target_link_libraries(map_server_node
-  yaml-cpp
-  ${OpenCV_LIBS})
-
 
 ament_target_dependencies(
   map_server_node
@@ -153,6 +164,22 @@ ament_target_dependencies(
 )
 
 
+ament_target_dependencies(
+  go_to_server
+  rclcpp
+  rclcpp_action
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  ament_index_cpp
+  OpenCV
+  puzzlebot_interfaces
+)
+
+
 
 
 # With older GCC versions, std::filesystem may require linking stdc++fs.
@@ -166,6 +193,7 @@ install(TARGETS
   path_planner_node
   dynamic_map_node
   map_server_node
+  go_to_server
   DESTINATION lib/${PROJECT_NAME}
 )
 

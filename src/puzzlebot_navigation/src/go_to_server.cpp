@@ -1,0 +1,233 @@
+#include <memory>
+#include <string>
+#include <map>
+#include <cmath>
+#include <chrono>
+#include <fstream>
+#include <thread>
+
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
+#include "tf2/utils.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "nav_msgs/msg/path.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
+#include "yaml-cpp/yaml.h"
+
+#include "puzzlebot_interfaces/action/go_to.hpp"
+#include "puzzlebot_interfaces/srv/plan_path.hpp"
+
+using namespace std::chrono_literals;
+using GoTo = puzzlebot_interfaces::action::GoTo;
+using GoalHandle = rclcpp_action::ServerGoalHandle<GoTo>;
+using PlanPath = puzzlebot_interfaces::srv::PlanPath;
+
+struct ZonePose {
+  double x, y, yaw;
+};
+
+class GoToServer : public rclcpp::Node {
+public:
+  GoToServer() : Node("go_to_server") {
+    pos_thr_ = declare_parameter<double>("pos_threshold", 0.15);
+    yaw_thr_ = declare_parameter<double>("yaw_threshold", 0.10);
+    fb_rate_ = declare_parameter<double>("feedback_rate", 5.0);
+    timeout_ = declare_parameter<double>("goal_timeout", 60.0);
+
+    load_zones();
+
+    tf_buffer_   = std::make_shared<tf2_ros::Buffer>(get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    planner_cli_ = create_client<PlanPath>("plan_path");
+    path_pub_    = create_publisher<nav_msgs::msg::Path>("/path", 10);
+
+    server_ = rclcpp_action::create_server<GoTo>(
+      this, "go_to",
+      std::bind(&GoToServer::handle_goal,     this, std::placeholders::_1, std::placeholders::_2),
+      std::bind(&GoToServer::handle_cancel,   this, std::placeholders::_1),
+      std::bind(&GoToServer::handle_accepted, this, std::placeholders::_1));
+  }
+
+private:
+  void load_zones() {
+    std::string pkg_path  = ament_index_cpp::get_package_share_directory("puzzlebot_navigation");
+    std::string yaml_path = pkg_path + "/config/dummy_zones.yaml";
+
+    std::ifstream f(yaml_path);
+    if (!f.is_open()) {
+      RCLCPP_ERROR(get_logger(), "Cannot open: %s", yaml_path.c_str());
+      return;
+    }
+
+    YAML::Node config = YAML::LoadFile(yaml_path);
+
+    if (!config["zones"]) {
+      RCLCPP_WARN(get_logger(), "No 'zones' key in config.yaml");
+      return;
+    }
+
+    for (auto it = config["zones"].begin(); it != config["zones"].end(); ++it) {
+      std::string name = it->first.as<std::string>();
+      ZonePose z;
+      z.x   = it->second["x"].as<double>(0.0);
+      z.y   = it->second["y"].as<double>(0.0);
+      z.yaw = it->second["yaw"].as<double>(0.0);
+      zones_[name] = z;
+      RCLCPP_INFO(get_logger(), "Zone loaded: %s (%.2f, %.2f, %.2f)", name.c_str(), z.x, z.y, z.yaw);
+    }
+
+    if (zones_.empty()) {
+      RCLCPP_WARN(get_logger(), "No valid zones loaded from dummy_zones.yaml");
+    }
+  }
+
+  rclcpp_action::GoalResponse handle_goal(
+    const rclcpp_action::GoalUUID &,
+    std::shared_ptr<const GoTo::Goal> goal)
+  {
+    if (goal->goal_type == GoTo::Goal::NAMED_ZONE &&
+        zones_.find(goal->zone_name) == zones_.end()) {
+      RCLCPP_ERROR(get_logger(), "Unknown zone: %s", goal->zone_name.c_str());
+      return rclcpp_action::GoalResponse::REJECT;
+    }
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+  }
+
+  rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<GoalHandle>) {
+    return rclcpp_action::CancelResponse::ACCEPT;
+  }
+
+  void handle_accepted(const std::shared_ptr<GoalHandle> gh) {
+    std::thread{std::bind(&GoToServer::execute, this, gh)}.detach();
+  }
+
+  geometry_msgs::msg::PoseStamped make_pose(double x, double y, double yaw) {
+    geometry_msgs::msg::PoseStamped p;
+    p.header.frame_id = "map";
+    p.header.stamp    = now();
+    p.pose.position.x = x;
+    p.pose.position.y = y;
+    tf2::Quaternion q;
+    q.setRPY(0, 0, yaw);
+    p.pose.orientation = tf2::toMsg(q);
+    return p;
+  }
+
+  geometry_msgs::msg::PoseStamped resolve_goal(std::shared_ptr<const GoTo::Goal> goal) {
+    if (goal->goal_type == GoTo::Goal::NAMED_ZONE) {
+      const auto & z = zones_.at(goal->zone_name);
+      return make_pose(z.x, z.y, z.yaw);
+    }
+    return goal->target_pose;
+  }
+
+  bool get_robot_pose(double & x, double & y, double & yaw) {
+    try {
+      auto tf = tf_buffer_->lookupTransform("map", "base_footprint", tf2::TimePointZero);
+      x   = tf.transform.translation.x;
+      y   = tf.transform.translation.y;
+      yaw = tf2::getYaw(tf.transform.rotation);
+      return true;
+    } catch (const tf2::TransformException & e) {
+      RCLCPP_WARN(get_logger(), "TF lookup failed: %s", e.what());
+      return false;
+    }
+  }
+
+  void execute(const std::shared_ptr<GoalHandle> gh) {
+    auto result = std::make_shared<GoTo::Result>();
+    auto target = resolve_goal(gh->get_goal());
+
+    double gx   = target.pose.position.x;
+    double gy   = target.pose.position.y;
+    double gyaw = tf2::getYaw(target.pose.orientation);
+
+    if (!planner_cli_->wait_for_service(2s)) {
+      result->success    = false;
+      result->error_code = GoTo::Result::PLANNER_FAIL;
+      gh->abort(result);
+      return;
+    }
+
+    auto req    = std::make_shared<PlanPath::Request>();
+    req->goal   = target;
+    auto future = planner_cli_->async_send_request(req);
+
+    if (future.wait_for(5s) != std::future_status::ready) {
+      result->success    = false;
+      result->error_code = GoTo::Result::PLANNER_FAIL;
+      gh->abort(result);
+      return;
+    }
+
+    auto plan_resp = future.get();
+    if (!plan_resp->success) {
+      RCLCPP_ERROR(get_logger(), "Planner failed: %s", plan_resp->message.c_str());
+      result->success    = false;
+      result->error_code = GoTo::Result::PLANNER_FAIL;
+      gh->abort(result);
+      return;
+    }
+
+    path_pub_->publish(plan_resp->path);
+
+    auto fb    = std::make_shared<GoTo::Feedback>();
+    rclcpp::Rate rate(fb_rate_);
+    auto start = now();
+
+    while (rclcpp::ok()) {
+      if (gh->is_canceling()) {
+        result->success    = false;
+        result->error_code = GoTo::Result::ABORTED;
+        gh->canceled(result);
+        return;
+      }
+
+      if ((now() - start).seconds() > timeout_) {
+        result->success    = false;
+        result->error_code = GoTo::Result::TIMEOUT;
+        gh->abort(result);
+        return;
+      }
+
+      double rx, ry, ryaw;
+      if (get_robot_pose(rx, ry, ryaw)) {
+        double dist = std::hypot(gx - rx, gy - ry);
+        double ang  = std::abs(std::atan2(std::sin(gyaw - ryaw), std::cos(gyaw - ryaw)));
+
+        fb->distance_remaining = static_cast<float>(dist);
+        fb->angle_remaining    = static_cast<float>(ang);
+        gh->publish_feedback(fb);
+
+        if (dist < pos_thr_ && ang < yaw_thr_) {
+          break;
+        }
+      }
+
+      rate.sleep();
+    }
+
+    result->success    = true;
+    result->error_code = GoTo::Result::OK;
+    gh->succeed(result);
+  }
+
+  std::map<std::string, ZonePose> zones_;
+  double pos_thr_, yaw_thr_, fb_rate_, timeout_;
+
+  std::shared_ptr<tf2_ros::Buffer>           tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  rclcpp::Client<PlanPath>::SharedPtr         planner_cli_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+  rclcpp_action::Server<GoTo>::SharedPtr      server_;
+};
+
+int main(int argc, char ** argv) {
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<GoToServer>());
+  rclcpp::shutdown();
+  return 0;
+}
