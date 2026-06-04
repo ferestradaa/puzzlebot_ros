@@ -16,6 +16,11 @@ def generate_launch_description():
         output='screen'
     )
 
+    go_to_srv = Node(
+        package='puzzlebot_navigation',
+        executable='go_to_server',
+    )
+
 
 
 
@@ -38,6 +43,7 @@ def generate_launch_description():
     return LaunchDescription([
 
         map_pub, 
+        go_to_srv
         #path_planner,
        #dynamic_map, 
 

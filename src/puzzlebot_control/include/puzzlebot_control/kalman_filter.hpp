@@ -200,9 +200,10 @@ class ExtendedKalmanFilter{
             }
             return info;
         }
+
+
         Eigen::Vector3d getState()      const { return mu_; }
         Eigen::Matrix3d getCovariance() const { return P_;  }
-
         void setState(const Eigen::Vector3d& s) {
             mu_ = s;
             // post-init covariance: confident but not zero
@@ -211,6 +212,12 @@ class ExtendedKalmanFilter{
             P_(1,1) = 0.1;
             P_(2,2) = 0.05;
             just_initialized_ = true;
+        }
+
+        bool isLocalized() const { return localized_; } //severe lost 
+
+        double getPositionUncertainty() const {
+            return std::sqrt(P_(0,0) + P_(1,1));
         }
 
 

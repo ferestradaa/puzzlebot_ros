@@ -1,9 +1,22 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="PuzzlebotTree">
     <Sequence name="MainSequence">
-      <CheckMapAvailable timeout_sec="10.0"/> 
+
+     <CheckMapAvailable timeout_sec="10.0"/>
+
+     <RetryUntilSuccessful num_attempts="-1">
+      <IsLocalizedCondition/>
+     </RetryUntilSuccessful>
+
+     <Sequence name="PickPlace">
       <!--<Sequence name="SequencePickPlace"> -->
-        <WaitForQRPose timeout="5.0" qr_pose="{qr_pose}"/>
+        <GoToAction zone="inspect"/>
+        <GoToAction zone="home"/>
+        <WaitForQRPose timeout_sec="5.0" qr_pose="{qr_pose}"/>
+        
+        <!-- <GoTo pose="{qr_pose}"/> -->
+     </Sequence>
+
         <!-- <QrDetectionAction consecutive_detections="3" qr_data="{qr_data}" z="{z}"/> -->
         <!--<MoveForklift target_height="0.03"/> -->
         <!--<EnableDetections enable="true"/>-->

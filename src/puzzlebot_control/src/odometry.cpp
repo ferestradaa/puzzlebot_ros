@@ -37,6 +37,7 @@ which is:
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <rclcpp/timer.hpp>
+#include <std_msgs/msg/bool.hpp>
 
 #include <puzzlebot_interfaces/msg/april_tag_detection.hpp>
 #include <puzzlebot_interfaces/msg/april_tag_detection_array.hpp>
@@ -58,6 +59,8 @@ class OdometryNode : public rclcpp::Node{
 
         auto qos = rclcpp::QoS(rclcpp::KeepLast(5)).best_effort();
 
+        
+
         encl_sub_ = this -> create_subscription<std_msgs::msg::Float32>("/VelocityEncL", qos,
             std::bind(&OdometryNode::encoderL_callback, this, std::placeholders::_1));
 
@@ -77,6 +80,13 @@ class OdometryNode : public rclcpp::Node{
         odom_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
 
         odom_raw_pub_ = this-> create_publisher<nav_msgs::msg::Odometry>("/odom_raw", 10);
+
+        localized_pub_ = this->create_publisher<std_msgs::msg::Bool>("/localization_ready", rclcpp::QoS(1).transient_local());
+
+        localization_degraded_pub_ = this->create_publisher<std_msgs::msg::Bool>(
+            "/localization_degraded",
+            rclcpp::QoS(1).transient_local());
+
 
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -121,6 +131,10 @@ class OdometryNode : public rclcpp::Node{
         this->get_parameter("max_lin_step", max_lin_step_);
         this->get_parameter("max_ang_step", max_ang_step_);
         this->get_parameter("max_meas_latency", max_meas_latency_);
+        this->declare_parameter("cov_degraded_threshold", 0.5);
+        this->declare_parameter("severe_timeout", 3.0);
+        this->get_parameter("cov_degraded_threshold", cov_degraded_threshold_);
+        this->get_parameter("severe_timeout", severe_timeout_);
 
         RCLCPP_INFO(this->get_logger(), "Reading encoder velocities");
         
@@ -219,9 +233,13 @@ class OdometryNode : public rclcpp::Node{
                 }
             }
 
-            if (accepted_count > 0){
+            if (accepted_count > 0 && !localized_) {
                 localized_ = true;
                 last_correction_time_ = this->get_clock()->now();
+                std_msgs::msg::Bool flag;
+                flag.data = true;
+                localized_pub_->publish(flag);
+                RCLCPP_INFO(this->get_logger(), "initial localization acquired");
             }
 
             // LOG: estado del EKF despues de procesar el frame
@@ -278,9 +296,35 @@ class OdometryNode : public rclcpp::Node{
                 double since_corr = (stamp - last_correction_time_).seconds();
                 if (since_corr > localization_timeout_) {
                     localized_ = false;
+                    std_msgs::msg::Bool flag;
+                    flag.data = false;
+                    localized_pub_->publish(flag);
+
                     RCLCPP_WARN(this->get_logger(),
                         "localization lost: no valid landmark for %.1f s (running on odometry only)",
                         since_corr);
+                }
+            }
+
+
+            bool cov_blown = kalman_->getPositionUncertainty() > cov_degraded_threshold_;
+            bool time_lost = (stamp - last_correction_time_).seconds() > severe_timeout_;
+
+            if (cov_blown && time_lost) {
+                if (!degraded_published_) {
+                    std_msgs::msg::Bool flag;
+                    flag.data = true;
+                    localization_degraded_pub_->publish(flag);
+                    degraded_published_ = true;
+                    RCLCPP_WARN(this->get_logger(), "localization degraded: cov=%.2f",
+                                kalman_->getPositionUncertainty());
+                }
+            } else {
+                if (degraded_published_) {
+                    std_msgs::msg::Bool flag;
+                    flag.data = false;
+                    localization_degraded_pub_->publish(flag);
+                    degraded_published_ = false;
                 }
             }
 
@@ -401,11 +445,19 @@ class OdometryNode : public rclcpp::Node{
             for (auto it = config["landmarks"].begin(); it != config["landmarks"].end(); ++it) {
                 int id = it->first.as<int>();
                 auto v = it->second.as<std::vector<double>>();
-                // expects [x, y, theta] per landmark; theta is the known yaw of the tag in world frame
+                // expects [x, y, theta] per landmark; theta Fis the known yaw of the tag in world frame
                 landmark_map_[id] = Eigen::Vector3d(v[0], v[1], v[2]);
             }
             //RCLCPP_INFO(this->get_logger(), "Loaded %zu landmarks", landmark_map_.size());
         }   
+
+
+        bool is_localization_degraded() {
+            Eigen::Matrix3d P = kalman_->getCovariance();
+            double pos_uncertainty = std::sqrt(P(0,0) + P(1,1));
+            double time_since_corr = (this->get_clock()->now() - last_correction_time_).seconds();
+            return pos_uncertainty > cov_degraded_threshold_ && time_since_corr > severe_timeout_;
+        }
 
 
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; 
@@ -424,6 +476,14 @@ class OdometryNode : public rclcpp::Node{
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
         std::unique_ptr<ExtendedKalmanFilter> kalman_; 
+
+        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr localized_pub_; //publish everytimme the robot is lost for letting know the BT
+
+        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr localization_degraded_pub_;
+
+        bool degraded_published_ = false;
+        double cov_degraded_threshold_ = 0.5;  // metros
+        double severe_timeout_ = 3.0;          // segundos
 
         const double r_, L_;
         double wheel_vel_left_rads_, wheel_vel_right_rads_, x_, y_, theta_;

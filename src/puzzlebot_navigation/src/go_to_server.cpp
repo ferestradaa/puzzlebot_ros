@@ -178,7 +178,7 @@ private:
     rclcpp::Rate rate(fb_rate_);
     auto start = now();
 
-    while (rclcpp::ok()) {+
+    while (rclcpp::ok()) {
       if (gh->is_canceling()) {
         result->success    = false;
         result->error_code = GoTo::Result::ABORTED;

@@ -40,7 +40,7 @@ public:
 
     // pose port present means the goal is already resolved
     if (getInput("pose", pose_in)) {
-      goal.goal_type = GoTo::Goal::RESOLVED_POSE;
+      goal.goal_type = GoTo::Goal::POSE;
       goal.target_pose = pose_in;
     }
     // otherwise fall back to the named zone string

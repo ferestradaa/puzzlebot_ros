@@ -12,6 +12,9 @@
 #include "visual_servoing.hpp"
 #include "move_forklift.hpp"
 #include "map_available.hpp"
+#include "is_localized.hpp"
+#include "go_to.hpp"
+#include "wait_for_pose.hpp"
 
 
 
@@ -27,6 +30,26 @@ class BTexecutor : public  rclcpp::Node{
                 [this](const std::string & name, const BT::NodeConfig & conf){
                     return std::make_unique<puzzlebot_bt::CheckMapAvailable>(name, conf, bt_node_);
                 });
+
+            factory_.registerBuilder<puzzlebot_bt::IsLocalizedCondition>(
+                "IsLocalizedCondition",
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::IsLocalizedCondition>(name, conf, bt_node_);
+                });
+
+
+            factory_.registerBuilder<puzzlebot_bt::WaitForQRPoseAction>(
+                "WaitForQRPose",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::WaitForQRPoseAction>(name, conf, bt_node_);
+                });
+
+            factory_.registerBuilder<puzzlebot_bt::GoToAction>(
+                "GoToAction",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::GoToAction>(name, conf, bt_node_);
+                });
+
 
             factory_.registerBuilder<puzzlebot_bt::QrDetectionAction>(
                 "QrDetectionAction", 
