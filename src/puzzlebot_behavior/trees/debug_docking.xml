@@ -1,0 +1,15 @@
+<root BTCPP_format="4">
+  <BehaviorTree ID="PuzzlebotTree">
+    <Sequence name="MainSequence">
+              <Sequence name="DockingSequence">
+          <!--<MoveForklift target_height="0.03"/>-->
+          <VisualServoingAction target_area="28000.0"/>
+          <DriveRawAction linear_x="0.03" angular_z="0.0" duration_sec="6.0"/>
+          <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="6.0"/>
+          <DriveRawAction linear_x="-0.03" angular_z="-0.05" duration_sec="6.0"/>
+          <!--<MoveForklift target_height="0.05"/>-->
+        </Sequence>
+        <AlwaysSuccess/>
+    </Sequence>
+  </BehaviorTree>
+</root>

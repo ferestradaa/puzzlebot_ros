@@ -22,7 +22,7 @@ public:
   static BT::PortsList providedPorts() {
     return {
       BT::InputPort<std::string>("zone"),
-      BT::InputPort<geometry_msgs::msg::PoseStamped>("pose")
+      BT::InputPort<geometry_msgs::msg::PoseStamped>("target_pose")
     };
   }
 
@@ -39,7 +39,7 @@ public:
     std::string zone_in;
 
     // pose port present means the goal is already resolved
-    if (getInput("pose", pose_in)) {
+    if (getInput("target_pose", pose_in)) {
       goal.goal_type = GoTo::Goal::POSE;
       goal.target_pose = pose_in;
     }

@@ -2,6 +2,7 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include <Eigen/Geometry>
@@ -25,6 +26,7 @@ public:
             std::bind(&QrDetectionNode::cam_info_callback, this, std::placeholders::_1));
 
         pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>("qr_detection/pose", 10);
+        data_pub_ = create_publisher<std_msgs::msg::String>("qr_detection/data", 10);
 
         RCLCPP_INFO(get_logger(), "QR Detection Node ready");
     }
@@ -42,8 +44,7 @@ private:
         if (!has_camera_info_) return;
 
         rclcpp::Time now_t = now();
-        if ((now_t - last_detection_time_).seconds() < 0.1)
-            return;
+        if ((now_t - last_detection_time_).seconds() < 0.1) return;
         last_detection_time_ = now_t;
 
         cv::Mat frame;
@@ -78,14 +79,18 @@ private:
         pose_msg.pose.orientation.x = q.x();
         pose_msg.pose.orientation.y = q.y();
         pose_msg.pose.orientation.z = q.z();
-
         pose_pub_->publish(pose_msg);
+
+        std_msgs::msg::String data_msg;
+        data_msg.data = qr_result.data;
+        data_pub_->publish(data_msg);
     }
 
     std::unique_ptr<Qr_detection> qr_detection_;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
     rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr cam_info_sub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr data_pub_;
     cv::Mat K_, dist_;
     double qr_size_;
     bool has_camera_info_ = false;

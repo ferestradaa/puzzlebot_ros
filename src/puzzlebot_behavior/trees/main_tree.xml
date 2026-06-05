@@ -1,31 +1,43 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="PuzzlebotTree">
     <Sequence name="MainSequence">
+      <CheckMapAvailable timeout_sec="10.0"/>
+      <RetryUntilSuccessful num_attempts="-1">
+        <IsLocalizedCondition/>
+      </RetryUntilSuccessful>
 
-     <CheckMapAvailable timeout_sec="10.0"/>
+      <Sequence name="PickPlace">
+        <GoToAction zone="inspect"/>
 
-     <RetryUntilSuccessful num_attempts="-1">
-      <IsLocalizedCondition/>
-     </RetryUntilSuccessful>
+        <RetryUntilSuccessful num_attempts="-1">
+          <Fallback name="SearchQR">
 
-     <Sequence name="PickPlace">
-      <!--<Sequence name="SequencePickPlace"> -->
-        <GoToAction zone="popsi"/>
-        <GetTargetPose />
+            <Parallel success_count="1" failure_count="2">
+              <Sequence>
+                <DriveRawAction linear_x="0.0" angular_z="0.1" duration_sec="32.0"/>
+                <DriveRawAction linear_x="0.0" angular_z="-0.1" duration_sec="32.0"/>
+                <AlwaysFailure/>
+              </Sequence>
+              <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+            </Parallel>
+
+            <Parallel success_count="1" failure_count="2">
+              <Sequence>
+                <GoToAction zone="center"/>
+                <DriveRawAction linear_x="0.0" angular_z="0.1" duration_sec="63.0"/>
+                <AlwaysFailure/>
+              </Sequence>
+              <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+            </Parallel>
+
+          </Fallback>
+        </RetryUntilSuccessful>
+
+        <GoToAction target_pose="{qr_pose}"/>
+        <GoToAction zone="{qr_data}"/>
         <GoToAction zone="home"/>
-        <WaitForQRPose timeout_sec="5.0" qr_pose="{qr_pose}"/>
-        
-        <!-- <GoTo pose="{qr_pose}"/> -->
-     </Sequence>
+      </Sequence>
 
-        <!-- <QrDetectionAction consecutive_detections="3" qr_data="{qr_data}" z="{z}"/> -->
-        <!--<MoveForklift target_height="0.03"/> -->
-        <!--<EnableDetections enable="true"/>-->
-       <!-- <VisualServoingAction target_area="28000.0"/>-->
-        <!--<DriveRawAction linear_x="0.03" angular_z="0.0" duration_sec="6.0"/>-->
-        <!--<MoveForklift target_height="0.05"/>-->
-       <!-- <DriveRawAction linear_x="-0.05" angular_z="0.0" duration_sec="6.0"/>-->
-     <!-- </Sequence> -->
     </Sequence>
   </BehaviorTree>
 </root>

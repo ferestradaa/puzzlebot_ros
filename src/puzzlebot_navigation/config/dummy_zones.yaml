@@ -1,8 +1,13 @@
 zones:
   inspect:
-    x: 1.15
-    y: 2.9
+    x: 0.8
+    y: 2.5
     yaw: 1.5
+
+  center:
+    x: 1.8
+    y: 1.9
+    yaw: 0.0
 
   home:
     x: 1.15
