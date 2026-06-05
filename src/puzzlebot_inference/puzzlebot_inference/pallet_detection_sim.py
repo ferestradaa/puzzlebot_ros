@@ -9,6 +9,8 @@ from cv_bridge import CvBridge
 from std_srvs.srv import SetBool
 from vision_msgs.msg import Detection2DArray, Detection2D 
 from ament_index_python.packages import get_package_share_directory
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+
 
 PKG_SHARE = get_package_share_directory('puzzlebot_inference')
 MODEL_PATH = os.path.join(PKG_SHARE, 'models', 'ft2_full_holes.onnx')
@@ -38,6 +40,14 @@ class PalletNode(Node):
         self.bridge = CvBridge()
         self.enabled = False
 
+
+
+        qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
+
         self.get_logger().info(f'Modelo: {MODEL_PATH}')
         self.session = build_session(MODEL_PATH)
         self.input_name = self.session.get_inputs()[0].name
@@ -50,7 +60,7 @@ class PalletNode(Node):
         self.pub = self.create_publisher(Detection2DArray, '/pallet/detections', 10)
         self.pub_viz = self.create_publisher(Image, '/pallet/image_detections', 10)
         
-        self.sub = self.create_subscription(Image, 'camera/image_raw', self.cb, 10)
+        self.sub = self.create_subscription(Image, 'camera/image_raw', self.cb, qos)
         self.get_logger().info('Ready.')
 
     def enable_callback(self, request, response):

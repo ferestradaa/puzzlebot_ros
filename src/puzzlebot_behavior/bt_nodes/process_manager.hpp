@@ -1,4 +1,5 @@
-//process_manager.hpp
+// process_manager.hpp
+#pragma once
 #include <behaviortree_cpp/action_node.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -22,12 +23,10 @@ public:
     BT::NodeStatus onStart() override {
         done_ = false;
         succeeded_ = false;
-
         if (!client_->wait_for_action_server(std::chrono::seconds(2))) {
             RCLCPP_ERROR(node_->get_logger(), "process_manager not available");
             return BT::NodeStatus::FAILURE;
         }
-
         auto goal = buildGoal();
         auto opts = typename rclcpp_action::Client<ActionT>::SendGoalOptions();
         opts.result_callback = [this](const typename GoalHandle::WrappedResult& result) {
@@ -35,10 +34,10 @@ public:
                           result.result->success);
             done_ = true;
         };
-
         client_->async_send_goal(goal, opts);
         return BT::NodeStatus::RUNNING;
     }
+
 
     BT::NodeStatus onRunning() override {
         if (!done_) return BT::NodeStatus::RUNNING;
@@ -56,7 +55,6 @@ protected:
     virtual typename ActionT::Goal buildGoal() = 0;
 };
 
-
 class LaunchNodeAction : public ProcessAction<puzzlebot_interfaces::action::LaunchNode> {
 public:
     using Base = ProcessAction<puzzlebot_interfaces::action::LaunchNode>;
@@ -68,7 +66,9 @@ public:
     static BT::PortsList providedPorts() {
         return {
             BT::InputPort<std::string>("package"),
-            BT::InputPort<std::string>("executable")
+            BT::InputPort<std::string>("executable"),
+            BT::InputPort<std::string>("ready_topic"),       // 
+            BT::InputPort<double>("ready_timeout_sec")       // 
         };
     }
 
@@ -77,10 +77,13 @@ protected:
         puzzlebot_interfaces::action::LaunchNode::Goal goal;
         getInput("package", goal.package);
         getInput("executable", goal.executable);
+        getInput("ready_topic", goal.ready_topic);   // 
+        double t = 0.0;
+        getInput("ready_timeout_sec", t);
+        goal.ready_timeout_sec = static_cast<float>(t);
         return goal;
     }
 };
-
 
 class KillNodeAction : public ProcessAction<puzzlebot_interfaces::action::KillNode> {
 public:

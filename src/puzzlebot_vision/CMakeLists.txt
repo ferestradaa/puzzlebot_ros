@@ -238,7 +238,7 @@ target_link_libraries(camera_noise_node
     cv_bridge::cv_bridge
     rclcpp::rclcpp
     opencv_core
-    opencv_imgprocs
+    opencv_imgproc
 )
 
 target_link_libraries(frame_id_stamper

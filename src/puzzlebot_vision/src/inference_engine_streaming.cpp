@@ -1,9 +1,11 @@
 #include <memory>
 #include <string>
 #include <chrono>
+#include <vector>
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <vision_msgs/msg/detection2_d_array.hpp>
 #include <vision_msgs/msg/detection2_d.hpp>
 #include <vision_msgs/msg/object_hypothesis_with_pose.hpp>
@@ -25,6 +27,7 @@ public:
     this->declare_parameter<std::string>("image_topic", "/camera/image_raw");
     this->declare_parameter<std::string>("detections_topic", "/pallet_detections");
     this->declare_parameter<std::string>("debug_image_topic", "/pallet_detections/image");
+    this->declare_parameter<std::string>("ready_topic", "/pallet_detector/ready");
     this->declare_parameter<float>("conf_threshold", 0.25f);
     this->declare_parameter<float>("nms_threshold", 0.45f);
     this->declare_parameter<int>("input_size", 320);
@@ -33,6 +36,7 @@ public:
     std::string image_topic = this->get_parameter("image_topic").as_string();
     std::string det_topic   = this->get_parameter("detections_topic").as_string();
     std::string dbg_topic   = this->get_parameter("debug_image_topic").as_string();
+    std::string ready_topic = this->get_parameter("ready_topic").as_string();
     conf_threshold_ = this->get_parameter("conf_threshold").as_double();
     nms_threshold_  = this->get_parameter("nms_threshold").as_double();
     input_size_     = this->get_parameter("input_size").as_int();
@@ -52,14 +56,33 @@ public:
     detections_pub_ = this->create_publisher<vision_msgs::msg::Detection2DArray>(det_topic, 10);
     debug_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(dbg_topic, 10);
 
+    ready_pub_ = this->create_publisher<std_msgs::msg::Bool>(
+      ready_topic, rclcpp::QoS(1).transient_local());
+
+      
     image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      image_topic, rclcpp::SensorDataQoS(),
-      std::bind(&PalletDetector::imageCallback, this, std::placeholders::_1));
+        image_topic,
+        rclcpp::SensorDataQoS().keep_last(1),
+        std::bind(&PalletDetector::imageCallback, this, std::placeholders::_1));
+
+    warmupInference();
+    publishReady();
 
     RCLCPP_INFO(this->get_logger(), "PalletDetector ready");
   }
 
 private:
+
+  void warmupInference(){
+    std::vector<float> dummy(engine_->inputSize(), 0.0f);
+    engine_->infer(dummy.data(), output_buffer_.data());
+  }
+
+  void publishReady(){
+    std_msgs::msg::Bool msg;
+    msg.data = true;
+    ready_pub_->publish(msg);
+  }
 
   void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr msg){
     cv::Mat frame;
@@ -125,6 +148,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
   rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr detections_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr debug_image_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr ready_pub_;
 
   float conf_threshold_;
   float nms_threshold_;

@@ -1,10 +1,14 @@
-# action/Launch.action
+# Goal
 string package
 string executable
 string[] args
+string ready_topic         
+float32 ready_timeout_sec 
 ---
+# Result
 bool success
-string message
 int32 pid
+string message
 ---
+# Feedback
 string status

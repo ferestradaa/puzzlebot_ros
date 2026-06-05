@@ -1,7 +1,8 @@
-# action/Kill.action
+# Goal
 string executable
 ---
+# Result
 bool success
 string message
 ---
-string status
+# Feedback
