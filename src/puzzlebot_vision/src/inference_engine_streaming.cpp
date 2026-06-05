@@ -53,7 +53,7 @@ public:
 
     output_buffer_.resize(engine_->outputSize());
 
-    detections_pub_ = this->create_publisher<vision_msgs::msg::Detection2DArray>(det_topic, 10);
+    detections_pub_ = this->create_publisher<vision_msgs::msg::Detection2DArray>(det_topic, 1);
     debug_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(dbg_topic, 10);
 
     ready_pub_ = this->create_publisher<std_msgs::msg::Bool>(
@@ -65,8 +65,11 @@ public:
         rclcpp::SensorDataQoS().keep_last(1),
         std::bind(&PalletDetector::imageCallback, this, std::placeholders::_1));
 
-    warmupInference();
+
     publishReady();
+
+    std::thread([this]{ warmupInference(); warmup_done_ = true; }).detach();
+
 
     RCLCPP_INFO(this->get_logger(), "PalletDetector ready");
   }
@@ -75,7 +78,9 @@ private:
 
   void warmupInference(){
     std::vector<float> dummy(engine_->inputSize(), 0.0f);
+    std::lock_guard<std::mutex> lock(inference_mutex_);
     engine_->infer(dummy.data(), output_buffer_.data());
+    warmup_done_ = true;
   }
 
   void publishReady(){
@@ -85,6 +90,9 @@ private:
   }
 
   void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr msg){
+
+    if (!warmup_done_) return;
+
     cv::Mat frame;
     try {
       auto cv_ptr = cv_bridge::toCvShare(msg, "bgr8");
@@ -97,9 +105,12 @@ private:
     LetterboxInfo lb_info;
     auto input_data = preprocess(frame, input_size_, lb_info);
 
+
+
+    std::lock_guard<std::mutex> lock(inference_mutex_);
     if (!engine_->infer(input_data.data(), output_buffer_.data())) {
       RCLCPP_ERROR(this->get_logger(), "Inference failed");
-      return;
+      return; 
     }
 
     int num_features   = engine_->outputDims()[1];
@@ -149,6 +160,9 @@ private:
   rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr detections_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr debug_image_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr ready_pub_;
+
+  std::mutex inference_mutex_;
+  std::atomic<bool> warmup_done_{false};
 
   float conf_threshold_;
   float nms_threshold_;

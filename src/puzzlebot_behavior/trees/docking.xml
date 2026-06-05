@@ -1,14 +1,18 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="PuzzlebotTree">
     <Sequence name="MainSequence">
-      <KillNode executable="qr_"/>
       <LaunchNode package="puzzlebot_vision" executable="inference_engine_streaming"
                   ready_topic="/pallet_detector/ready" ready_timeout_sec="30.0"/>
-      <!--<MoveForklift target_height="0.03"/>-->
-      <VisualServoingAction target_area="28000.0"/>
-      <DriveRawAction linear_x="0.03" angular_z="0.0" duration_sec="6.0"/>
-      <!--<MoveForklift target_height="0.05"/>-->
+      <Fallback name="RunAndCleanup">
+        <Sequence name="DockingSequence">
+          <!--<MoveForklift target_height="0.03"/>-->
+          <VisualServoingAction target_area="28000.0"/>
+          <DriveRawAction linear_x="0.03" angular_z="0.0" duration_sec="6.0"/>
+          <!--<MoveForklift target_height="0.05"/>-->
+        </Sequence>
+        <AlwaysSuccess/>
+      </Fallback>
       <KillNode executable="inference_engine_streaming"/>
     </Sequence>
   </BehaviorTree>
-</root> 
+</root>

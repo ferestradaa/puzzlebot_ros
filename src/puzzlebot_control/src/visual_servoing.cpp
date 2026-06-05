@@ -12,7 +12,7 @@ public:
 
     VisualServoingActionServer() : Node("visual_servoing_action_server") {
         bbox_sub_ = create_subscription<vision_msgs::msg::Detection2DArray>( //subcribing to boundign box from cnn detection
-            "pallet_detections", 10,
+            "pallet_detections", 1,
             std::bind(&VisualServoingActionServer::detections_callback, this, std::placeholders::_1));
         
         cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
@@ -60,50 +60,64 @@ private:
 
     void execute(const std::shared_ptr<GoalHandleVisualServoing> goal_handle) {
         RCLCPP_INFO(get_logger(), "Executing visual servoing");
-        
+
         const auto goal = goal_handle->get_goal();
-        target_area_ = goal->target_area; //target area set by the client inside behavior tree
+        target_area_ = goal->target_area;
         active_ = true;
         current_goal_handle_ = goal_handle;
-        
+
+        {
+            std::lock_guard<std::mutex> lock(error_mutex_);
+            last_current_area_ = 0.0;
+        }
+
         rclcpp::Rate loop_rate(10);
         auto result = std::make_shared<VisualServoing::Result>();
-        
+        auto start_time = this->now();
+        const double timeout_sec = 60.0;
+
         while (rclcpp::ok() && active_) {
             if (goal_handle->is_canceling()) {
+                geometry_msgs::msg::Twist stop;
+                cmd_pub_->publish(stop);
                 result->success = false;
                 result->message = "Goal canceled";
                 goal_handle->canceled(result);
                 active_ = false;
-                geometry_msgs::msg::Twist stop;
-                cmd_pub_->publish(stop);
                 RCLCPP_INFO(get_logger(), "Goal canceled");
                 return;
             }
 
-            std::lock_guard<std::mutex> lock(error_mutex_); 
-            double tolerance = target_area_* 0.05; 
-
-            if (std::abs(last_current_area_ - target_area_) < tolerance){
-                geometry_msgs::msg::Twist stop; 
-                cmd_pub_ -> publish(stop); 
-                result -> success = true; 
-                result ->message = "Target area reached"; 
-                goal_handle -> succeed(result); 
-                active_ = false; 
-                RCLCPP_INFO(get_logger(), "Goal succeed"); 
-                return; 
+            if ((this->now() - start_time).seconds() > timeout_sec) {
+                geometry_msgs::msg::Twist stop;
+                cmd_pub_->publish(stop);
+                result->success = false;
+                result->message = "Timeout";
+                goal_handle->abort(result);
+                active_ = false;
+                RCLCPP_WARN(get_logger(), "Visual servoing timed out");
+                return;
             }
-        }
-            
+
+            double current_area;
+            {
+                std::lock_guard<std::mutex> lock(error_mutex_);
+                current_area = last_current_area_;
+            }
+
+            double tolerance = target_area_ * 0.05;
+            if (current_area > 0.0 && std::abs(current_area - target_area_) < tolerance) {
+                geometry_msgs::msg::Twist stop;
+                cmd_pub_->publish(stop);
+                result->success = true;
+                result->message = "Target area reached";
+                goal_handle->succeed(result);
+                active_ = false;
+                RCLCPP_INFO(get_logger(), "Goal succeeded");
+                return;
+            }
+
             loop_rate.sleep();
-        
-        
-        if (rclcpp::ok()) {
-            result->success = true;
-            result->message = "Visual servoing completed";
-            goal_handle->succeed(result);
-            RCLCPP_INFO(get_logger(), "Goal succeeded");
         }
     }
 
@@ -130,20 +144,24 @@ private:
     void compute_cmd(double cx, double cy, double w, double h) {
         geometry_msgs::msg::Twist twist;
         double bbox_area = w * h;
-        double cx_corrected = image_width_ - cx;
-        double image_cx = image_width_ / 2.0;
-        double ex = cx_corrected - image_cx;
+        //double cx_corrected = image_width_ - cx;
+        //double image_cx = image_width_ / 2.0;
+        //double ex = cx_corrected - image_cx;
+        double ex = cx - (image_width_ / 2.0);
         double ey = target_area_ - bbox_area;
         
         if (std::abs(ex) < 20.0) ex = 0.0;
         
-        twist.angular.z = -Kw_ * ex / image_cx;
+        twist.angular.z = -Kw_ * ex / (image_width_ / 2.0);
         twist.linear.x = Kv_ * ey / target_area_;
         twist.linear.x = std::clamp(twist.linear.x, -0.05, 0.15);
         twist.angular.z = std::clamp(twist.angular.z, -0.3, 0.3);
+
+
+        RCLCPP_INFO(get_logger(), "cx=%.1f ex=%.1f ey=%.1f area=%.0f linear=%.3f angular=%.3f",
+                    cx, ex, ey, bbox_area, twist.linear.x, twist.angular.z);
         
-       // RCLCPP_INFO(get_logger(), "cx_raw=%.1f cx_corr=%.1f ex=%.1f area=%.0f",
-         //           cx, cx_corrected, ex, bbox_area);
+
         
         cmd_pub_->publish(twist);
         

@@ -14,6 +14,7 @@ def generate_launch_description():
     control     = get_package_share_directory('puzzlebot_control')
     vision      = get_package_share_directory('puzzlebot_vision')
     navigation  = get_package_share_directory('puzzlebot_navigation')
+    behavior  = get_package_share_directory('puzzlebot_behavior')
 
     use_sim      = LaunchConfiguration('use_sim')
     rviz         = LaunchConfiguration('rviz')
@@ -128,6 +129,11 @@ def generate_launch_description():
         executable= 'pure_pursuit_fork', 
     )
 
+    process_manager = Node(
+        package = 'puzzlebot_behavior', 
+        executable= 'process_manager', 
+    )
+
 
     return LaunchDescription([
         use_sim_arg,
@@ -136,6 +142,7 @@ def generate_launch_description():
         micro_ros_agent,
         puzzlebot_cam,
         lidar,
+        process_manager, 
         pure_pursuit_py,
         path_planner,
         navigation_launch,         

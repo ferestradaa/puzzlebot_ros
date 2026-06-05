@@ -20,7 +20,7 @@ def clamp(v, lo, hi):
 class PurePursuit(Node):
     def __init__(self):
         super().__init__('pure_pursuit_fork')
-        self.declare_parameter('v_max', 0.08)
+        self.declare_parameter('v_max', 0.11)
         self.declare_parameter('w_max', 0.13)
         self.declare_parameter('a_lin', 0.10)
         self.declare_parameter('a_ang', 1.20)
@@ -132,8 +132,8 @@ class PurePursuit(Node):
         self.update_pose_from_tf()
 
         if self.pose is None or len(self.path) < 2:
-            self.stop()
-            return
+            return 
+            
 
         x, y, th = self.pose
         gx, gy = self.path[-1]
