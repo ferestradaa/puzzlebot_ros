@@ -216,6 +216,10 @@ add_executable(pallet_detection_engine
     src/pallet_detection_engine.cpp
 )
 
+add_executable(inference_engine_streaming
+    src/inference_engine_streaming.cpp
+) #same as above but this node runns on streaming
+
 add_executable(qr_detection_node_test
     src/qr_detection.cpp
 )
@@ -234,7 +238,7 @@ target_link_libraries(camera_noise_node
     cv_bridge::cv_bridge
     rclcpp::rclcpp
     opencv_core
-    opencv_imgproc
+    opencv_imgprocs
 )
 
 target_link_libraries(frame_id_stamper
@@ -273,6 +277,22 @@ target_link_libraries(pallet_detection_engine
     nvonnxparser
     ${CUDA_LIBRARIES}
 )
+
+target_link_libraries(inference_engine_streaming
+  PRIVATE
+    rclcpp::rclcpp
+    ${sensor_msgs_TARGETS}
+    ${vision_msgs_TARGETS}
+    cv_bridge::cv_bridge
+    opencv_core
+    opencv_imgproc
+    opencv_dnn
+    nvinfer
+    nvinfer_plugin
+    nvonnxparser
+    ${CUDA_LIBRARIES}
+)
+
 
 target_link_libraries(qr_detection_node_test
   PRIVATE
@@ -332,7 +352,18 @@ target_include_directories(pallet_detection_engine
     ${CUDA_INCLUDE_DIRS}
 )
 
-install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine qr_detection_node_test qr_detection_node aruco_pose_node 
+target_compile_options(inference_engine_streaming
+  PRIVATE
+    -Wno-deprecated-declarations
+)
+
+target_include_directories(inference_engine_streaming
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CUDA_INCLUDE_DIRS}
+)
+
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine inference_engine_streaming qr_detection_node_test qr_detection_node aruco_pose_node 
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 

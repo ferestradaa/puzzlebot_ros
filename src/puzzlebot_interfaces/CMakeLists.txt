@@ -18,6 +18,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/VisualServoing.action"
   "action/MoveForklift.action"
   "action/GoTo.action"
+  "action/LaunchNode.action"
+  "action/KillNode.action"
   "srv/PlanPath.srv"
   "srv/ForkliftHeight.srv"
   "msg/AprilTagDetection.msg"

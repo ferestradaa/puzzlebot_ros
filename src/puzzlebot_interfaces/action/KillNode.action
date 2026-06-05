@@ -1,0 +1,7 @@
+# action/Kill.action
+string executable
+---
+bool success
+string message
+---
+string status

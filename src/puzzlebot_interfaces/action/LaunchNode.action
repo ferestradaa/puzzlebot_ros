@@ -1,0 +1,10 @@
+# action/Launch.action
+string package
+string executable
+string[] args
+---
+bool success
+string message
+int32 pid
+---
+string status

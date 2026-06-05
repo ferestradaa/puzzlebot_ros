@@ -57,6 +57,9 @@ public:
 
     send_goal_options.feedback_callback =
       [this](GoalHandleGoTo::SharedPtr, const std::shared_ptr<const GoTo::Feedback> feedback) {
+        auto now = node_->now();
+        if ((now - last_feedback_log_).seconds() < 1.0) return;
+        last_feedback_log_ = now;
         RCLCPP_INFO(node_->get_logger(), "Distance remaining: %.2f m, angle: %.2f rad",
                     feedback->distance_remaining, feedback->angle_remaining);
       };
@@ -105,6 +108,7 @@ private:
   rclcpp_action::Client<GoTo>::SharedPtr action_client_;
   GoalHandleGoTo::WrappedResult result_;
   std::shared_future<GoalHandleGoTo::SharedPtr> goal_handle_future_;
+  rclcpp::Time last_feedback_log_{0, 0, RCL_ROS_TIME};
 };
 
 }  // namespace puzzlebot_bt

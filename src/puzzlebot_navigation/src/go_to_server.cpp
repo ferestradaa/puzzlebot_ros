@@ -126,7 +126,7 @@ private:
 
   bool get_robot_pose(double & x, double & y, double & yaw) {
     try {
-      auto tf = tf_buffer_->lookupTransform("map", "base_footprint", tf2::TimePointZero);
+      auto tf = tf_buffer_->lookupTransform("map", "fork_tip_link", tf2::TimePointZero);
       x   = tf.transform.translation.x;
       y   = tf.transform.translation.y;
       yaw = tf2::getYaw(tf.transform.rotation);

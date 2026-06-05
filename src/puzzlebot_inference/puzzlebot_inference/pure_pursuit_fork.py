@@ -24,7 +24,7 @@ class PurePursuit(Node):
         self.declare_parameter('w_max', 0.13)
         self.declare_parameter('a_lin', 0.10)
         self.declare_parameter('a_ang', 1.20)
-        self.declare_parameter('ld_min', 0.15)
+        self.declare_parameter('ld_min', 0.2)
         self.declare_parameter('ld_max', 0.60)
         self.declare_parameter('ld_gain', 0.8)
         self.declare_parameter('goal_tol', 0.08)
@@ -75,14 +75,14 @@ class PurePursuit(Node):
             t = self.tf_buffer.lookup_transform(
                 self.map_frame,
                 'fork_tip_link',
-                rclpy.time.Time()   # ultima transformacion disponible
+                rclpy.time.Time()
             )
             tr = t.transform.translation
             self.pose = (tr.x, tr.y, yaw_from_quat(t.transform.rotation))
-        except tf2_ros.LookupException:
-            pass  # TF todavia no disponible
-        except tf2_ros.ExtrapolationException:
-            pass  # timestamp fuera de rango
+        except (tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException):
+            pass
 
     def path_cb(self, msg):
         self.path     = [(ps.pose.position.x, ps.pose.position.y) for ps in msg.poses]

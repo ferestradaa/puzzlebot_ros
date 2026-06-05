@@ -49,7 +49,7 @@
       declare_parameter<std::string>("dynamic_map_topic", "/map");
       declare_parameter<double>("robot_radius",     0.20);
       declare_parameter<bool>  ("smooth_path",      true);
-      declare_parameter<double>("waypoint_spacing", 0.45);
+      declare_parameter<double>("waypoint_spacing", 0.15);
       declare_parameter<int>   ("max_iter",          5000);
       declare_parameter<int>   ("step_size",         2);
       declare_parameter<int>   ("connect_step_size", 2);

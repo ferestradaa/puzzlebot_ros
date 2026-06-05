@@ -26,6 +26,10 @@ include_directories(bt_nodes)
 add_executable(bt_executor
    src/bt_executor.cpp)
 
+add_executable(process_manager
+   src/process_manager.cpp)
+
+   
 target_include_directories(bt_executor PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
@@ -43,10 +47,16 @@ ament_target_dependencies(bt_executor
    tf2_geometry_msgs
    tf2
    
-   
 )
 
-install(TARGETS bt_executor
+ament_target_dependencies(process_manager
+    rclcpp
+    rclcpp_action
+    puzzlebot_interfaces
+   
+)
+  
+install(TARGETS bt_executor process_manager
   DESTINATION lib/${PROJECT_NAME}
 )
 

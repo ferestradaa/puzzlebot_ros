@@ -15,6 +15,7 @@
 #include "is_localized.hpp"
 #include "go_to.hpp"
 #include "wait_for_pose.hpp"
+#include "process_manager.hpp"
 
 
 
@@ -86,6 +87,18 @@ class BTexecutor : public  rclcpp::Node{
                 [this](const std::string & name, const BT::NodeConfig & conf){
                     return std::make_unique<puzzlebot_bt::VisualServoingAction>(name, conf, bt_node_); 
                 }); 
+
+            factory_.registerBuilder<puzzlebot_bt::LaunchNodeAction>(
+                "LaunchNode",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::LaunchNodeAction>(name, conf, bt_node_);
+                });
+
+            factory_.registerBuilder<puzzlebot_bt::KillNodeAction>(
+                "KillNode",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::KillNodeAction>(name, conf, bt_node_);
+                });
 
             
                 
