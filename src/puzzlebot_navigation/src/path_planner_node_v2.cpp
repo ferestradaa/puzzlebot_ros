@@ -21,14 +21,14 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
 
-#include "robot_interfaces/srv/plan_path.hpp"
+#include "puzzlebot_interfaces/srv/plan_path.hpp"
 
 class PathPlannerNode : public rclcpp::Node
 {
 public:
   using GridCell = std::pair<int, int>;
   using WorldPoint = std::pair<double, double>;
-  using PlanPath = robot_interfaces::srv::PlanPath;
+  using PlanPath = puzzlebot_interfaces::srv::PlanPath;
 
   struct PairHash
   {
@@ -45,8 +45,8 @@ public:
     rng_(std::random_device{}())
   {
     declare_parameter<std::string>("global_frame", "map");
-    declare_parameter<std::string>("robot_pose_topic", "/robot_pose_map");
-    declare_parameter<std::string>("dynamic_map_topic", "/dynamic_map");
+    declare_parameter<std::string>("robot_pose_topic", "/odom");
+    declare_parameter<std::string>("dynamic_map_topic", "/map");
 
     declare_parameter<double>("robot_radius", 0.20);
     declare_parameter<int>("start_free_search_radius_cells", 20);

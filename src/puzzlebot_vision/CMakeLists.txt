@@ -306,7 +306,8 @@ target_link_libraries(qr_detection_node_test
     opencv_dnn
     opencv_objdetect
     opencv_calib3d
-    -lzbar) 
+    Eigen3::Eigen
+    -lzbar)
 
 target_link_libraries(qr_detection_node
   PRIVATE

@@ -42,22 +42,6 @@ def generate_launch_description():
         executable='odometry', #valid for sim or real
     )
 
-    odom_raw = Node(
-        package='puzzlebot_control', 
-        executable='odometry_raw',
-    )
-
-    drive_raw = Node(
-        package='puzzlebot_control', 
-        executable='drive_raw_server',
-    )
-
-    visual_servoing = Node(
-        package='puzzlebot_control', 
-        executable='visual_servoing',
-    )
-
-
     fixed_april = Node(
         package='puzzlebot_control', 
         executable='fixed_apriltags_node',
@@ -74,14 +58,10 @@ def generate_launch_description():
             use_sim_time_arg,
             sim_arg,
             SetParameter(name='use_sim_time', value=use_sim_time),
-            js_pub, 
+            js_pub,
             encoders_sim,
-            pure_pursuit,
             odom, 
-            #odom_raw,
-            visual_servoing, 
-            drive_raw, 
-            fixed_april
+            fixed_april, 
         ])
 
 

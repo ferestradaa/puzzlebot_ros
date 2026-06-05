@@ -52,11 +52,6 @@ def generate_launch_description():
 
     
 
-    qr_detection = Node(
-        package = 'puzzlebot_vision',
-        executable = 'qr_detection_node_test', #detection as topic not service
-
-    )
 
     apriltag_detector = Node(
         package = 'puzzlebot_inference',
@@ -72,11 +67,12 @@ def generate_launch_description():
 
 
     return LaunchDescription([
-
-        qr_detection, 
+        use_sim_time_arg,
+        sim_arg,
+        SetParameter(name='use_sim_time', value=use_sim_time),
         camera_noise, 
-        camera_info, 
-        apriltag_detector
+        camera_info,
+        apriltag_detector,
         
 
     ])

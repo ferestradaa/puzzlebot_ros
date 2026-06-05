@@ -88,6 +88,11 @@ add_executable(path_planner_node
   src/path_planner_node.cpp
 )
 
+add_executable(path_planner_node_v2
+  src/path_planner_node_v2.cpp
+)
+
+
 
 add_executable(dynamic_map_node
   src/dynamic_map_node.cpp
@@ -110,11 +115,22 @@ target_include_directories(path_planner_node PRIVATE
   include
 )
 
+
+target_include_directories(path_planner_node_v2 PRIVATE
+  include
+)
+
+
 target_include_directories(dynamic_map_node PRIVATE
   include
 )
 
 target_link_libraries(path_planner_node
+  yaml-cpp
+  ${OpenCV_LIBS}
+)
+
+target_link_libraries(path_planner_node_v2
   yaml-cpp
   ${OpenCV_LIBS}
 )
@@ -130,6 +146,21 @@ target_link_libraries(map_server_node
 
 ament_target_dependencies(
   path_planner_node
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  ament_index_cpp
+  OpenCV
+  puzzlebot_interfaces
+)
+
+
+ament_target_dependencies(
+  path_planner_node_v2
   rclcpp
   nav_msgs
   geometry_msgs
@@ -185,12 +216,14 @@ ament_target_dependencies(
 # With older GCC versions, std::filesystem may require linking stdc++fs.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
   target_link_libraries(path_planner_node stdc++fs)
+  target_link_libraries(path_planner_node_v2 stdc++fs)
   target_link_libraries(dynamic_map_node stdc++fs)
 endif()
 
 
 install(TARGETS
   path_planner_node
+  path_planner_node_v2
   dynamic_map_node
   map_server_node
   go_to_server

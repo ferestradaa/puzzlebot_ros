@@ -17,6 +17,10 @@ class EncoderNode : public rclcpp::Node{
         encr_sub_ = this -> create_subscription<std_msgs::msg::Float32>("VelocityEncR", qos, 
         std::bind(&EncoderNode::encoderR_callback, this, std::placeholders::_1));
 
+
+        forklift_sub_ = this -> create_subscription<std_msgs::msg::Float32>("forklift_height", 10, 
+        std::bind(&EncoderNode::forklift_callback, this, std::placeholders::_1));
+
         timer_ = this ->create_wall_timer(std::chrono::milliseconds(50), //timer for publishing joint states
                 std::bind(&EncoderNode::publish_joint_states, this)); 
 
@@ -31,6 +35,11 @@ class EncoderNode : public rclcpp::Node{
         
     }
     private:
+
+        void forklift_callback(const std_msgs::msg::Float32::SharedPtr msg){
+            fork_hei_ = msg -> data; 
+        }
+
         void encoderL_callback(const std_msgs::msg::Float32::SharedPtr msg){
             left_vel_ = msg -> data; 
         }
@@ -64,9 +73,10 @@ class EncoderNode : public rclcpp::Node{
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr js_pub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encl_sub_; 
         rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr encr_sub_; 
+        rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr forklift_sub_; 
         rclcpp::Time last_time_; 
         rclcpp::TimerBase::SharedPtr timer_;
-        double left_pos_, right_pos_, left_vel_, right_vel_; 
+        double left_pos_, right_pos_, left_vel_, right_vel_, fork_hei_; 
         
 }; 
 

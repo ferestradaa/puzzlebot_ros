@@ -1,0 +1,164 @@
+#include <rclcpp/rclcpp.hpp>
+#include <behaviortree_cpp/bt_factory.h>
+#include <behaviortree_cpp/loggers/bt_cout_logger.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <yaml-cpp/yaml.h>
+#include <fstream>
+
+#include "dummy_nodes.hpp"
+#include "enable_detections.hpp"
+#include "qr_detection.hpp"
+#include "drive_raw.hpp"
+#include "visual_servoing.hpp"
+#include "move_forklift.hpp"
+#include "map_available.hpp"
+#include "is_localized.hpp"
+#include "go_to.hpp"
+#include "wait_for_pose.hpp"
+#include "process_manager.hpp"
+
+
+
+
+class BTexecutor : public  rclcpp::Node{
+    public: 
+        explicit BTexecutor(rclcpp::Node::SharedPtr bt_node)
+        : Node("bt_executor"), bt_node_(bt_node){
+
+
+            factory_.registerBuilder<puzzlebot_bt::CheckMapAvailable>(
+                "CheckMapAvailable",
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::CheckMapAvailable>(name, conf, bt_node_);
+                });
+
+            factory_.registerBuilder<puzzlebot_bt::IsLocalizedCondition>(
+                "IsLocalizedCondition",
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::IsLocalizedCondition>(name, conf, bt_node_);
+                });
+
+
+            factory_.registerBuilder<puzzlebot_bt::WaitForQRPoseAction>(
+                "WaitForQRPose",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::WaitForQRPoseAction>(name, conf, bt_node_);
+                });
+
+            factory_.registerBuilder<puzzlebot_bt::GoToAction>(
+                "GoToAction",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::GoToAction>(name, conf, bt_node_);
+                });
+
+
+            factory_.registerBuilder<puzzlebot_bt::QrDetectionAction>(
+                "QrDetectionAction", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::QrDetectionAction>(name, conf, bt_node_); 
+                });
+            
+            factory_.registerBuilder<puzzlebot_bt::EnableDetections>(
+                "EnableDetections", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::EnableDetections>(name, conf, bt_node_); 
+                }); 
+
+            factory_.registerBuilder<puzzlebot_bt::GetTargetPose>(
+                "GetTargetPose", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::GetTargetPose>(name, conf); 
+                }); 
+
+            factory_.registerBuilder<puzzlebot_bt::MoveForklift>(
+                "MoveForklift", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::MoveForklift>(name, conf, bt_node_); 
+                }); 
+
+            factory_.registerBuilder<puzzlebot_bt::DriveRawAction>(
+                "DriveRawAction", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::DriveRawAction>(name, conf, bt_node_); 
+                }); 
+
+            factory_.registerBuilder<puzzlebot_bt::VisualServoingAction>(
+                "VisualServoingAction", 
+                [this](const std::string & name, const BT::NodeConfig & conf){
+                    return std::make_unique<puzzlebot_bt::VisualServoingAction>(name, conf, bt_node_); 
+                }); 
+
+            factory_.registerBuilder<puzzlebot_bt::LaunchNodeAction>(
+                "LaunchNode",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::LaunchNodeAction>(name, conf, bt_node_);
+                });
+
+            factory_.registerBuilder<puzzlebot_bt::KillNodeAction>(
+                "KillNode",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::KillNodeAction>(name, conf, bt_node_);
+                });
+
+            
+                
+
+            std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_behavior"); 
+            YAML::Node config = YAML::LoadFile(pkg_path + "/config/config.yaml"); 
+
+            //std::string relative_tree_path = config["path_trees"]["main_tree"].as<std::string>();
+            std::string relative_tree_path = config["path_trees"]["docking_tree"].as<std::string>();
+
+            std::string xml_path = pkg_path + "/" + relative_tree_path;
+
+
+            std::ifstream xml_file(xml_path);
+            if (!xml_file.is_open()) {
+                RCLCPP_ERROR(this->get_logger(), "Cannot open: %s", xml_path.c_str());
+                return;
+            }
+            std::string xml_content((std::istreambuf_iterator<char>(xml_file)),
+                                    std::istreambuf_iterator<char>());
+            tree_ = factory_.createTreeFromText(xml_content);            
+            logger_ = std::make_shared<BT::StdCoutLogger>(tree_); 
+
+            timer_ = this -> create_wall_timer(std::chrono::milliseconds(50),
+                     std::bind(&BTexecutor::tickTree, this)); 
+            
+            RCLCPP_INFO(this -> get_logger(), "BT successfully initialized!"); 
+        }
+
+
+    private: 
+        void tickTree(){
+            auto status = tree_.tickOnce(); 
+            if (status == BT::NodeStatus::SUCCESS){
+                RCLCPP_INFO(this->get_logger(), "Tree finished with SUCCESS");
+                timer_ -> cancel(); 
+            } else if (status == BT::NodeStatus::FAILURE){
+                RCLCPP_WARN(this->get_logger(), "Tree finished with FAILURE");
+                timer_ -> cancel();
+            }
+        }
+
+        rclcpp::Node::SharedPtr bt_node_; 
+        BT::BehaviorTreeFactory factory_; 
+        BT::Tree tree_; 
+        std::shared_ptr<BT::StdCoutLogger> logger_; 
+        rclcpp::TimerBase::SharedPtr timer_; 
+};
+
+
+int main(int argc, char **argv){
+  rclcpp::init(argc, argv);
+  auto bt_node = std::make_shared<rclcpp::Node>("bt_clients"); 
+  auto executor = std::make_shared<BTexecutor>(bt_node);
+
+  rclcpp::executors::MultiThreadedExecutor exec; 
+  exec.add_node(executor); 
+  exec.add_node(bt_node); 
+  exec.spin(); 
+
+  rclcpp::shutdown();
+  return 0;
+}

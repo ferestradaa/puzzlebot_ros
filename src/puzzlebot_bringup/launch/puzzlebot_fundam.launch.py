@@ -82,6 +82,11 @@ def generate_launch_description():
         launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
     )
 
+    vision_fundam = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(vision, 'launch', 'vision_fundam.launch.py')),
+        launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
+    )
 
 
 
@@ -96,6 +101,7 @@ def generate_launch_description():
         puzzlebot_cam,
         lidar,       
         desc_launch,
+        vision_fundam
 
     ])
 
