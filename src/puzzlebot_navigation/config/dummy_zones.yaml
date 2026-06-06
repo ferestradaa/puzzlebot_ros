@@ -15,17 +15,17 @@ zones:
     yaw: 1.5
 
   Emezon:
-    x: 4.1
-    y: 2.8
+    x: 4.4
+    y: 2.9
     yaw: 0.0
 
   Wolmar:
-    x: 4.1
+    x: 4.4
     y: 2.35
-    yaw: 0.0
+    yaw: 1.5
 
   Popsi:
-    x: 4.1
+    x: 4.4
     y: 1.8
     yaw: 0.0
 
