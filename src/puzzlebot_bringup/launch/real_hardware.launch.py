@@ -119,11 +119,6 @@ def generate_launch_description():
         executable= 'path_planner_node_v2', 
     )
 
-    pure_pursuit = Node(
-        package = 'puzzlebot_control', 
-        executable= 'pure_pursuit_node', 
-    )
-
     pure_pursuit_py = Node(
         package = 'puzzlebot_inference', 
         executable= 'pure_pursuit_fork', 

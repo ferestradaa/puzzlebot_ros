@@ -5,6 +5,7 @@ from nav_msgs.msg import Odometry, Path
 from geometry_msgs.msg import Twist
 from tf2_ros import Buffer, TransformListener
 import tf2_ros
+from std_msgs.msg import Bool
 
 def yaw_from_quat(q):
     siny = 2.0 * (q.w * q.z + q.x * q.y)
@@ -20,8 +21,8 @@ def clamp(v, lo, hi):
 class PurePursuit(Node):
     def __init__(self):
         super().__init__('pure_pursuit_fork')
-        self.declare_parameter('v_max', 0.11)
-        self.declare_parameter('w_max', 0.13)
+        self.declare_parameter('v_max', 0.06)
+        self.declare_parameter('w_max', 0.1)
         self.declare_parameter('a_lin', 0.10)
         self.declare_parameter('a_ang', 1.20)
         self.declare_parameter('ld_min', 0.2)
@@ -34,7 +35,7 @@ class PurePursuit(Node):
         self.declare_parameter('final_yaw_tol', 0.05)
         self.declare_parameter('final_yaw_gain', 0.8)
         self.declare_parameter('map_frame', 'map')
-        self.declare_parameter('rate', 30.0)
+        self.declare_parameter('rate', 5.0)
 
         self.v_max          = self.get_parameter('v_max').value
         self.w_max          = self.get_parameter('w_max').value
@@ -67,6 +68,10 @@ class PurePursuit(Node):
 
         self.create_subscription(Path, '/path', self.path_cb, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.goal_reached_pub = self.create_publisher(Bool, '/pure_pursuit/goal_reached', 10)
+        self._goal_reached_latched = False
+
+
         self.create_timer(self.dt, self.control_loop)
         self.get_logger().info('pure pursuit ready, controlling fork_tip_link')
 
@@ -85,6 +90,7 @@ class PurePursuit(Node):
             pass
 
     def path_cb(self, msg):
+        self._goal_reached_latched = False
         self.path     = [(ps.pose.position.x, ps.pose.position.y) for ps in msg.poses]
         self.aligning = False
         if msg.poses:
@@ -95,10 +101,12 @@ class PurePursuit(Node):
             else:
                 self.goal_yaw = None
 
-    def stop(self):
-        self.prev_v = 0.0
-        self.prev_w = 0.0
-        self.cmd_pub.publish(Twist())
+
+    def _publish_reached(self):
+        msg = Bool()
+        msg.data = True
+        self.goal_reached_pub.publish(msg)
+        self._goal_reached_latched = True
 
     def ramp(self, target, prev, accel):
         step = accel * self.dt
@@ -156,6 +164,7 @@ class PurePursuit(Node):
                 self.stop()
                 self.path    = []
                 self.aligning = False
+                self._publish_reached()
                 self.get_logger().info('goal reached with final orientation')
                 return
 
@@ -169,7 +178,9 @@ class PurePursuit(Node):
                 self.aligning = True
                 self.get_logger().info('position reached, starting final alignment')
             else:
+                self.stop()
                 self.path = []
+                self._publish_reached()
                 self.get_logger().info('goal reached')
             return
 
@@ -196,6 +207,13 @@ class PurePursuit(Node):
 
         self.publish_cmd(v_target, w_target)
 
+
+    def stop(self):
+        cmd = Twist()
+        self.cmd_pub.publish(cmd)
+        self.prev_v = 0.0
+        self.prev_w = 0.0
+
 def main():
     rclpy.init()
     node = PurePursuit()
@@ -204,7 +222,8 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        node.stop()
+        if node and node.cmd_pub:
+            node.stop()
         node.destroy_node()
         rclpy.shutdown()
 

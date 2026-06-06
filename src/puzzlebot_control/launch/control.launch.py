@@ -64,10 +64,6 @@ def generate_launch_description():
     )
 
 
-    pure_pursuit = Node(
-        package = 'puzzlebot_control', 
-        executable= 'pure_pursuit_node', 
-    )
 
     
     return LaunchDescription([
@@ -76,7 +72,6 @@ def generate_launch_description():
             SetParameter(name='use_sim_time', value=use_sim_time),
             js_pub, 
             encoders_sim,
-            pure_pursuit,
             odom, 
             #odom_raw,
             visual_servoing, 

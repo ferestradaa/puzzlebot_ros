@@ -14,6 +14,9 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "std_msgs/msg/bool.hpp"
+
+
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "yaml-cpp/yaml.h"
 
@@ -43,6 +46,12 @@ public:
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
     planner_cli_ = create_client<PlanPath>("plan_path");
     path_pub_    = create_publisher<nav_msgs::msg::Path>("/path", 10);
+
+    reached_sub_ = create_subscription<std_msgs::msg::Bool>(
+      "/pure_pursuit/goal_reached", 10,
+      [this](const std_msgs::msg::Bool::SharedPtr msg) {
+          if (msg->data) goal_reached_ = true;
+      });
 
     server_ = rclcpp_action::create_server<GoTo>(
       this, "go_to",
@@ -138,6 +147,7 @@ private:
   }
 
   void execute(const std::shared_ptr<GoalHandle> gh) {
+    goal_reached_ = false;
     auto result = std::make_shared<GoTo::Result>();
     auto target = resolve_goal(gh->get_goal());
 
@@ -179,35 +189,32 @@ private:
     auto start = now();
 
     while (rclcpp::ok()) {
-      if (gh->is_canceling()) {
-        result->success    = false;
-        result->error_code = GoTo::Result::ABORTED;
-        gh->canceled(result);
-        return;
-      }
-
-      if ((now() - start).seconds() > timeout_) {
-        result->success    = false;
-        result->error_code = GoTo::Result::TIMEOUT;
-        gh->abort(result);
-        return;
-      }
-
-      double rx, ry, ryaw;
-      if (get_robot_pose(rx, ry, ryaw)) {
-        double dist = std::hypot(gx - rx, gy - ry);
-        double ang  = std::abs(std::atan2(std::sin(gyaw - ryaw), std::cos(gyaw - ryaw)));
-
-        fb->distance_remaining = static_cast<float>(dist);
-        fb->angle_remaining    = static_cast<float>(ang);
-        gh->publish_feedback(fb);
-
-        if (dist < pos_thr_ && ang < yaw_thr_) {
-          break;
+        if (gh->is_canceling()) {
+            result->success    = false;
+            result->error_code = GoTo::Result::ABORTED;
+            gh->canceled(result);
+            return;
         }
-      }
 
-      rate.sleep();
+        if ((now() - start).seconds() > timeout_) {
+            result->success    = false;
+            result->error_code = GoTo::Result::TIMEOUT;
+            gh->abort(result);
+            return;
+        }
+
+        double rx, ry, ryaw;
+        if (get_robot_pose(rx, ry, ryaw)) {
+            double dist = std::hypot(gx - rx, gy - ry);
+            double ang  = std::abs(std::atan2(std::sin(gyaw - ryaw), std::cos(gyaw - ryaw)));
+            fb->distance_remaining = static_cast<float>(dist);
+            fb->angle_remaining    = static_cast<float>(ang);
+            gh->publish_feedback(fb);
+        }
+
+        if (goal_reached_) break;
+
+        rate.sleep();
     }
 
     result->success    = true;
@@ -223,6 +230,9 @@ private:
   rclcpp::Client<PlanPath>::SharedPtr         planner_cli_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
   rclcpp_action::Server<GoTo>::SharedPtr      server_;
+
+  bool goal_reached_{false};
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr reached_sub_;
 };
 
 int main(int argc, char ** argv) {
