@@ -99,9 +99,9 @@ public:
     path_pub_ = create_publisher<nav_msgs::msg::Path>("/path", 10);
 
 
-    dynamic_map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
+  dynamic_map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
       dynamic_map_topic_,
-      rclcpp::QoS(10),
+      rclcpp::QoS(1).reliable().transient_local(),  // match map_server
       std::bind(&PathPlannerNode::dynamic_map_callback, this, std::placeholders::_1));
 
     robot_pose_stamped_sub_ = create_subscription<nav_msgs::msg::Odometry>(

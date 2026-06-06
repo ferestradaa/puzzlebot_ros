@@ -18,6 +18,20 @@ import contextlib
 
 import os
 import sys
+import os
+import contextlib
+
+@contextlib.contextmanager
+def suppress_fd2():
+    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    old_fd2 = os.dup(2)
+    os.dup2(devnull_fd, 2)
+    os.close(devnull_fd)
+    try:
+        yield
+    finally:
+        os.dup2(old_fd2, 2)
+        os.close(old_fd2)
 
 
 class AprilTagDetector(Node):
@@ -101,14 +115,13 @@ class AprilTagDetector(Node):
         cx = self.camera_matrix[0, 2]
         cy = self.camera_matrix[1, 2]
 
-        with open(os.devnull, 'w') as devnull:
-            with contextlib.redirect_stderr(devnull):
-                detections = self.detector.detect(
-                    frame,
-                    estimate_tag_pose=True,
-                    camera_params=(fx, fy, cx, cy),
-                    tag_size=self.tag_size,
-                )
+        with suppress_fd2():
+            detections = self.detector.detect(
+                frame,
+                estimate_tag_pose=True,
+                camera_params=(fx, fy, cx, cy),
+                tag_size=self.tag_size,
+            )
 
         cam_array = AprilTagDetectionArray()
         cam_array.header = msg.header
@@ -201,6 +214,10 @@ class AprilTagDetector(Node):
             y = (R[1,2] + R[2,1]) / s
             z = 0.25 * s
         return [x, y, z, w]
+    
+
+
+
 
 
 
