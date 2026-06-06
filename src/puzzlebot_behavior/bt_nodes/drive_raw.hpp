@@ -49,10 +49,18 @@ public:
         goal.cmd_vel.angular.z = angular_z;
 
         auto send_goal_options = rclcpp_action::Client<DriveRaw>::SendGoalOptions();
+
+
+
         send_goal_options.feedback_callback = 
             [this](GoalHandleDriveRaw::SharedPtr, const std::shared_ptr<const DriveRaw::Feedback> feedback) {
+                 auto now = node_->now();
+                 if ((now - last_feedback_log_).seconds() < 3.0) return;
+                 last_feedback_log_ = now;
                 RCLCPP_INFO(node_->get_logger(), "Distance to obstacle: %.2f m", feedback->distance_to_obstacle);
             };
+
+
         send_goal_options.result_callback = 
             [this](const GoalHandleDriveRaw::WrappedResult& result) {
                 result_ = result;
@@ -108,6 +116,7 @@ private:
     std::shared_future<GoalHandleDriveRaw::SharedPtr> goal_handle_future_;
     rclcpp::Time start_time_;
     rclcpp::Duration duration_;
+    rclcpp::Time last_feedback_log_{0, 0, RCL_ROS_TIME};
 };
 
 }

@@ -58,7 +58,7 @@ public:
     send_goal_options.feedback_callback =
       [this](GoalHandleGoTo::SharedPtr, const std::shared_ptr<const GoTo::Feedback> feedback) {
         auto now = node_->now();
-        if ((now - last_feedback_log_).seconds() < 1.0) return;
+        if ((now - last_feedback_log_).seconds() < 3.0) return;
         last_feedback_log_ = now;
         RCLCPP_INFO(node_->get_logger(), "Distance remaining: %.2f m, angle: %.2f rad",
                     feedback->distance_remaining, feedback->angle_remaining);

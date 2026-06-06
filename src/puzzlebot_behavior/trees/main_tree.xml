@@ -12,19 +12,19 @@
         <RetryUntilSuccessful num_attempts="-1">
           <Fallback name="SearchQR">
 
-            <Parallel success_count="1" failure_count="2">
+            <Parallel success_count="1" failure_count="1">
               <Sequence>
-                <DriveRawAction linear_x="0.0" angular_z="0.1" duration_sec="32.0"/>
-                <DriveRawAction linear_x="0.0" angular_z="-0.1" duration_sec="32.0"/>
+                <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
+                <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
                 <AlwaysFailure/>
               </Sequence>
               <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
             </Parallel>
 
-            <Parallel success_count="1" failure_count="2">
+            <Parallel success_count="1" failure_count="1">
               <Sequence>
                 <GoToAction zone="center"/>
-                <DriveRawAction linear_x="0.0" angular_z="0.1" duration_sec="63.0"/>
+                <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
                 <AlwaysFailure/>
               </Sequence>
               <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>

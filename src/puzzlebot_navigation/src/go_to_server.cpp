@@ -38,7 +38,7 @@ public:
     pos_thr_ = declare_parameter<double>("pos_threshold", 0.10);
     yaw_thr_ = declare_parameter<double>("yaw_threshold", 0.10);
     fb_rate_ = declare_parameter<double>("feedback_rate", 5.0);
-    timeout_ = declare_parameter<double>("goal_timeout", 60.0);
+    timeout_ = declare_parameter<double>("goal_timeout", 90.0);
 
     load_zones();
 
@@ -85,7 +85,7 @@ private:
       z.y   = it->second["y"].as<double>(0.0);
       z.yaw = it->second["yaw"].as<double>(0.0);
       zones_[name] = z;
-      RCLCPP_INFO(get_logger(), "Zone loaded: %s (%.2f, %.2f, %.2f)", name.c_str(), z.x, z.y, z.yaw);
+      //RCLCPP_INFO(get_logger(), "Zone loaded: %s (%.2f, %.2f, %.2f)", name.c_str(), z.x, z.y, z.yaw);
     }
 
     if (zones_.empty()) {
@@ -130,7 +130,11 @@ private:
       const auto & z = zones_.at(goal->zone_name);
       return make_pose(z.x, z.y, z.yaw);
     }
-    return goal->target_pose;
+    auto p = goal->target_pose;
+    double yaw = tf2::getYaw(p.pose.orientation);
+    p.pose.position.x -= 0.15 * std::cos(yaw);
+    p.pose.position.y -= 0.15 * std::sin(yaw);
+    return p;
   }
 
   bool get_robot_pose(double & x, double & y, double & yaw) {
