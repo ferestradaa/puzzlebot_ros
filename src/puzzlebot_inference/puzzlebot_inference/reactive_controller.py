@@ -1,64 +1,96 @@
 import math
+import numpy as np
 import rclpy
 from rclpy.node import Node
+from rclpy.duration import Duration
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Bool
 import tf2_ros
 from tf2_ros import Buffer, TransformListener
-from rclpy.duration import Duration
+
+# states that mean the reactive layer is recovering on its own
+RECOVERY_STATES = {'ESCAPE_BACKUP', 'ESCAPE_TURN', 'STUCK_HOLD'}
+
+
 def clamp(v, lo, hi):
     return max(lo, min(hi, v))
+
+
 class ReactiveLayer(Node):
     def __init__(self):
         super().__init__('reactive_layer')
-        self.declare_parameter('tip_offset',      0.2)
-        self.declare_parameter('clearance',       0.15)
-        self.declare_parameter('ramp_start',      0.8)
+
+        # geometry and cone params
+        self.declare_parameter('tip_offset', 0.2)
+        self.declare_parameter('clearance', 0.15)
+        self.declare_parameter('ramp_start', 0.8)
         self.declare_parameter('cone_half_angle', 0.524)
-        self.declare_parameter('evasion_gain',    1.5)
-        self.declare_parameter('w_max',           0.15)
-        self.declare_parameter('base_frame',      'base_link')
-        self.declare_parameter('corridor_half_width', 0.25)  # medio ancho del robot + margen
+        self.declare_parameter('evasion_gain', 1.5)
+        self.declare_parameter('w_max', 0.15)
+        self.declare_parameter('base_frame', 'base_link')
+        self.declare_parameter('corridor_half_width', 0.25)  # half robot width + margin
+        self.declare_parameter('corridor_min_x', 0.15)       # ignore points closer than this
 
-        self.a_lin_up   = 0.15   # acelerar gentil, protege el Jetson
-        self.a_lin_down = 0.6    # frenar agresivo, usa la zona de rampa
-        self.a_ang      = 1.0
-        self.corridor_half_width = self.get_parameter('corridor_half_width').value
-
-        
-        self.tip_offset      = self.get_parameter('tip_offset').value
-        self.clearance       = self.get_parameter('clearance').value
-        self.ramp_start      = self.get_parameter('ramp_start').value
+        self.tip_offset = self.get_parameter('tip_offset').value
+        self.clearance = self.get_parameter('clearance').value
+        self.ramp_start = self.get_parameter('ramp_start').value
         self.cone_half_angle = self.get_parameter('cone_half_angle').value
-        self.evasion_gain    = self.get_parameter('evasion_gain').value
-        self.w_max           = self.get_parameter('w_max').value
-        self.base_frame      = self.get_parameter('base_frame').value
-
-
-        self.declare_parameter('corridor_min_x', 0.15)  # ignora puntos mas cerca que esto (ruido/self/lado)
+        self.evasion_gain = self.get_parameter('evasion_gain').value
+        self.w_max = self.get_parameter('w_max').value
+        self.base_frame = self.get_parameter('base_frame').value
+        self.corridor_half_width = self.get_parameter('corridor_half_width').value
         self.corridor_min_x = self.get_parameter('corridor_min_x').value
-        # hard_stop = 0.35m, ramp desde 0.8m -> 65cm de margen
+
+        # frontal stop distance, ramp zone reaches down to this
         self.hard_stop = self.tip_offset + self.clearance
-        self.tf_buffer   = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
-        self.latest_scan       = None
-        self.latest_desired    = None
-        self.last_desired_time = None
-        self.desired_timeout   = Duration(seconds=0.5)
+
+        # accel limits for the command ramp, dt is the timer period
+        self.dt = 0.033
+        self.a_lin_up = 0.15    # gentle accel, protects the Jetson
+        self.a_lin_down = 0.6   # aggressive braking, uses the ramp zone
+        self.a_ang = 0.8
+
+        # FSM tuning
+        self.exit_margin = 0.2          # extra clearance over ramp_start to leave AVOID
+        self.clear_needed = 5           # consecutive clean frames to leave AVOID
+        self.stuck_timeout = 1.0        # seconds blocked at hard_stop before escaping
+        self.backup_speed = 0.08        # reverse speed during escape
+        self.backup_duration = 1.0      # reverse time, ~8cm of clearance
+        self.turn_timeout = 3.0         # max in place rotation before retrying backup
+        self.max_escape_attempts = 2    # after this, hold and hand off to the BT
+
+        # FSM state
+        self.state = 'PASSTHROUGH'      # PASSTHROUGH, AVOID, ESCAPE_BACKUP, ESCAPE_TURN, STUCK_HOLD
+        self.evade_dir = 0              # +1 left, -1 right, latched
+        self.clear_frames = 0
+        self.stuck_since = None
+        self.phase_start = None         # timer reference for escape phases
+        self.escape_attempts = 0
+
+        # command memory for the ramp
         self.prev_v = 0.0
         self.prev_w = 0.0
-        self.a_lin  = 0.05
-        self.a_ang  = 0.8
-        self._loop_count     = 0
+
+        # tf
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        # inputs
+        self.latest_scan = None
+        self.latest_desired = None
+        self.last_desired_time = None
+        self.desired_timeout = Duration(seconds=0.5)
+
+        # diagnostics
+        self._loop_count = 0
         self._last_scan_time = None
-        self._last_cmd_v     = 0.0
-        self._last_cmd_w     = 0.0
-        self.create_subscription(LaserScan, '/scan',            self.scan_cb,    10)
-        self.create_subscription(Twist,     '/cmd_vel_desired', self.desired_cb, 10)
+
+        self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
+        self.create_subscription(Twist, '/cmd_vel_desired', self.desired_cb, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
-        self.create_timer(0.033, self.control_loop)
-
-
+        self.stuck_pub = self.create_publisher(Bool, '/reactive_stuck', 10)
+        self.create_timer(self.dt, self.control_loop)
 
     def scan_cb(self, msg):
         now = self.get_clock().now()
@@ -68,9 +100,11 @@ class ReactiveLayer(Node):
                 self.get_logger().warn(f'scan gap {dt:.3f}s')
         self._last_scan_time = now
         self.latest_scan = msg
+
     def desired_cb(self, msg):
-        self.latest_desired    = msg
+        self.latest_desired = msg
         self.last_desired_time = self.get_clock().now()
+
     def get_laser_to_base_tf(self, frame_id):
         try:
             tf = self.tf_buffer.lookup_transform(
@@ -78,141 +112,222 @@ class ReactiveLayer(Node):
                 frame_id,
                 rclpy.time.Time()
             )
-            tx  = tf.transform.translation.x
-            ty  = tf.transform.translation.y
-            yaw = 2.0 * math.atan2(
-                tf.transform.rotation.z,
-                tf.transform.rotation.w
-            )
+            tx = tf.transform.translation.x
+            ty = tf.transform.translation.y
+            yaw = 2.0 * math.atan2(tf.transform.rotation.z, tf.transform.rotation.w)
             return tx, ty, yaw
-        except (tf2_ros.LookupException, tf2_ros.ExtrapolationException):
+        except (tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException):
             return None
-        
+
     def analyze_cone(self, scan):
+        # returns nearest frontal distance inside the robot corridor, and left/right
+        # obstacle counts inside the wider steering cone. vectorized for the Jetson.
         tf = self.get_laser_to_base_tf(scan.header.frame_id)
         if tf is None:
             return float('inf'), 0, 0
+        tx, ty, yaw = tf
 
-        tx, ty, yaw_offset = tf
-        forward_dist = float('inf')   # distancia frontal solo dentro del corredor del robot
-        left_count   = 0
-        right_count  = 0
-        angle        = scan.angle_min
+        ranges = np.asarray(scan.ranges, dtype=np.float32)
+        n = ranges.shape[0]
+        if n == 0:
+            return float('inf'), 0, 0
 
-        for r in scan.ranges:
-            angle += scan.angle_increment
-            if not math.isfinite(r) or r < scan.range_min or r > scan.range_max:
-                continue
+        # correct per index angle, no off by one
+        angles = scan.angle_min + np.arange(n, dtype=np.float32) * scan.angle_increment
 
-            lx = r * math.cos(angle)
-            ly = r * math.sin(angle)
-            bx = tx + math.cos(yaw_offset) * lx - math.sin(yaw_offset) * ly
-            by = ty + math.sin(yaw_offset) * lx + math.cos(yaw_offset) * ly
+        valid = (np.isfinite(ranges) &
+                 (ranges >= scan.range_min) &
+                 (ranges <= scan.range_max))
+        if not np.any(valid):
+            return float('inf'), 0, 0
+        r = ranges[valid]
+        a = angles[valid]
 
-            if bx <= self.corridor_min_x:
-                continue  # demasiado cerca, probablemente al lado o auto-deteccion
+        # laser frame point to base frame
+        lx = r * np.cos(a)
+        ly = r * np.sin(a)
+        cos_y = math.cos(yaw)
+        sin_y = math.sin(yaw)
+        bx = tx + cos_y * lx - sin_y * ly
+        by = ty + sin_y * lx + cos_y * ly
 
-            # frenado: solo puntos dentro del ancho del robot bloquean el avance
-            # un punto de lado no frena, se esquiva con el giro
-            if abs(by) <= self.corridor_half_width and bx < forward_dist:
-                forward_dist = bx
+        # drop points too close, likely self or sideways
+        ahead = bx > self.corridor_min_x
+        bx = bx[ahead]
+        by = by[ahead]
+        if bx.size == 0:
+            return float('inf'), 0, 0
 
-            # conteo lateral para decidir hacia donde esquivar, cono mas amplio
-            dist    = math.hypot(bx, by)
-            bearing = math.atan2(by, bx)
-            if abs(bearing) <= self.cone_half_angle and dist < self.ramp_start:
-                if by >= 0.0:
-                    left_count += 1
-                else:
-                    right_count += 1
+        # only points inside the robot corridor block forward motion
+        corridor = np.abs(by) <= self.corridor_half_width
+        forward_dist = float(np.min(bx[corridor])) if np.any(corridor) else float('inf')
+
+        # lateral counts decide which way to turn, wider cone
+        dist = np.hypot(bx, by)
+        bearing = np.arctan2(by, bx)
+        in_cone = (np.abs(bearing) <= self.cone_half_angle) & (dist < self.ramp_start)
+        left_count = int(np.sum(in_cone & (by >= 0.0)))
+        right_count = int(np.sum(in_cone & (by < 0.0)))
 
         return forward_dist, left_count, right_count
-    
 
-    def evasion_w(self, min_dist, left_count, right_count, desired_w):
-        proximity = 1.0 - (min_dist - self.hard_stop) / (self.ramp_start - self.hard_stop)
-        proximity = clamp(proximity, 0.0, 1.0)
-        magnitude = self.evasion_gain * proximity
-        if left_count == 0 and right_count == 0:
-            # no hay puntos laterales en la zona de peligro, pasa el giro deseado
-            return desired_w
-        if left_count <= right_count:
-            evasion = clamp(magnitude, 0.0, self.w_max)
-        else:
-            evasion = clamp(-magnitude, -self.w_max, 0.0)
-        # blend: a mayor proximidad, domina evasion; a menor, domina desired_w
-        # esto evita el flip de signo que causaba la oscilacion en arco
-        blend = clamp(proximity, 0.0, 1.0)
-        return blend * evasion + (1.0 - blend) * desired_w
-    
+    def pick_dir(self, left_count, right_count):
+        # turn toward the more open side, +1 left, -1 right
+        return 1 if left_count <= right_count else -1
 
     def ramp(self, target, prev, a_up, a_down):
         delta = target - prev
-        # frenar (reducir magnitud o acercarse a cero) puede ser rapido
+        # reducing magnitude or crossing zero can be fast
         braking = (prev >= 0 and delta < 0) or (prev <= 0 and delta > 0)
-        step = (a_down if braking else a_up) * 0.033
+        step = (a_down if braking else a_up) * self.dt
         return prev + clamp(delta, -step, step)
-    
+
+    def elapsed(self, t0, now):
+        return (now - t0).nanoseconds * 1e-9
+
+    def reset_to_passthrough(self):
+        self.state = 'PASSTHROUGH'
+        self.evade_dir = 0
+        self.clear_frames = 0
+        self.stuck_since = None
+        self.escape_attempts = 0
+
+    def enter_escape(self, now):
+        # keep evade_dir latched, it already points to the more open side
+        self.state = 'ESCAPE_BACKUP'
+        self.phase_start = now
+        self.stuck_since = None
+
+    def update_state(self, now, min_dist, left, right):
+        laterals = left + right
+
+        if self.state == 'PASSTHROUGH':
+            if min_dist < self.ramp_start:
+                self.state = 'AVOID'
+                self.evade_dir = self.pick_dir(left, right)  # latch once on entry
+                self.clear_frames = 0
+                self.stuck_since = None
+
+        elif self.state == 'AVOID':
+            # leave only with margin and several clean frames, schmitt trigger
+            if min_dist > self.ramp_start + self.exit_margin and laterals == 0:
+                self.clear_frames += 1
+                if self.clear_frames >= self.clear_needed:
+                    self.reset_to_passthrough()
+            else:
+                self.clear_frames = 0
+
+            # stuck detection, blocked at the frontal stop
+            if min_dist <= self.hard_stop:
+                if self.stuck_since is None:
+                    self.stuck_since = now
+                elif self.elapsed(self.stuck_since, now) > self.stuck_timeout:
+                    self.enter_escape(now)
+            else:
+                self.stuck_since = None
+
+        elif self.state == 'ESCAPE_BACKUP':
+            # blind reverse, time bounded, then rotate
+            if self.elapsed(self.phase_start, now) > self.backup_duration:
+                self.state = 'ESCAPE_TURN'
+                self.phase_start = now
+
+        elif self.state == 'ESCAPE_TURN':
+            if min_dist > self.ramp_start:
+                # front cleared, hand back to the global controller
+                self.reset_to_passthrough()
+            elif self.elapsed(self.phase_start, now) > self.turn_timeout:
+                self.escape_attempts += 1
+                if self.escape_attempts >= self.max_escape_attempts:
+                    self.state = 'STUCK_HOLD'
+                else:
+                    self.state = 'ESCAPE_BACKUP'
+                    self.phase_start = now
+
+        elif self.state == 'STUCK_HOLD':
+            # stopped, the BT must decide, recover only if the path opens by itself
+            if min_dist > self.ramp_start:
+                self.reset_to_passthrough()
+
+    def command_for_state(self, min_dist, desired_v, desired_w):
+        if self.state == 'PASSTHROUGH':
+            return desired_v, desired_w
+
+        if self.state == 'AVOID':
+            if min_dist <= self.hard_stop:
+                # too close, stop and let the stuck timer trigger the escape
+                return 0.0, 0.0
+            scale = clamp((min_dist - self.hard_stop) /
+                          (self.ramp_start - self.hard_stop), 0.0, 1.0)
+            v_target = desired_v * scale
+            prox = clamp(1.0 - scale, 0.0, 1.0)
+            # latched direction, not recomputed each frame, avoids sign flip
+            evasion = self.evade_dir * clamp(self.evasion_gain * prox, 0.0, self.w_max)
+            # blend, closer means evasion dominates, farther means desired_w dominates
+            w_target = prox * evasion + (1.0 - prox) * desired_w
+            return v_target, w_target
+
+        if self.state == 'ESCAPE_BACKUP':
+            # short blind reverse, no rear sensing, retracts the forks from the obstacle
+            return -self.backup_speed, 0.0
+
+        if self.state == 'ESCAPE_TURN':
+            # rotate in place toward the latched open side
+            return 0.0, self.evade_dir * self.w_max
+
+        # STUCK_HOLD
+        return 0.0, 0.0
 
     def control_loop(self):
         self._loop_count += 1
         log_this = (self._loop_count % 30 == 0)
+
         if self.latest_scan is None:
             if log_this:
                 self.get_logger().warn('no scan received yet')
             return
         if self.latest_desired is None or self.last_desired_time is None:
             return
-        desired_age = (self.get_clock().now() - self.last_desired_time).nanoseconds * 1e-9
+
+        now = self.get_clock().now()
+        desired_age = (now - self.last_desired_time).nanoseconds * 1e-9
         if desired_age > self.desired_timeout.nanoseconds * 1e-9:
+            # deadman, global controller is silent, full stop and reset
             self.prev_v = 0.0
             self.prev_w = 0.0
+            self.reset_to_passthrough()
             self.cmd_pub.publish(Twist())
+            self.stuck_pub.publish(Bool(data=False))
             return
-        min_dist, left_count, right_count = self.analyze_cone(self.latest_scan)
+
+        min_dist, left, right = self.analyze_cone(self.latest_scan)
         desired_v = self.latest_desired.linear.x
         desired_w = self.latest_desired.angular.z
-        is_pivoting = abs(desired_v) < 0.05 and abs(desired_w) > 0.05 and min_dist > self.hard_stop
-        if is_pivoting:
-            # giro en lugar: no frenar por obstaculo frontal, rotar saca de la esquina
-            v_target = desired_v
-            w_target = desired_w
-        elif min_dist <= self.hard_stop:
-            v_target = 0.0
-            w_target = 0.0
 
-            self.latest_desired.linear.x  = 0.0
-            self.latest_desired.angular.z = 0.0
-        elif min_dist < self.ramp_start:
-            scale    = (min_dist - self.hard_stop) / (self.ramp_start - self.hard_stop)
-            scale    = clamp(scale, 0.0, 1.0)
-            v_target = desired_v * scale
-            w_target = self.evasion_w(min_dist, left_count, right_count, desired_w)
-        else:
-            v_target = desired_v
-            w_target = desired_w
-        # al final de control_loop, antes de publicar
+        self.update_state(now, min_dist, left, right)
+        v_target, w_target = self.command_for_state(min_dist, desired_v, desired_w)
 
         cmd = Twist()
-# en control_loop al publicar
-        cmd.linear.x  = self.ramp(v_target, self.prev_v, self.a_lin_up, self.a_lin_down)
+        cmd.linear.x = self.ramp(v_target, self.prev_v, self.a_lin_up, self.a_lin_down)
         cmd.angular.z = self.ramp(w_target, self.prev_w, self.a_ang, self.a_ang)
-        self._last_cmd_v = cmd.linear.x
-        self._last_cmd_w = cmd.angular.z
-        self.prev_v      = cmd.linear.x
-        self.prev_w      = cmd.angular.z
+        self.prev_v = cmd.linear.x
+        self.prev_w = cmd.angular.z
 
-
+        # tell the BT whether the reactive layer is recovering
+        self.stuck_pub.publish(Bool(data=(self.state in RECOVERY_STATES)))
 
         if log_this:
-            branch = ('PIVOT' if is_pivoting else
-                    'HARDSTOP' if min_dist <= self.hard_stop else
-                    'RAMP' if min_dist < self.ramp_start else 'FREE')
             self.get_logger().info(
-                f'{branch} | fwd={min_dist:.3f} desv=({desired_v:.3f},{desired_w:.3f}) '
-                f'cmd=({cmd.linear.x:.3f},{cmd.angular.z:.3f}) L={left_count} R={right_count}'
+                f'{self.state} fwd={min_dist:.3f} dir={self.evade_dir} '
+                f'des=({desired_v:.3f},{desired_w:.3f}) '
+                f'cmd=({cmd.linear.x:.3f},{cmd.angular.z:.3f}) L={left} R={right}'
             )
+
         self.cmd_pub.publish(cmd)
+
+
 def main():
     rclpy.init()
     node = ReactiveLayer()
@@ -223,5 +338,7 @@ def main():
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
+
 if __name__ == '__main__':
     main()

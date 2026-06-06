@@ -1,6 +1,7 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="PuzzlebotTree">
     <Sequence name="MainSequence">
+
       <CheckMapAvailable timeout_sec="10.0"/>
       <RetryUntilSuccessful num_attempts="-1">
         <IsLocalizedCondition/>
@@ -11,7 +12,9 @@
 
         <RetryUntilSuccessful num_attempts="-1">
           <Fallback name="SearchQR">
-
+          
+          <Sequence name="SearchInspect">
+           <GoToAction zone="inspect"/>
             <Parallel success_count="1" failure_count="1">
               <Sequence>
                 <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
@@ -20,21 +23,26 @@
               </Sequence>
               <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
             </Parallel>
+           </Sequence>
 
+
+          <Sequence name="SearchCenter">
+           <GoToAction zone="center"/>
             <Parallel success_count="1" failure_count="1">
               <Sequence>
-                <GoToAction zone="center"/>
                 <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
                 <AlwaysFailure/>
               </Sequence>
               <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
             </Parallel>
+          </Sequence>
 
           </Fallback>
         </RetryUntilSuccessful>
 
         <GoToAction target_pose="{qr_pose}"/>
         <GoToAction zone="{qr_data}"/>
+
         <GoToAction zone="home"/>
       </Sequence>
 

@@ -38,7 +38,7 @@ public:
     pos_thr_ = declare_parameter<double>("pos_threshold", 0.10);
     yaw_thr_ = declare_parameter<double>("yaw_threshold", 0.10);
     fb_rate_ = declare_parameter<double>("feedback_rate", 5.0);
-    timeout_ = declare_parameter<double>("goal_timeout", 90.0);
+    timeout_ = declare_parameter<double>("goal_timeout", 120.0);
 
     load_zones();
 

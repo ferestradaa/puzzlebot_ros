@@ -11,7 +11,7 @@
 class QrDetectionNode : public rclcpp::Node {
 public:
     QrDetectionNode() : Node("qr_detection_node") {
-        qr_size_ = 0.035;
+        qr_size_ = 0.09; 
         qr_detection_ = std::make_unique<Qr_detection>(qr_size_, 3);
 
         rclcpp::QoS info_qos(10);

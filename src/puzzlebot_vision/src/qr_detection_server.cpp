@@ -19,7 +19,7 @@ public:
     QrDetectionActionServer()
     : Node("qr_detection_node") {
         
-        qr_size_ = 0.10;
+        qr_size_ = 0.045;
         
         tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
