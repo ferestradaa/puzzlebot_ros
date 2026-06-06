@@ -20,6 +20,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
+#include "nav_msgs/msg/odometry.hpp"
 
 #include "puzzlebot_interfaces/srv/plan_path.hpp"
 
@@ -65,6 +66,8 @@ public:
     declare_parameter<double>("beta", 0.10);
     declare_parameter<double>("gamma", 0.20);
 
+    auto qos = rclcpp::QoS(10).reliable().durability_volatile();
+
 
     global_frame_ = get_parameter("global_frame").as_string();
     robot_pose_topic_ = get_parameter("robot_pose_topic").as_string();
@@ -101,9 +104,9 @@ public:
       rclcpp::QoS(10),
       std::bind(&PathPlannerNode::dynamic_map_callback, this, std::placeholders::_1));
 
-    robot_pose_stamped_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+    robot_pose_stamped_sub_ = create_subscription<nav_msgs::msg::Odometry>(
       robot_pose_topic_,
-      rclcpp::SensorDataQoS(),
+      qos,
       std::bind(&PathPlannerNode::robot_pose_stamped_callback, this, std::placeholders::_1));
 
     goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
@@ -317,7 +320,7 @@ private:
     return false;
   }
 
-  void robot_pose_stamped_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+  void robot_pose_stamped_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
   {
     latest_robot_pose_ = *msg;
     has_robot_pose_ = true;
@@ -347,10 +350,10 @@ private:
         global_frame_.c_str());
     }
 
-    x = latest_robot_pose_.pose.position.x;
-    y = latest_robot_pose_.pose.position.y;
+    x = latest_robot_pose_.pose.pose.position.x;
+    y = latest_robot_pose_.pose.pose.position.y;
 
-    const auto & q = latest_robot_pose_.pose.orientation;
+    const auto & q = latest_robot_pose_.pose.pose.orientation;
     yaw = quaternion_to_yaw(q.x, q.y, q.z, q.w);
 
     return true;
@@ -965,6 +968,21 @@ private:
 
     auto path_msg = build_path_msg(path_world);
 
+
+
+    if (!path_msg.poses.empty()) {
+        const double goal_yaw = quaternion_to_yaw(
+            goal_msg.pose.orientation.x,
+            goal_msg.pose.orientation.y,
+            goal_msg.pose.orientation.z,
+            goal_msg.pose.orientation.w);
+        const auto [qz, qw] = yaw_to_quaternion(goal_yaw);
+        path_msg.poses.back().pose.orientation.x = 0.0;
+        path_msg.poses.back().pose.orientation.y = 0.0;
+        path_msg.poses.back().pose.orientation.z = qz;
+        path_msg.poses.back().pose.orientation.w = qw;
+    }
+
     path_pub_->publish(path_msg);
 
 
@@ -998,7 +1016,6 @@ private:
   {
     const auto [success, message, path] = compute_path_to_goal(*msg);
     (void)path;
-
     if (success) {
       RCLCPP_INFO(get_logger(), "%s", message.c_str());
     } else {
@@ -1082,11 +1099,12 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
 
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr dynamic_map_sub_;
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr robot_pose_stamped_sub_;
+  //rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr robot_pose_stamped_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr robot_pose_stamped_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_;
   rclcpp::Service<PlanPath>::SharedPtr plan_path_srv_;
 
-  geometry_msgs::msg::PoseStamped latest_robot_pose_;
+  nav_msgs::msg::Odometry latest_robot_pose_;
   bool has_robot_pose_ = false;
 };
 

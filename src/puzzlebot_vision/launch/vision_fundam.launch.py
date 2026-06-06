@@ -73,6 +73,7 @@ def generate_launch_description():
         camera_noise, 
         camera_info,
         apriltag_detector,
+        #apriltag_node, 
         
 
     ])

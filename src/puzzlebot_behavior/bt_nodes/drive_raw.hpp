@@ -92,6 +92,12 @@ public:
     }
 
     void onHalted() override {
+        if (goal_handle_future_.valid()) {
+            auto goal_handle = goal_handle_future_.get();
+            if (goal_handle) {
+                action_client_->async_cancel_goal(goal_handle);
+            }
+        }
         RCLCPP_INFO(node_->get_logger(), "Drive raw action halted");
     }
 

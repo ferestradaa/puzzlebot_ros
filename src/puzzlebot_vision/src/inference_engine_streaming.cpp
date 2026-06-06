@@ -25,7 +25,7 @@ public:
       "engine_path",
       "/home/puzzlebot/puzz_ws/src/puzzlebot_inference/models/real/two_sides.engine");
     this->declare_parameter<std::string>("image_topic", "/camera/image_raw");
-    this->declare_parameter<std::string>("detections_topic", "/pallet_detections");
+    this->declare_parameter<std::string>("detections_topic", "/pallet_inference_centroid");
     this->declare_parameter<std::string>("debug_image_topic", "/pallet_detections/image");
     this->declare_parameter<std::string>("ready_topic", "/pallet_detector/ready");
     this->declare_parameter<float>("conf_threshold", 0.25f);
@@ -168,7 +168,7 @@ private:
   float nms_threshold_;
   int   input_size_;
   int   max_detections = 1;
-};
+};  
 
 }
 

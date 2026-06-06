@@ -232,6 +232,12 @@ add_executable(aruco_pose_node
     src/aruco_pose.cpp
 )
 
+
+add_executable(apriltag_detector_node
+    src/apriltag_detector_node.cpp
+)
+
+
 target_link_libraries(camera_noise_node
   PRIVATE
     ${sensor_msgs_TARGETS}
@@ -341,6 +347,23 @@ target_link_libraries(aruco_pose_node
     opencv_aruco
     tf2_ros::tf2_ros)
 
+target_link_libraries(apriltag_detector_node
+  PRIVATE
+    rclcpp::rclcpp
+    apriltag::apriltag
+    ${sensor_msgs_TARGETS}
+    ${geometry_msgs_TARGETS}
+    cv_bridge::cv_bridge
+    opencv_core
+    opencv_imgproc
+    tf2_ros::tf2_ros
+)
+
+ament_target_dependencies(apriltag_detector_node
+  PUBLIC
+    puzzlebot_interfaces
+    tf2_geometry_msgs
+)
 
 target_compile_options(pallet_detection_engine
   PRIVATE
@@ -364,7 +387,7 @@ target_include_directories(inference_engine_streaming
     ${CUDA_INCLUDE_DIRS}
 )
 
-install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine inference_engine_streaming qr_detection_node_test qr_detection_node aruco_pose_node 
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine inference_engine_streaming qr_detection_node_test qr_detection_node aruco_pose_node apriltag_detector_node
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -11,8 +11,9 @@ public:
     using GoalHandleVisualServoing = rclcpp_action::ServerGoalHandle<VisualServoing>;
 
     VisualServoingActionServer() : Node("visual_servoing_action_server") {
+        
         bbox_sub_ = create_subscription<vision_msgs::msg::Detection2DArray>( //subcribing to boundign box from cnn detection
-            "pallet_detections", 1,
+            "pallet_inference_centroid", 1,
             std::bind(&VisualServoingActionServer::detections_callback, this, std::placeholders::_1));
         
         cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
@@ -25,10 +26,12 @@ public:
             std::bind(&VisualServoingActionServer::handle_accepted, this, std::placeholders::_1));
         
         Kw_ = 0.1; //gain for angular velocity 
-        Kv_ = 0.05; //gain por lineal velocity 
+        Kv_ = 0.8; //gain por lineal velocity 
         image_width_ = 640;
         active_ = false;
-        last_current_area_= 0.0; //state inside callback 
+        last_current_area_= 0.0; //state inside callback
+        
+        last_detection_time_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
         
         RCLCPP_INFO(get_logger(), "Visual Servoing action server initialized");
     }
@@ -66,6 +69,8 @@ private:
         active_ = true;
         current_goal_handle_ = goal_handle;
 
+        last_detection_time_ = this->now();
+
         {
             std::lock_guard<std::mutex> lock(error_mutex_);
             last_current_area_ = 0.0;
@@ -99,13 +104,22 @@ private:
                 return;
             }
 
+            double time_since_det = (this->now() - last_detection_time_).seconds();
+            if (time_since_det > detection_timeout_) {
+                geometry_msgs::msg::Twist stop;
+                cmd_pub_->publish(stop);
+                loop_rate.sleep();
+                continue; // sigue esperando, no aborta
+            }
+
+
             double current_area;
             {
                 std::lock_guard<std::mutex> lock(error_mutex_);
                 current_area = last_current_area_;
             }
 
-            double tolerance = target_area_ * 0.05;
+            double tolerance = target_area_ * 0.12;
             if (current_area > 0.0 && std::abs(current_area - target_area_) < tolerance) {
                 geometry_msgs::msg::Twist stop;
                 cmd_pub_->publish(stop);
@@ -127,10 +141,12 @@ private:
         }
         
         if (msg->detections.empty()) {
-            geometry_msgs::msg::Twist stop;
-            cmd_pub_->publish(stop);
+            //geometry_msgs::msg::Twist stop;
+            //cmd_pub_->publish(stop);
             return;
         }
+
+        last_detection_time_ = this->now(); 
         
         auto & det = msg->detections[0];
         double cx = det.bbox.center.position.x;
@@ -154,14 +170,13 @@ private:
         
         twist.angular.z = -Kw_ * ex / (image_width_ / 2.0);
         twist.linear.x = Kv_ * ey / target_area_;
-        twist.linear.x = std::clamp(twist.linear.x, -0.05, 0.15);
-        twist.angular.z = std::clamp(twist.angular.z, -0.3, 0.3);
+        twist.linear.x = std::clamp(twist.linear.x, -0.15, 0.3);
+        twist.angular.z = std::clamp(twist.angular.z, -0.5, 0.5);
 
 
         RCLCPP_INFO(get_logger(), "cx=%.1f ex=%.1f ey=%.1f area=%.0f linear=%.3f angular=%.3f",
                     cx, ex, ey, bbox_area, twist.linear.x, twist.angular.z);
         
-
         
         cmd_pub_->publish(twist);
         
@@ -178,6 +193,7 @@ private:
     rclcpp_action::Server<VisualServoing>::SharedPtr action_server_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
     rclcpp::Subscription<vision_msgs::msg::Detection2DArray>::SharedPtr bbox_sub_;
+    rclcpp::Time last_detection_time_;
     std::shared_ptr<GoalHandleVisualServoing> current_goal_handle_;
     
     double Kw_;
@@ -186,12 +202,17 @@ private:
     double image_width_;
     bool active_;
     double last_current_area_; 
+    const double detection_timeout_ = 0.5; 
     std::mutex error_mutex_; 
 };
 
+
 int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<VisualServoingActionServer>());
+    auto node = std::make_shared<VisualServoingActionServer>();
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(node);
+    executor.spin();
     rclcpp::shutdown();
     return 0;
 }

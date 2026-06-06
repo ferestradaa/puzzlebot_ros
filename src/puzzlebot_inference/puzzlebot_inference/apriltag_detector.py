@@ -201,15 +201,7 @@ class AprilTagDetector(Node):
             y = (R[1,2] + R[2,1]) / s
             z = 0.25 * s
         return [x, y, z, w]
-    
 
-    def _preprocess(self, frame: np.ndarray) -> np.ndarray:
-        min_val = np.percentile(frame, 2)
-        max_val = np.percentile(frame, 98)
-        stretched = np.clip((frame - min_val) / (max_val - min_val + 1e-6) * 255, 0, 255).astype(np.uint8)
-
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        return clahe.apply(stretched)
 
 
 def main(args=None):

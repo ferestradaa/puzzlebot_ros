@@ -157,17 +157,17 @@ class OdometryNode : public rclcpp::Node{
 
             rclcpp::Time detection_time = msg->header.stamp;
 
-            // LOG: latencia de medicion en milisegundos
             double meas_latency = (this->get_clock()->now() - detection_time).seconds();
 
             // latency gate: applying an old detection to the current state injects a jump.
             // negative latency (future stamp) is not rejected. note: with use_sim_time make
             // sure stamps are consistent or this can drop every frame.
+            /*
             if (meas_latency > max_meas_latency_) {
                 RCLCPP_WARN(this->get_logger(), "apriltag frame dropped, latency %.0f ms",
                             meas_latency * 1000.0);
                 return;
-            }
+            }*/
 
             for (const auto& marker : msg->detections){
                 auto iterator = landmark_map_.find(marker.tag_id);
@@ -503,7 +503,7 @@ class OdometryNode : public rclcpp::Node{
         bool   mo_initialized_ = false;
         double max_lin_step_ = 0.02;     // m per cycle, cap on correction step
         double max_ang_step_ = 0.02;     // rad per cycle, cap on correction step
-        double max_meas_latency_ = 0.3;  // s, drop detections older than this
+        double max_meas_latency_ = 0.6;  // s, drop detections older than this
         
         
 }; 

@@ -40,6 +40,13 @@ class BTexecutor : public  rclcpp::Node{
 
 
             factory_.registerBuilder<puzzlebot_bt::WaitForQRPoseAction>(
+                "WaitForQRPoseAction",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::WaitForQRPoseAction>(name, conf, bt_node_);
+                });
+
+
+            factory_.registerBuilder<puzzlebot_bt::WaitForQRPoseAction>(
                 "WaitForQRPose",
                 [this](const std::string& name, const BT::NodeConfig& conf) {
                     return std::make_unique<puzzlebot_bt::WaitForQRPoseAction>(name, conf, bt_node_);
