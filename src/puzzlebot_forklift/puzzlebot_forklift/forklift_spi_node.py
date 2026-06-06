@@ -2,50 +2,41 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32, Int32
-
 import spidev
 import time
 from smbus2 import SMBus
 
-DIST_MIN_MM = 0.0
-DIST_MAX_MM = 290.0
-
-KP          = 0.8
-DUTY_MIN    = 80
-DUTY_MAX    = 95
-PERIODO_PWM = 0.05
-TOLERANCIA  = 3.0
-
-ZONA_FRENADO_MM = 30.0
-DUTY_FRENADO    = 80
-
-DEVICE_ADDRESS = 0x29
-OFFSET_MM      = 65.0
-
-CMD_STOP = 0x00
-CMD_SUBE = 0x01
-CMD_BAJA = 0xFF
-
-LIMITE_INFERIOR_MM = 10.0
-LIMITE_SUPERIOR_MM = 280.0
+DIST_MIN_MM      = 0.0
+DIST_MAX_MM      = 290.0
+KP               = 0.8
+DUTY_MIN         = 200
+DUTY_MAX         = 250
+PWM_PERIOD       = 0.05
+TOLERANCE_MM     = 3.0
+BRAKING_ZONE_MM  = 50.0
+BRAKING_DUTY     = 200
+DEVICE_ADDRESS   = 0x29
+OFFSET_MM        = 55.0
+CMD_STOP         = 0x00
+CMD_UP           = 0x01
+CMD_DOWN         = 0xFF
+UPPER_LIMIT_MM   = 280.0
 
 
 class MastilNode(Node):
-
     def __init__(self):
-        super().__init__('robot_spi_node')   # ← nombre del nodo cambiado
-
+        super().__init__('forklift_spi_node')
         try:
             self.bus = SMBus(1)
-            self.limpiar_y_arrancar_laser()
-            self.get_logger().info('Sensor VL53L0X iniciado')
+            self._reset_sensor()
+            self.get_logger().info('VL53L0X initialized')
         except Exception as e:
-            self.get_logger().error(f'Error I2C: {e}')
+            self.get_logger().error(f'I2C error: {e}')
             raise
 
-        self.historial        = []
-        self.altura_actual_mm = 0.0
-        self.altura_previa_mm = 0.0
+        self.history         = []
+        self.current_height  = 0.0
+        self.prev_height     = 0.0
 
         try:
             self.spi = spidev.SpiDev()
@@ -54,44 +45,26 @@ class MastilNode(Node):
             self.spi.mode          = 0
             self.spi.bits_per_word = 8
             self.spi.lsbfirst      = False
-            self.get_logger().info('SPI iniciado')
+            self.get_logger().info('SPI initialized')
         except Exception as e:
-            self.get_logger().error(f'Error SPI: {e}')
+            self.get_logger().error(f'SPI error: {e}')
             raise
 
-        self.setpoint_mm      = None
-        self.en_movimiento    = False
-        self.direccion_previa = 0
-        self.confirmaciones   = 0
-        self.servo_angulo     = 90
-        self.velocidad_manual = None
+        self.setpoint_mm    = None
+        self.moving         = False
+        self.confirmations  = 0
+        self.manual_speed   = None
+        self.startup_cycles = 0
 
-        self.pub_altura = self.create_publisher(
-            Float32, 'forklift_height', 10)
-
-        self.pub_servo = self.create_publisher(
-            Int32, '/mastil/servo_angulo', 10)
-
+        self.pub_height = self.create_publisher(Float32, '/forklift/height', 10)
         self.sub_setpoint = self.create_subscription(
-            Float32, '/forklift/target_height',
-            self.setpoint_callback, 10)
-
-        self.sub_servo = self.create_subscription(
-            Int32, '/mastil/servo_grados',
-            self.servo_callback, 10)
-
-        self.sub_velocidad = self.create_subscription(
-            Int32, '/mastil/velocidad',
-            self.velocidad_callback, 10)
+            Float32, '/forklift/setpoint', self.setpoint_callback, 10)
+        self.sub_speed = self.create_subscription(
+            Int32, '/forklift/speed', self.speed_callback, 10)
 
         self.timer = self.create_timer(0.05, self.loop)
 
-        self.get_logger().info(
-            f'robot_spi_node listo (offset: {OFFSET_MM} mm)')
-
-
-
-    def limpiar_y_arrancar_laser(self):
+    def _reset_sensor(self):
         try:
             self.bus.write_byte_data(DEVICE_ADDRESS, 0x00, 0x00)
             time.sleep(0.01)
@@ -104,190 +77,160 @@ class MastilNode(Node):
             self.bus.write_byte_data(DEVICE_ADDRESS, 0x00, 0x02)
             time.sleep(0.01)
         except Exception as e:
-            self.get_logger().warn(f'Reinicio sensor falló: {e}')
+            self.get_logger().warn(f'Sensor reset failed: {e}')
 
-    def leer_distancia(self):
+    def _read_distance(self):
         try:
-            data  = self.bus.read_i2c_block_data(DEVICE_ADDRESS, 0x1E, 2)
-            cruda = float((data[0] << 8) + data[1])
+            data = self.bus.read_i2c_block_data(DEVICE_ADDRESS, 0x1E, 2)
+            raw  = float((data[0] << 8) + data[1])
         except Exception as e:
-            self.get_logger().warn(f'Error I2C: {e}')
+            self.get_logger().warn(f'I2C read error: {e}')
             return None
 
-        if cruda == 0.0:
-            self.get_logger().warn('Lectura cero — reiniciando sensor...')
-            self.limpiar_y_arrancar_laser()
+        if raw == 0.0:
+            self.get_logger().warn('Zero reading, resetting sensor')
+            self._reset_sensor()
             return None
 
-        if cruda <= 10 or cruda > 2000:
+        if raw <= 10 or raw > 2000:
             return None
 
-        corregida = max(DIST_MIN_MM, cruda - OFFSET_MM)
-        self.historial.append(corregida)
-        if len(self.historial) > 3:
-            self.historial.pop(0)
+        corrected = max(0.0, raw - OFFSET_MM)
+        self.history.append(corrected)
+        if len(self.history) > 3:
+            self.history.pop(0)
+        return sum(self.history) / len(self.history)
 
-        return sum(self.historial) / len(self.historial)
+    def _send(self, cmd, speed=255):
+        self.spi.xfer([cmd, int(speed)], 100_000, 500)
 
-    def _send(self, servo_ang, motor_cmd, duty=0):
-        servo_ang = max(0, min(180, int(servo_ang)))
-        duty      = max(0, min(95, int(duty)))
-        self.spi.xfer([servo_ang, motor_cmd, duty], 100_000, 500)
+    def _motor_stop(self):
+        self._send(CMD_STOP, 0)
 
-    def motor_stop(self):
-        self._send(self.servo_angulo, CMD_STOP, 0)
-
-    def pulso_motor(self, direccion, duty):
-        if not self.en_movimiento:
-            self.motor_stop()
+    def _motor_pulse(self, direction, duty):
+        if not self.moving:
+            self._motor_stop()
             return
+        duty_int = int(max(DUTY_MIN, min(DUTY_MAX, duty)))
+        cmd = CMD_UP if direction == 1 else CMD_DOWN
+        self._send(cmd, duty_int)
+        time.sleep(PWM_PERIOD)
 
-        if self.velocidad_manual is not None:
-            duty_int = self.velocidad_manual
-        else:
-            duty_int = max(DUTY_MIN, min(DUTY_MAX, int(duty)))
-
-        cmd = CMD_SUBE if direccion == 1 else CMD_BAJA
-        self._send(self.servo_angulo, cmd, duty_int)
-        time.sleep(PERIODO_PWM)
-
-    def direccion_real(self, distancia_actual):
-        delta = distancia_actual - self.altura_previa_mm
-        if   delta >  1.5:  return  1
-        elif delta < -1.5:  return -1
-        else:               return  0
-
-
+    def _actual_direction(self, current_dist):
+        delta = current_dist - self.prev_height
+        if   delta >  1.5: return  1
+        elif delta < -1.5: return -1
+        else:              return  0
 
     def setpoint_callback(self, msg: Float32):
-        nuevo = max(DIST_MIN_MM, min(DIST_MAX_MM, float(msg.data)))
-        self.setpoint_mm      = nuevo
-        self.en_movimiento    = True
-        self.direccion_previa = 0
-        self.confirmaciones   = 0
-        self.historial        = []
-        self.get_logger().info(f'Nuevo setpoint: {nuevo:.1f} mm')
+        target = max(DIST_MIN_MM, min(DIST_MAX_MM, float(msg.data)))
+        self.setpoint_mm    = target
+        self.moving         = True
+        self.confirmations  = 0
+        self.history        = []
+        self.startup_cycles = 6
+        self.get_logger().info(f'New setpoint: {target:.1f} mm')
 
-    def servo_callback(self, msg: Int32):
-        angulo = max(0, min(180, int(msg.data)))
-        self.servo_angulo = angulo
-        self._send(self.servo_angulo, CMD_STOP, 0)
-        pub_msg      = Int32()
-        pub_msg.data = self.servo_angulo
-        self.pub_servo.publish(pub_msg)
-        self.get_logger().info(f'Servo → {angulo}°')
-
-    def velocidad_callback(self, msg: Int32):
-        vel = int(msg.data)
-        if vel <= 0:
-            self.velocidad_manual = None
-            self.get_logger().info('Velocidad → AUTO (control P)')
+    def speed_callback(self, msg: Int32):
+        val = int(msg.data)
+        if val <= 0:
+            self.manual_speed = None
+            self.get_logger().info('Speed -> AUTO')
         else:
-            self.velocidad_manual = max(DUTY_MIN, min(DUTY_MAX, vel))
-            self.get_logger().info(
-                f'Velocidad → MANUAL {self.velocidad_manual}%')
-
+            self.manual_speed = max(DUTY_MIN, min(DUTY_MAX, val))
+            self.get_logger().info(f'Speed -> MANUAL {self.manual_speed}/255')
 
     def loop(self):
-        distancia = self.leer_distancia()
-
-        if distancia is None:
-            self.motor_stop()
+        dist = self._read_distance()
+        if dist is None:
+            self._motor_stop()
             return
 
-        if distancia >= LIMITE_SUPERIOR_MM:
-            self.motor_stop()
-            self.en_movimiento  = False
-            self.setpoint_mm    = None
-            self.confirmaciones = 0
-            self.get_logger().warn(
-                f'LÍMITE SUPERIOR: {distancia:.1f} mm — STOP')
-            self.altura_previa_mm = distancia
+        if dist >= UPPER_LIMIT_MM:
+            self._motor_stop()
+            self.moving        = False
+            self.setpoint_mm   = None
+            self.confirmations = 0
+            self.get_logger().warn(f'Upper limit reached: {dist:.1f} mm')
+            self.prev_height = dist
             return
 
-        self.altura_actual_mm = distancia
-
+        self.current_height = dist
         msg      = Float32()
-        msg.data = self.altura_actual_mm
-        self.pub_altura.publish(msg)
+        msg.data = self.current_height
+        self.pub_height.publish(msg)
 
-        if self.setpoint_mm is None or not self.en_movimiento:
-            self.motor_stop()
-            self.altura_previa_mm = distancia
+        if self.setpoint_mm is None or not self.moving:
+            self._motor_stop()
+            self.prev_height = dist
             return
 
-        error             = self.setpoint_mm - self.altura_actual_mm
-        direccion_deseada = 1 if error > 0 else -1
-        dir_real          = self.direccion_real(distancia)
+        error        = self.setpoint_mm - self.current_height
+        dir_desired  = 1 if error > 0 else -1
+        dir_actual   = self._actual_direction(dist)
 
-        if abs(error) <= TOLERANCIA:
-            self.confirmaciones += 1
-            self.motor_stop()
-
-            if self.confirmaciones >= 3:
-                sp = self.setpoint_mm
-                dir_freno = -1 if error >= 0 else 1
-                cmd_freno = CMD_SUBE if dir_freno == 1 else CMD_BAJA
-                self._send(self.servo_angulo, cmd_freno, DUTY_MIN)
+        if abs(error) <= TOLERANCE_MM:
+            self.confirmations  += 1
+            self.startup_cycles  = 0
+            self._motor_stop()
+            if self.confirmations >= 3:
+                sp        = self.setpoint_mm
+                brake_dir = -1 if error >= 0 else 1
+                self._send(CMD_UP if brake_dir == 1 else CMD_DOWN, DUTY_MIN)
                 time.sleep(0.03)
-                self.motor_stop()
-                self.motor_stop()
-                self.motor_stop()
-                self.en_movimiento  = False
-                self.setpoint_mm    = None
-                self.confirmaciones = 0
+                self._motor_stop()
+                self._motor_stop()
+                self._motor_stop()
+                self.moving        = False
+                self.setpoint_mm   = None
+                self.confirmations = 0
                 self.get_logger().info(
-                    f'✓ Objetivo confirmado 3x: {self.altura_actual_mm:.1f} mm '
-                    f'(setpoint {sp:.1f} mm) — MOTOR STOP')
+                    f'Target reached 3x: {self.current_height:.1f} mm ({sp:.1f} mm)')
             else:
                 self.get_logger().info(
-                    f'[CONFIRMANDO {self.confirmaciones}/3] '
-                    f'Altura: {distancia:.1f} mm | '
-                    f'Error: {error:+.1f} mm')
-
-            self.altura_previa_mm = distancia
+                    f'[CONFIRMING {self.confirmations}/3] '
+                    f'{dist:.1f} mm | err:{error:+.1f}')
+            self.prev_height = dist
             return
 
-        self.confirmaciones = 0
+        self.confirmations = 0
 
-        if dir_real == 1 and direccion_deseada == -1:
-            cmd_final = 1
-            escenario = 'ESC1↑'
-        elif dir_real == -1 and direccion_deseada == 1:
-            cmd_final = -1
-            escenario = 'ESC2↓'
-        elif dir_real == 1 and direccion_deseada == 1:
-            cmd_final = 1
-            escenario = 'ESC3✓↑'
-        elif dir_real == -1 and direccion_deseada == -1:
-            cmd_final = -1
-            escenario = 'ESC4✓↓'
+        if self.startup_cycles > 0:
+            self.startup_cycles -= 1
+            cmd_final = 1 if error > 0 else -1
+            tag       = 'STARTUP'
+            duty      = DUTY_MAX
+        elif dir_desired == -1 and dir_actual == 1:
+            cmd_final, tag = 1,  'INV_UP'
+            duty = DUTY_MIN
+        elif dir_desired == 1 and dir_actual == -1:
+            cmd_final, tag = -1, 'INV_DOWN'
+            duty = DUTY_MIN
+        elif dir_desired == -1:
+            cmd_final, tag = -1, 'DOWN'
+            duty_p = KP * abs(error) * (255.0 / 100.0)
+            if abs(error) < BRAKING_ZONE_MM:
+                duty = max(DUTY_MIN, min(duty_p, BRAKING_DUTY))
+            else:
+                duty = max(DUTY_MIN, min(DUTY_MAX, duty_p))
         else:
-            cmd_final = direccion_deseada
-            escenario = 'QUIETO'
+            cmd_final, tag = 1, 'UP'
+            duty_p = KP * abs(error) * (255.0 / 100.0)
+            if abs(error) < BRAKING_ZONE_MM:
+                duty = max(DUTY_MIN, min(duty_p, BRAKING_DUTY))
+            else:
+                duty = max(DUTY_MIN, min(DUTY_MAX, duty_p))
 
-        duty_p = KP * abs(error)
-
-        if abs(error) < ZONA_FRENADO_MM:
-            duty = max(DUTY_MIN, min(duty_p, DUTY_FRENADO))
-        else:
-            duty = max(DUTY_MIN, min(DUTY_MAX, duty_p))
-
-        vel_tag = (f'MANUAL {self.velocidad_manual}%'
-                   if self.velocidad_manual else f'AUTO {duty:.1f}%')
-
+        speed_tag = (f'MANUAL {self.manual_speed}/255'
+                     if self.manual_speed else f'AUTO {int(duty)}/255')
         self.get_logger().info(
-            f'[{escenario}] Servo: {self.servo_angulo}° | '
-            f'Altura: {distancia:.1f} mm | '
-            f'Error: {error:+.1f} mm | '
-            f'Vel: {vel_tag}')
+            f'[{tag}] {dist:.1f}mm | err:{error:+.1f} | speed:{speed_tag}')
 
-        self.pulso_motor(cmd_final, duty)
-        self.altura_previa_mm = distancia
-
+        self._motor_pulse(cmd_final, duty)
+        self.prev_height = dist
 
     def destroy_node(self):
-        self.motor_stop()
+        self._motor_stop()
         self.spi.close()
         self.bus.close()
         super().destroy_node()

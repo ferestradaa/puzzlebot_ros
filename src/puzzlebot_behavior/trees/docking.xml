@@ -7,7 +7,9 @@
         <Sequence name="DockingSequence">
           <!--<MoveForklift target_height="0.03"/>-->
           <VisualServoingAction target_area="28000.0"/>
-          <DriveRawAction linear_x="0.03" angular_z="0.0" duration_sec="6.0"/>
+          <DriveRawAction linear_x="0.02" angular_z="0.0" duration_sec="5.0"/>
+          <DriveRawAction linear_x="0.0" angular_z="0.0" duration_sec="3.0"/>
+          <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="6.0"/>
           <!--<MoveForklift target_height="0.05"/>-->
         </Sequence>
         <AlwaysSuccess/>

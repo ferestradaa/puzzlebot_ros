@@ -238,6 +238,11 @@ add_executable(apriltag_detector_node
 )
 
 
+add_executable(pallet_detection_classic
+    src/pallet_detection_classic.cpp
+)
+
+
 target_link_libraries(camera_noise_node
   PRIVATE
     ${sensor_msgs_TARGETS}
@@ -359,6 +364,21 @@ target_link_libraries(apriltag_detector_node
     tf2_ros::tf2_ros
 )
 
+target_link_libraries(pallet_detection_classic
+  PRIVATE
+    rclcpp::rclcpp
+    ${vision_msgs_TARGETS}
+    ${sensor_msgs_TARGETS}
+    ${geometry_msgs_TARGETS}
+    cv_bridge::cv_bridge
+    opencv_core
+    opencv_imgproc
+    tf2_ros::tf2_ros
+)
+
+
+
+
 ament_target_dependencies(apriltag_detector_node
   PUBLIC
     puzzlebot_interfaces
@@ -387,7 +407,7 @@ target_include_directories(inference_engine_streaming
     ${CUDA_INCLUDE_DIRS}
 )
 
-install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine inference_engine_streaming qr_detection_node_test qr_detection_node aruco_pose_node apriltag_detector_node
+install(TARGETS camera_noise_node camera_info_publisher frame_id_stamper pallet_detection_engine inference_engine_streaming qr_detection_node_test qr_detection_node aruco_pose_node apriltag_detector_node pallet_detection_classic
     RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
