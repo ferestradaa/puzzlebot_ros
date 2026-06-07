@@ -8,9 +8,9 @@
       <Fallback name="RunAndCleanup">
         <Sequence name="DockingSequence">
         
-          <VisualServoingAction target_area="8000.0"/>
+          <VisualServoingAction target_area="15000.0"/>
           <MoveForklift target_height="70.0" timeout_s="15.0" tolerance_mm="6.0"/>
-          <DriveRawAction linear_x="0.02" angular_z="0.0" duration_sec="5.0"/>
+          <DriveRawAction linear_x="0.02" angular_z="0.0" duration_sec="15.0"/>
           <DriveRawAction linear_x="0.0" angular_z="0.0" duration_sec="3.0"/>
           <MoveForklift target_height="90.0" timeout_s="15.0" tolerance_mm="6.0"/>
           <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>

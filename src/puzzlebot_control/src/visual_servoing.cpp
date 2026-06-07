@@ -25,7 +25,7 @@ public:
             std::bind(&VisualServoingActionServer::handle_cancel, this, std::placeholders::_1),
             std::bind(&VisualServoingActionServer::handle_accepted, this, std::placeholders::_1));
         
-        Kw_ = 0.3; //gain for angular velocity 
+        Kw_ = 0.22; //gain for angular velocity 
         Kv_ = 0.08; //gain por lineal velocity 
         image_width_ = 640;
         active_ = false;

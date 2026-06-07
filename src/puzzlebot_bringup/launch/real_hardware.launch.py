@@ -104,7 +104,7 @@ def generate_launch_description():
 
     move_forklift = Node(
         package='puzzlebot_forklift',
-        executable='forklift_spi_service',
+        executable='forklift_spi_node',
         output='screen'
     )
 
@@ -141,7 +141,7 @@ def generate_launch_description():
         pure_pursuit_py,
         #path_planner,
         navigation_launch,         
-        #move_forklift, 
+        move_forklift, 
         desc_launch,
         control_launch, 
         vision_launch,
