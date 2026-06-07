@@ -59,8 +59,6 @@ class MastilNode(Node):
         self.pub_height = self.create_publisher(Float32, '/forklift/height', 10)
         self.sub_setpoint = self.create_subscription(
             Float32, '/forklift/setpoint', self.setpoint_callback, 10)
-        self.sub_speed = self.create_subscription(
-            Int32, '/forklift/speed', self.speed_callback, 10)
 
         self.timer = self.create_timer(0.05, self.loop)
 
