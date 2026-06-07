@@ -7,7 +7,11 @@
         <IsLocalizedCondition/>
       </RetryUntilSuccessful>
 
+      <KeepRunningUntilFailure>
+
       <Sequence name="PickPlace">
+       <LaunchNode package="puzzlebot_vision" executable="qr_detection_node_test"/>
+       <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
         <GoToAction zone="inspect"/>
 
         <RetryUntilSuccessful num_attempts="-1">
@@ -15,6 +19,7 @@
           
           <Sequence name="SearchInspect">
            <GoToAction zone="inspect"/>
+           <MoveForklift target_height="70.0" timeout_s="15.0" tolerance_mm="3.0"/>
             <Parallel success_count="1" failure_count="1">
               <Sequence>
                 <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
@@ -28,6 +33,7 @@
 
           <Sequence name="SearchCenter">
            <GoToAction zone="center"/>
+           <MoveForklift target_height="50.0" timeout_s="15.0" tolerance_mm="3.0"/>
             <Parallel success_count="1" failure_count="1">
               <Sequence>
                 <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
@@ -37,14 +43,17 @@
             </Parallel>
           </Sequence>
 
+
           </Fallback>
         </RetryUntilSuccessful>
-
+        <MoveForklift target_height="140.0" timeout_s="15.0" tolerance_mm="3.0"/>
         <GoToAction target_pose="{qr_pose}"/>
+        <KillNode executable="qr_detection_node_test"/>
         <GoToAction zone="{qr_data}"/>
-
-        <GoToAction zone="home"/>
+        <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
+        <GoToAction zone="inspect"/>
       </Sequence>
+    </KeepRunningUntilFailure>
 
     </Sequence>
   </BehaviorTree>

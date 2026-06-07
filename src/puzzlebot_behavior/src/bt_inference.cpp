@@ -106,8 +106,8 @@ class BTexecutor : public  rclcpp::Node{
             std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_behavior"); 
             YAML::Node config = YAML::LoadFile(pkg_path + "/config/config.yaml"); 
 
-            //std::string relative_tree_path = config["path_trees"]["main_tree"].as<std::string>();
             std::string relative_tree_path = config["path_trees"]["docking_tree"].as<std::string>();
+            //std::string relative_tree_path = config["path_trees"]["debug_docking"].as<std::string>();
 
             std::string xml_path = pkg_path + "/" + relative_tree_path;
 

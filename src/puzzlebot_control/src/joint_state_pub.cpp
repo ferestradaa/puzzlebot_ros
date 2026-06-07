@@ -18,7 +18,7 @@ class EncoderNode : public rclcpp::Node{
         std::bind(&EncoderNode::encoderR_callback, this, std::placeholders::_1));
 
 
-        forklift_sub_ = this -> create_subscription<std_msgs::msg::Float32>("forklift_height", 10, 
+        forklift_sub_ = this -> create_subscription<std_msgs::msg::Float32>("forklift/height", 10, 
         std::bind(&EncoderNode::forklift_callback, this, std::placeholders::_1));
 
         timer_ = this ->create_wall_timer(std::chrono::milliseconds(50), //timer for publishing joint states
@@ -28,6 +28,7 @@ class EncoderNode : public rclcpp::Node{
         right_vel_ = 0.0;
         left_pos_ = 0.0;
         right_pos_ = 0.0; 
+        fork_hei = 0.0; 
         last_time_ = this ->get_clock() -> now(); 
 
 
@@ -37,7 +38,7 @@ class EncoderNode : public rclcpp::Node{
     private:
 
         void forklift_callback(const std_msgs::msg::Float32::SharedPtr msg){
-            fork_hei_ = msg -> data; 
+            fork_hei_ = msg -> data / 1000.0; 
         }
 
         void encoderL_callback(const std_msgs::msg::Float32::SharedPtr msg){
@@ -64,7 +65,7 @@ class EncoderNode : public rclcpp::Node{
             sensor_msgs::msg::JointState msg; 
             msg.header.stamp = this -> get_clock() -> now(); 
             msg.name = {"base_to_left_wheel", "base_to_right_wheel", "forks_joint"}; 
-            msg.position = {left_pos_, right_pos_, 0.0}; 
+            msg.position = {left_pos_, right_pos_, fork_hei_}; 
 
             js_pub_ -> publish(msg); 
         }

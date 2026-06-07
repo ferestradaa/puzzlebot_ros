@@ -2,3 +2,4 @@ path_trees:
     main_tree: trees/main_tree.xml
     docking_tree: trees/docking.xml
     debug_tree: trees/debug_tree.xml
+    debug_docking: trees/debug_docking.xml

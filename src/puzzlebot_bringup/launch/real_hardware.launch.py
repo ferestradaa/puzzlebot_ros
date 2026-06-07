@@ -130,6 +130,13 @@ def generate_launch_description():
     )
 
 
+    qr_detections = Node(
+        package='puzzlebot_behavior',
+        executable='bt_executor',
+        output='screen'
+    )
+
+
     return LaunchDescription([
         use_sim_arg,
         rviz_arg,

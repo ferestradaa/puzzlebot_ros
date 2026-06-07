@@ -1,7 +1,7 @@
 zones:
   inspect:
     x: 0.8
-    y: 2.5
+    y: 2.8
     yaw: 3.14
 
   center:

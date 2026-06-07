@@ -2,17 +2,17 @@
   <BehaviorTree ID="PuzzlebotTree">
     <Sequence name="MainSequence">
     <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
-      <LaunchNode package="puzzlebot_vision" executable="inference_engine_streaming"
-                  ready_topic="/pallet_detector/ready" ready_timeout_sec="30.0"/>
+     <!-- <LaunchNode package="puzzlebot_vision" executable="inference_engine_streaming" -->
+                <!-- ready_topic="/pallet_detector/ready" ready_timeout_sec="30.0"/> -->
 
       <Fallback name="RunAndCleanup">
         <Sequence name="DockingSequence">
         
-          <VisualServoingAction target_area="15000.0"/>
+          <VisualServoingAction target_area="20000.0"/>
           <MoveForklift target_height="70.0" timeout_s="15.0" tolerance_mm="6.0"/>
           <DriveRawAction linear_x="0.02" angular_z="0.0" duration_sec="15.0"/>
           <DriveRawAction linear_x="0.0" angular_z="0.0" duration_sec="3.0"/>
-          <MoveForklift target_height="90.0" timeout_s="15.0" tolerance_mm="6.0"/>
+          <MoveForklift target_height="120.0" timeout_s="15.0" tolerance_mm="6.0"/>
           <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
           <DriveRawAction linear_x="0.0" angular_z="0.0" duration_sec="2.0"/>
           <DriveRawAction linear_x="0.0" angular_z="0.08" duration_sec="6.0"/>

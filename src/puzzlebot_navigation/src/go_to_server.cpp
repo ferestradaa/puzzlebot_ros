@@ -132,8 +132,8 @@ private:
     }
     auto p = goal->target_pose;
     double yaw = tf2::getYaw(p.pose.orientation);
-    p.pose.position.x -= 0.15 * std::cos(yaw);
-    p.pose.position.y -= 0.15 * std::sin(yaw);
+    p.pose.position.x -= 0.25 * std::cos(yaw);
+    p.pose.position.y -= 0.25 * std::sin(yaw);
     return p;
   }
 

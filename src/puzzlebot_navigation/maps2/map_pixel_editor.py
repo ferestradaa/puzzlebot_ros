@@ -56,9 +56,12 @@ class MapEditor:
         # =========================
         # 1. Obtener área libre original
         # =========================
-        original = self.original.copy()
+        # =========================
+        # 1. Obtener área libre actual
+        # =========================
+        current = self.img.copy()
 
-        free_original = (original == FREE).astype(np.uint8) * 255
+        free_original = (current == FREE).astype(np.uint8) * 255
 
         free_original = cv2.morphologyEx(
             free_original,
