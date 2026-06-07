@@ -49,7 +49,8 @@ def generate_launch_description():
     return LaunchDescription([
 
         map_pub, 
-        go_to_srv
+        go_to_srv, 
+        path_planner_v2
         #path_planner,
        #dynamic_map, 
 

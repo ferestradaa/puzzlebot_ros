@@ -139,7 +139,7 @@ def generate_launch_description():
         lidar,
         process_manager, 
         pure_pursuit_py,
-        path_planner,
+        #path_planner,
         navigation_launch,         
         #move_forklift, 
         desc_launch,
