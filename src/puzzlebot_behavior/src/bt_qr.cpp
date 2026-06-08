@@ -16,6 +16,8 @@
 #include "go_to.hpp"
 #include "wait_for_pose.hpp"
 #include "process_manager.hpp"
+#include "set_height_from_zone.hpp"
+
 
 
 
@@ -106,6 +108,14 @@ class BTexecutor : public  rclcpp::Node{
                 [this](const std::string& name, const BT::NodeConfig& conf) {
                     return std::make_unique<puzzlebot_bt::KillNodeAction>(name, conf, bt_node_);
                 });
+
+
+            factory_.registerBuilder<puzzlebot_bt::SetHeightFromZone>(
+                "SetHeightFromZone",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::SetHeightFromZone>(name, conf, bt_node_);
+                });
+
 
             
                 

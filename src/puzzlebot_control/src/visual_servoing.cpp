@@ -24,7 +24,7 @@ public:
             std::bind(&VisualServoingActionServer::handle_accepted, this, std::placeholders::_1));
 
         Kw_ = 0.1;
-        Kv_ = 0.05;
+        Kv_ = 0.08;
         image_width_ = 640;
         active_ = false;
         last_current_area_ = 0.0;

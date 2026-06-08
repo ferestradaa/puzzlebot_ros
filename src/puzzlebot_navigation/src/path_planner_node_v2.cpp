@@ -897,38 +897,10 @@ private:
     const GridCell raw_start_grid = world_to_grid(robot_x, robot_y);
     const GridCell goal_grid = world_to_grid(goal_x, goal_y);
 
-    if (!is_cell_inside(raw_start_grid)) {
-      return {false, "Start cell is outside dynamic map.", nav_msgs::msg::Path()};
-    }
-
-    if (!is_cell_free(goal_grid)) {
-      return {false, "Goal cell is occupied or outside dynamic map.", nav_msgs::msg::Path()};
-    }
-
+    // Do not reject or relocate the initial/goal cells here.
+    // The caller guarantees that start and goal are valid free cells.
+    // The planner itself still samples, expands, connects, and smooths only through free cells.
     GridCell start_grid = raw_start_grid;
-
-    if (!is_cell_free(start_grid)) {
-      GridCell nearest_start;
-
-      if (!find_nearest_free_cell(
-            start_grid, nearest_start, start_free_search_radius_cells_))
-      {
-        return {
-          false,
-          "Start cell is occupied after obstacle inflation and no nearby free cell was found.",
-          nav_msgs::msg::Path()};
-      }
-
-      RCLCPP_WARN(
-        get_logger(),
-        "Start cell (%d,%d) is occupied after inflation. Using nearest free cell (%d,%d) instead.",
-        start_grid.first,
-        start_grid.second,
-        nearest_start.first,
-        nearest_start.second);
-
-      start_grid = nearest_start;
-    }
 
     std::vector<GridCell> path_grid;
 

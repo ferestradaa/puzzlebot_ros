@@ -82,7 +82,6 @@ ament_target_dependencies(bt_inference
    tf2_ros
    tf2_geometry_msgs
    tf2
-   
 )
 
 ament_target_dependencies(process_manager
@@ -106,8 +105,6 @@ install(DIRECTORY config
 
 target_link_libraries(bt_executor
    yaml-cpp)
-
-
 
 target_link_libraries(bt_qr
    yaml-cpp)
