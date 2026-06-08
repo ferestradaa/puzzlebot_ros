@@ -30,9 +30,6 @@ public:
   {
     declare_and_load_parameters();
 
-    map_pub_ = create_publisher<nav_msgs::msg::OccupancyGrid>(map_topic_, 10);
-    path_blocked_pub_ = create_publisher<std_msgs::msg::Bool>(path_blocked_topic_, 10);
-
     rclcpp::QoS static_map_qos(1);
     static_map_qos.reliable();
     static_map_qos.transient_local();
@@ -51,6 +48,10 @@ public:
       path_topic_,
       rclcpp::QoS(10),
       std::bind(&DynamicMapNode::path_callback, this, std::placeholders::_1));
+
+
+    map_pub_ = create_publisher<nav_msgs::msg::OccupancyGrid>(map_topic_, static_map_qos);
+    path_blocked_pub_ = create_publisher<std_msgs::msg::Bool>(path_blocked_topic_, 10);
 
     map_pub_timer_ = create_wall_timer(
       std::chrono::milliseconds(map_publish_period_ms_),
