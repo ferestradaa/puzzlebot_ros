@@ -3,6 +3,8 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <vision_msgs/msg/detection2_d_array.hpp>
+#include <vision_msgs/msg/detection2_d.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include <Eigen/Geometry>
@@ -11,7 +13,7 @@
 class QrDetectionNode : public rclcpp::Node {
 public:
     QrDetectionNode() : Node("qr_detection_node") {
-        qr_size_ = 0.09; 
+        qr_size_ = 0.09;
         qr_detection_ = std::make_unique<Qr_detection>(qr_size_, 3);
 
         rclcpp::QoS info_qos(10);
@@ -27,6 +29,7 @@ public:
 
         pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>("qr_detection/pose", 10);
         data_pub_ = create_publisher<std_msgs::msg::String>("qr_detection/data", 10);
+        bbox_pub_ = create_publisher<vision_msgs::msg::Detection2DArray>("pallet_inference_centroid", 10);
 
         RCLCPP_INFO(get_logger(), "QR Detection Node ready");
     }
@@ -34,7 +37,7 @@ public:
 private:
     void cam_info_callback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr msg) {
         if (has_camera_info_) return;
-        K_ = cv::Mat(3, 3, CV_64F, const_cast<double*>(msg->k.data())).clone();
+        K_    = cv::Mat(3, 3, CV_64F, const_cast<double*>(msg->k.data())).clone();
         dist_ = cv::Mat(1, (int)msg->d.size(), CV_64F, const_cast<double*>(msg->d.data())).clone();
         has_camera_info_ = true;
         RCLCPP_INFO(get_logger(), "Camera info received");
@@ -60,17 +63,15 @@ private:
 
         cv::Mat R;
         cv::Rodrigues(qr_result.rvec, R);
-
         Eigen::Matrix3d Re;
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
                 Re(i, j) = R.at<double>(i, j);
-
         Eigen::Quaterniond q(Re);
         q.normalize();
 
         geometry_msgs::msg::PoseStamped pose_msg;
-        pose_msg.header.stamp = msg->header.stamp;
+        pose_msg.header.stamp    = msg->header.stamp;
         pose_msg.header.frame_id = "camera_color_optical_frame";
         pose_msg.pose.position.x = qr_result.tvec[0];
         pose_msg.pose.position.y = qr_result.tvec[1];
@@ -84,16 +85,34 @@ private:
         std_msgs::msg::String data_msg;
         data_msg.data = qr_result.data;
         data_pub_->publish(data_msg);
+
+        const auto& b = qr_result.bbox;
+        double side = std::sqrt((double)b.width * b.height);
+
+        vision_msgs::msg::Detection2D det;
+        det.bbox.center.position.x = b.x + b.width  / 2.0;
+        det.bbox.center.position.y = b.y + b.height / 2.0;
+        det.bbox.size_x = side;
+        det.bbox.size_y = side;
+
+        vision_msgs::msg::Detection2DArray det_array;
+        det_array.header.stamp    = msg->header.stamp;
+        det_array.header.frame_id = msg->header.frame_id;
+        det_array.detections.push_back(det);
+
+        bbox_pub_->publish(det_array);
     }
 
     std::unique_ptr<Qr_detection> qr_detection_;
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr      image_sub_;
     rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr cam_info_sub_;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr data_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr    pose_pub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr              data_pub_;
+    rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr bbox_pub_;
+
     cv::Mat K_, dist_;
-    double qr_size_;
-    bool has_camera_info_ = false;
+    double  qr_size_;
+    bool    has_camera_info_ = false;
     rclcpp::Time last_detection_time_{0, 0, RCL_ROS_TIME};
 };
 

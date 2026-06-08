@@ -23,8 +23,8 @@ public:
             std::bind(&VisualServoingActionServer::handle_cancel, this, std::placeholders::_1),
             std::bind(&VisualServoingActionServer::handle_accepted, this, std::placeholders::_1));
 
-        Kw_ = 0.22;
-        Kv_ = 0.08;
+        Kw_ = 0.1;
+        Kv_ = 0.05;
         image_width_ = 640;
         active_ = false;
         last_current_area_ = 0.0;
@@ -78,7 +78,7 @@ private:
         const double timeout_sec = 60.0;
 
         int frames_in_tolerance = 0;
-        const int required_frames = 15; // ~0.5s a 10Hz
+        const int required_frames = 20; // ~0.5s a 10Hz
 
         while (rclcpp::ok() && active_) {
             if (goal_handle->is_canceling()) {
@@ -105,7 +105,7 @@ private:
 
             double time_since_det = (this->now() - last_detection_time_).seconds();
             if (time_since_det > detection_timeout_) {
-                frames_in_tolerance = 0; // reset debounce si se pierde la deteccion
+                frames_in_tolerance = 0; // 
                 geometry_msgs::msg::Twist stop;
                 cmd_pub_->publish(stop);
                 loop_rate.sleep();

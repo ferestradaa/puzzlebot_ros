@@ -29,6 +29,15 @@ public:
         }
         auto goal = buildGoal();
         auto opts = typename rclcpp_action::Client<ActionT>::SendGoalOptions();
+
+        opts.goal_response_callback = [this](typename GoalHandle::SharedPtr gh){
+            if (!gh){
+                succeeded_ = false; 
+                done_ = true; 
+            }
+        }; 
+
+        
         opts.result_callback = [this](const typename GoalHandle::WrappedResult& result) {
             succeeded_ = (result.code == rclcpp_action::ResultCode::SUCCEEDED &&
                           result.result->success);

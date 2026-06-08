@@ -26,6 +26,9 @@ include_directories(bt_nodes)
 add_executable(bt_executor
    src/bt_executor.cpp)
 
+add_executable(bt_qr
+   src/bt_qr.cpp)
+
 add_executable(bt_inference
    src/bt_inference.cpp)
 
@@ -39,6 +42,21 @@ target_include_directories(bt_executor PUBLIC
 
 
 ament_target_dependencies(bt_executor
+   behaviortree_cpp 
+   rclcpp
+   rclcpp_action
+   ament_index_cpp
+   geometry_msgs
+   std_srvs
+   puzzlebot_interfaces
+   tf2_ros
+   tf2_geometry_msgs
+   tf2
+   
+)
+
+
+ament_target_dependencies(bt_qr
    behaviortree_cpp 
    rclcpp
    rclcpp_action
@@ -74,7 +92,7 @@ ament_target_dependencies(process_manager
    
 )
   
-install(TARGETS bt_executor bt_inference process_manager
+install(TARGETS bt_executor bt_inference process_manager bt_qr
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -89,6 +107,10 @@ install(DIRECTORY config
 target_link_libraries(bt_executor
    yaml-cpp)
 
+
+
+target_link_libraries(bt_qr
+   yaml-cpp)
 
 target_link_libraries(bt_inference
    yaml-cpp)

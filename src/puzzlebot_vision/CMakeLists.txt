@@ -309,6 +309,7 @@ target_link_libraries(qr_detection_node_test
   PRIVATE
     rclcpp::rclcpp
     rclcpp_action::rclcpp_action
+    ${vision_msgs_TARGETS}
     ${sensor_msgs_TARGETS}
     ${std_srvs_TARGETS}
     cv_bridge::cv_bridge

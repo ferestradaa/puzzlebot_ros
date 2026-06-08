@@ -10,7 +10,6 @@
         <Sequence name="PickPlaceCycle">
 
           <!-- start setting fork down to floor and running qr detection -->
-          <LaunchNode package="puzzlebot_vision" executable="qr_detection_node_test"/>
           <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
           <GoToAction zone="inspect"/>
 
@@ -25,7 +24,7 @@
                 <SetBlackboard output_key="hight_carry"         value="140.0"/>
                 
                 <GoToAction zone="inspect"/>
-                <MoveForklift target_height="{height_inspect}" timeout_s="15.0" tolerance_mm="3.0"/>
+                <MoveForklift target_height="{height_center}" timeout_s="15.0" tolerance_mm="3.0"/>
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
                     <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
@@ -55,26 +54,18 @@
           </RetryUntilSuccessful>
 
 
-          <KillNode executable="qr_detection_node_test"/>
-
-
           <!-- loading engine and moving to pallet aprox pose at the same timme
                NOrmalyy tensor RT takes about 20 sec to load so start moving to target and inference at the same time
               parallel finishes when both nodes have finished. -->
-
-          <Parallel success_count="2" failure_count="1">
-            <LaunchNode package="puzzlebot_vision" executable="inference_engine_streaming"
-                        ready_topic="/pallet_detector/ready" ready_timeout_sec="30.0"/>
-            <GoToAction target_pose="{qr_pose}"/>
-          </Parallel>
 
           <Fallback name="RunAndCleanup">
             <Sequence name="DockingSequence">
 
               <RetryUntilSuccessful num_attempts="-1">
                 <Fallback name="VisualServoingWithRecovery">
-                  <VisualServoingAction target_area="20000.0"/>
+                  <VisualServoingAction target_area="17000.0"/>
                   <Sequence name="VSBackupRecovery">
+                    <MoveForklift target_height="{height_inspect}" timeout_s="15.0" tolerance_mm="3.0"/>
                     <DriveRawAction linear_x="-0.02" angular_z="0.0" duration_sec="8.0"/>
                     <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="1.0"/>
                     <AlwaysFailure/>
@@ -94,8 +85,6 @@
             <AlwaysSuccess/>
           </Fallback>
 
-          <!-- kill inference after finishing docking -->
-          <KillNode executable="inference_engine_streaming"/>
 
           <!-- go to qr data solved pose and comeback-->
           <GoToAction zone="{qr_data}"/>

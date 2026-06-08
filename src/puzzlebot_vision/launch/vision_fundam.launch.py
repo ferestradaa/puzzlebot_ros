@@ -66,6 +66,13 @@ def generate_launch_description():
     )
 
 
+    qr = Node(
+        package = 'puzzlebot_vision',
+        executable = 'qr_detection_node_test',
+
+    )
+
+
     return LaunchDescription([
         use_sim_time_arg,
         sim_arg,
@@ -73,6 +80,7 @@ def generate_launch_description():
         camera_noise, 
         camera_info,
         apriltag_detector,
+        qr,
         #apriltag_node, 
         
 

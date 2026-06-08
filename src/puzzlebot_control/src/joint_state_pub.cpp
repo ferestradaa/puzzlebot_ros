@@ -28,7 +28,7 @@ class EncoderNode : public rclcpp::Node{
         right_vel_ = 0.0;
         left_pos_ = 0.0;
         right_pos_ = 0.0; 
-        fork_hei = 0.0; 
+        fork_hei_ = 0.0; 
         last_time_ = this ->get_clock() -> now(); 
 
 
