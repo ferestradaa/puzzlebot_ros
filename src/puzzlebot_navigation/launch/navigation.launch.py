@@ -41,6 +41,12 @@ def generate_launch_description():
         executable= 'path_planner_node_v2', 
     )
 
+
+    path_planner_v3 = Node(
+        package= 'puzzlebot_navigation', 
+        executable= 'path_planner_node_v3', 
+    )
+
     pure_pursuit = Node(
         package = 'puzzlebot_control', 
         executable= 'pure_pursuit_node', 
@@ -50,7 +56,9 @@ def generate_launch_description():
 
         map_pub, 
         go_to_srv, 
-        path_planner_v2
+        #path_planner_v2, 
+        path_planner_v3, 
+        #dynamic_map
         #path_planner,
        #dynamic_map, 
 

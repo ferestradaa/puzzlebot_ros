@@ -22,7 +22,7 @@ public:
 
     static BT::PortsList providedPorts() {
         return {
-            BT::InputPort<float>("target_height"),
+            BT::InputPort<double>("target_height"),
             BT::InputPort<float>("tolerance_mm", 6.0f, "tolerance in mm"),
             BT::InputPort<double>("timeout_s", 10.0, "timeout in seconds"),
             BT::InputPort<double>("republish_interval_s", 1.0, "republish interval in seconds")
@@ -88,7 +88,7 @@ private:
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subscriber_;
 
     float  current_height_;
-    float  target_height_;
+    double  target_height_;
     float  tolerance_mm_;
     double republish_interval_s_;
 

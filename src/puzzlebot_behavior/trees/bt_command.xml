@@ -1,51 +1,66 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="PuzzlebotTree">
     <Sequence name="MainSequence">
+
+      <!-- arranca: nada inicia hasta este comando -->
+      <WaitForVoiceCommand expected_cmd="1"/>
+
       <CheckMapAvailable timeout_sec="10.0"/>
       <RetryUntilSuccessful num_attempts="-1">
         <IsLocalizedCondition/>
       </RetryUntilSuccessful>
+
       <KeepRunningUntilFailure>
         <Sequence name="PickPlaceCycle">
           <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
 
-          <GoToAction zone="inspect"/>
+          <!-- recoge: arranca la busqueda, zona inicial inspect -->
+          <WaitForVoiceCommand expected_cmd="2"/>
+          <SetBlackboard output_key="search_zone" value="inspect"/>
+
+          <!-- busqueda interrumpible: retry hasta encontrar QR -->
           <RetryUntilSuccessful num_attempts="-1">
-            <Fallback name="SearchQR">
-              <Sequence name="SearchInspect">
-                <GoToAction zone="inspect"/>
-                <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
-                <Parallel success_count="1" failure_count="1">
-                  <Sequence>
-                    <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
-                    <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
-                    <AlwaysFailure/>
-                  </Sequence>
-                  <Sequence>
-                    <SetBlackboard output_key="search_zone" value="inspect"/>
-                    <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
-                  </Sequence>
-                </Parallel>
-              </Sequence>
-              <Sequence name="SearchCenter">
-                <GoToAction zone="center"/>
-                <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
-                <Parallel success_count="1" failure_count="1">
-                  <Sequence>
-                    <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
-                    <AlwaysFailure/>
-                  </Sequence>
-                  <Sequence>
-                    <SetBlackboard output_key="search_zone" value="center"/>
-                    <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
-                  </Sequence>
-                </Parallel>
-              </Sequence>
-            </Fallback>
+            <ReactiveSequence name="SearchReactive">
 
+              <!-- guard: cada tick escucha /voice_command -->
+              <!-- base/recoge a otra zona => FAILURE y cambia search_zone -->
+              <CheckSearchZoneInterrupt search_zone="{search_zone}"/>
 
+              <Switch2 variable="{search_zone}" case_1="inspect" case_2="center">
+
+                <Sequence name="SearchInspect">
+                  <GoToAction zone="inspect"/>
+                  <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
+                  <Parallel success_count="1" failure_count="1">
+                    <Sequence>
+                      <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
+                      <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
+                      <AlwaysFailure/>
+                    </Sequence>
+                    <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+                  </Parallel>
+                </Sequence>
+
+                <Sequence name="SearchCenter">
+                  <GoToAction zone="center"/>
+                  <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
+                  <Parallel success_count="1" failure_count="1">
+                    <Sequence>
+                      <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
+                      <AlwaysFailure/>
+                    </Sequence>
+                    <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+                  </Parallel>
+                </Sequence>
+
+                <AlwaysFailure/>
+              </Switch2>
+
+            </ReactiveSequence>
           </RetryUntilSuccessful>
-          <SetHeightFromZone zone="{search_zone}" fork_height="{fork_height}"/>
+
+
+          <!-- docking: NO interrumpible (no hay guard aqui) -->
           <Fallback name="RunAndCleanup">
             <Sequence name="DockingSequence">
               <MoveForklift target_height="20.0" timeout_s="15.0" tolerance_mm="3.0"/>
@@ -59,8 +74,6 @@
                   </Sequence>
                 </Fallback>
               </RetryUntilSuccessful>
-
-
               <MoveForklift target_height="{fork_height}" timeout_s="15.0" tolerance_mm="3.0"/>
               <DriveRawAction linear_x="0.02"  angular_z="0.0" duration_sec="15.0"/>
               <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="3.0"/>
@@ -71,7 +84,11 @@
             </Sequence>
             <AlwaysSuccess/>
           </Fallback>
+
+          <!-- entrega: va a la zona resuelta por el QR -->
+          <WaitForVoiceCommand expected_cmd="4"/>
           <GoToAction zone="{qr_data}"/>
+
           <MoveForklift target_height="0.0" timeout_s="15.0" tolerance_mm="3.0"/>
           <GoToAction zone="inspect"/>
         </Sequence>

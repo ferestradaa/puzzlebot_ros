@@ -86,7 +86,7 @@ private:
     declare_parameter<double>("path_blocking_tolerance", 0.20);
 
     declare_parameter<double>("hit_range_margin", 0.05);
-    declare_parameter<double>("scan_angle_offset", 0.0);
+    declare_parameter<double>("scan_angle_offset", -3.14);
     declare_parameter<double>("tf_timeout", 0.05);
 
     declare_parameter<double>("dynamic_hit_increment", 1.0);
@@ -456,7 +456,7 @@ private:
   float path_blocking_tolerance_{0.20f};
 
   float hit_range_margin_{0.05f};
-  float scan_angle_offset_{0.0f};
+  float scan_angle_offset_{-3.14f};
   double tf_timeout_{0.05};
 
   float dynamic_hit_increment_{1.0f};

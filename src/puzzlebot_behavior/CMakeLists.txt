@@ -32,6 +32,9 @@ add_executable(bt_qr
 add_executable(bt_inference
    src/bt_inference.cpp)
 
+add_executable(bt_voice
+   src/bt_voice.cpp)
+
 add_executable(process_manager
    src/process_manager.cpp)
 
@@ -84,6 +87,21 @@ ament_target_dependencies(bt_inference
    tf2
 )
 
+
+ament_target_dependencies(bt_voice
+   behaviortree_cpp 
+   rclcpp
+   rclcpp_action
+   ament_index_cpp
+   geometry_msgs
+   std_srvs
+   puzzlebot_interfaces
+   tf2_ros
+   tf2_geometry_msgs
+   tf2
+   
+)
+
 ament_target_dependencies(process_manager
     rclcpp
     rclcpp_action
@@ -91,7 +109,7 @@ ament_target_dependencies(process_manager
    
 )
   
-install(TARGETS bt_executor bt_inference process_manager bt_qr
+install(TARGETS bt_executor bt_inference process_manager bt_qr bt_voice
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -111,6 +129,11 @@ target_link_libraries(bt_qr
 
 target_link_libraries(bt_inference
    yaml-cpp)
+
+
+target_link_libraries(bt_voice
+   yaml-cpp)
+
 
 
 

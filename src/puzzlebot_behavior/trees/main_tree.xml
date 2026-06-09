@@ -20,12 +20,8 @@
             <Fallback name="SearchQR">
 
               <Sequence name="SearchInspect">
-                <SetBlackboard output_key="height_inspect"      value="58.0"/>
-                <SetBlackboard output_key="height_center"       value="23.0"/>
-                <SetBlackboard output_key="hight_carry"         value="140.0"/>
-                
                 <GoToAction zone="inspect"/>
-                <MoveForklift target_height="{height_inspect}" timeout_s="15.0" tolerance_mm="3.0"/>
+                <MoveForklift target_height="58" timeout_s="15.0" tolerance_mm="3.0"/>
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
                     <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
@@ -70,6 +66,7 @@
 
           <Fallback name="RunAndCleanup">
             <Sequence name="DockingSequence">
+            <MoveForklift target_height="20.0" timeout_s="15.0" tolerance_mm="6.0"/>
 
               <RetryUntilSuccessful num_attempts="-1">
                 <Fallback name="VisualServoingWithRecovery">
@@ -83,7 +80,7 @@
               </RetryUntilSuccessful>
 
 
-              <MoveForklift target_height="{height_center}" timeout_s="15.0" tolerance_mm="6.0"/>
+              <MoveForklift target_height="{height_inspect}" timeout_s="15.0" tolerance_mm="6.0"/>
               <DriveRawAction linear_x="0.02" angular_z="0.0" duration_sec="15.0"/>
               <DriveRawAction linear_x="0.0" angular_z="0.0" duration_sec="3.0"/>
               <MoveForklift target_height="{hight_carry}" timeout_s="15.0" tolerance_mm="6.0"/>
