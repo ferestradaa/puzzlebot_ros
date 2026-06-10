@@ -15,12 +15,18 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/time.hpp>
+#include <rcl_interfaces/msg/set_parameters_result.hpp>
 
 #include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include "nav_msgs/msg/odometry.hpp"
+
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 #include "puzzlebot_interfaces/srv/plan_path.hpp"
 
@@ -35,9 +41,7 @@ public:
   {
     std::size_t operator()(const GridCell & p) const noexcept
     {
-      const auto h1 = std::hash<int>{}(p.first);
-      const auto h2 = std::hash<int>{}(p.second);
-      return h1 ^ (h2 << 1);
+      return std::hash<int>{}(p.first) ^ (std::hash<int>{}(p.second) << 1);
     }
   };
 
@@ -46,11 +50,12 @@ public:
     rng_(std::random_device{}())
   {
     declare_parameter<std::string>("global_frame", "map");
-    declare_parameter<std::string>("robot_pose_topic", "/odom");
+    declare_parameter<std::string>("robot_frame", "base_link");
     declare_parameter<std::string>("dynamic_map_topic", "/map");
 
     declare_parameter<double>("robot_radius", 0.20);
     declare_parameter<int>("start_free_search_radius_cells", 20);
+    declare_parameter<int>("endpoint_ignore_cells", 3);
     declare_parameter<bool>("smooth_path", true);
     declare_parameter<double>("waypoint_spacing", 0.05);
 
@@ -65,17 +70,17 @@ public:
     declare_parameter<double>("alpha", 1.0);
     declare_parameter<double>("beta", 0.10);
     declare_parameter<double>("gamma", 0.20);
-
-    auto qos = rclcpp::QoS(10).reliable().durability_volatile();
-
+    declare_parameter<double>("tf_timeout", 0.05);
 
     global_frame_ = get_parameter("global_frame").as_string();
-    robot_pose_topic_ = get_parameter("robot_pose_topic").as_string();
+    robot_frame_ = get_parameter("robot_frame").as_string();
     dynamic_map_topic_ = get_parameter("dynamic_map_topic").as_string();
 
     robot_radius_ = get_parameter("robot_radius").as_double();
     start_free_search_radius_cells_ =
       static_cast<int>(get_parameter("start_free_search_radius_cells").as_int());
+    endpoint_ignore_cells_ =
+      std::max(0, static_cast<int>(get_parameter("endpoint_ignore_cells").as_int()));
     smooth_path_ = get_parameter("smooth_path").as_bool();
     waypoint_spacing_ = get_parameter("waypoint_spacing").as_double();
 
@@ -90,24 +95,21 @@ public:
     alpha_ = get_parameter("alpha").as_double();
     beta_ = get_parameter("beta").as_double();
     gamma_ = get_parameter("gamma").as_double();
-
+    tf_timeout_ = get_parameter("tf_timeout").as_double();
 
     if (random_seed_ != 0) {
       rng_.seed(static_cast<std::mt19937::result_type>(random_seed_));
     }
 
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
     path_pub_ = create_publisher<nav_msgs::msg::Path>("/path", 10);
 
-
-  dynamic_map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
+    dynamic_map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
       dynamic_map_topic_,
-      rclcpp::QoS(1).reliable().transient_local(),  // match map_server
+      rclcpp::QoS(1).reliable().transient_local(),
       std::bind(&PathPlannerNode::dynamic_map_callback, this, std::placeholders::_1));
-
-    robot_pose_stamped_sub_ = create_subscription<nav_msgs::msg::Odometry>(
-      robot_pose_topic_,
-      qos,
-      std::bind(&PathPlannerNode::robot_pose_stamped_callback, this, std::placeholders::_1));
 
     goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
       "/goal_pose",
@@ -124,16 +126,59 @@ public:
 
     RCLCPP_INFO(
       get_logger(),
-      "Path planner ready | dynamic_map_topic=%s | service=/plan_path | robot_pose_topic=%s",
+      "Path planner ready | map_topic=%s | service=/plan_path | tf=%s->%s | robot_radius=%.2f | endpoint_ignore_cells=%d",
       dynamic_map_topic_.c_str(),
-      robot_pose_topic_.c_str());
+      global_frame_.c_str(),
+      robot_frame_.c_str(),
+      robot_radius_,
+      endpoint_ignore_cells_);
+
+    param_callback_handle_ = add_on_set_parameters_callback(
+      std::bind(&PathPlannerNode::on_parameter_update, this, std::placeholders::_1));
   }
 
 private:
+  rcl_interfaces::msg::SetParametersResult on_parameter_update(
+    const std::vector<rclcpp::Parameter> & parameters)
+  {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = true;
+
+    for (const auto & param : parameters) {
+      if (param.get_name() == "endpoint_ignore_cells") {
+        if (param.get_type() != rclcpp::ParameterType::PARAMETER_INTEGER) {
+          result.successful = false;
+          result.reason = "endpoint_ignore_cells must be an integer.";
+          return result;
+        }
+
+        const int value = static_cast<int>(param.as_int());
+
+        if (value < 0) {
+          result.successful = false;
+          result.reason = "endpoint_ignore_cells must be >= 0.";
+          return result;
+        }
+      }
+    }
+
+    for (const auto & param : parameters) {
+      if (param.get_name() == "endpoint_ignore_cells") {
+        endpoint_ignore_cells_ = static_cast<int>(param.as_int());
+        RCLCPP_INFO(
+          get_logger(),
+          "Updated endpoint_ignore_cells=%d",
+          endpoint_ignore_cells_);
+      }
+    }
+
+    return result;
+  }
+
   void dynamic_map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
   {
     if (msg->info.width == 0 || msg->info.height == 0 || msg->data.empty()) {
-      RCLCPP_WARN(get_logger(), "Received empty dynamic map.");
+      RCLCPP_WARN(get_logger(), "Received empty map.");
       return;
     }
 
@@ -182,7 +227,7 @@ private:
     has_map_ = !free_cells_.empty();
 
     if (!has_map_) {
-      RCLCPP_WARN(get_logger(), "Dynamic map received, but it has no free cells.");
+      RCLCPP_WARN(get_logger(), "Map received, but it has no free cells.");
       return;
     }
 
@@ -190,7 +235,7 @@ private:
       get_logger(),
       *get_clock(),
       3000,
-      "Dynamic map updated | size=(%d,%d) | resolution=%.4f | free_cells=%zu",
+      "Map updated | size=(%d,%d) | resolution=%.4f | free_cells=%zu",
       grid_.cols,
       grid_.rows,
       resolution_,
@@ -267,96 +312,38 @@ private:
     return grid_.at<uint8_t>(cell.second, cell.first) == 0;
   }
 
-
-  bool find_nearest_free_cell(
-    const GridCell & start_cell,
-    GridCell & nearest_free_cell,
-    int max_search_radius_cells = 20) const
-  {
-    if (!is_cell_inside(start_cell)) {
-      return false;
-    }
-
-    if (is_cell_free(start_cell)) {
-      nearest_free_cell = start_cell;
-      return true;
-    }
-
-    const int max_radius = std::max(1, max_search_radius_cells);
-
-    for (int radius = 1; radius <= max_radius; ++radius) {
-      GridCell best_cell = start_cell;
-      double best_distance = std::numeric_limits<double>::infinity();
-      bool found = false;
-
-      for (int dy = -radius; dy <= radius; ++dy) {
-        for (int dx = -radius; dx <= radius; ++dx) {
-          if (std::max(std::abs(dx), std::abs(dy)) != radius) {
-            continue;
-          }
-
-          const GridCell candidate{start_cell.first + dx, start_cell.second + dy};
-
-          if (!is_cell_free(candidate)) {
-            continue;
-          }
-
-          const double d = distance(start_cell, candidate);
-
-          if (d < best_distance) {
-            best_distance = d;
-            best_cell = candidate;
-            found = true;
-          }
-        }
-      }
-
-      if (found) {
-        nearest_free_cell = best_cell;
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  void robot_pose_stamped_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
-  {
-    latest_robot_pose_ = *msg;
-    has_robot_pose_ = true;
-  }
-
   bool get_robot_pose(double & x, double & y, double & yaw)
   {
-    if (!has_robot_pose_) {
+    try {
+      const auto tf = tf_buffer_->lookupTransform(
+        global_frame_,
+        robot_frame_,
+        tf2::TimePointZero,
+        tf2::durationFromSec(tf_timeout_));
+
+      tf2::Quaternion q;
+      tf2::fromMsg(tf.transform.rotation, q);
+
+      double roll;
+      double pitch;
+      tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+      x = tf.transform.translation.x;
+      y = tf.transform.translation.y;
+
+      return true;
+    } catch (const tf2::TransformException & ex) {
       RCLCPP_WARN_THROTTLE(
         get_logger(),
         *get_clock(),
         1000,
-        "No robot pose received yet on topic %s.",
-        robot_pose_topic_.c_str());
+        "TF lookup %s -> %s failed: %s",
+        global_frame_.c_str(),
+        robot_frame_.c_str(),
+        ex.what());
+
       return false;
     }
-
-    if (!latest_robot_pose_.header.frame_id.empty() &&
-        latest_robot_pose_.header.frame_id != global_frame_)
-    {
-      RCLCPP_WARN_THROTTLE(
-        get_logger(),
-        *get_clock(),
-        1000,
-        "Robot pose frame is '%s', but planner frame is '%s'. Pose must already be in map frame.",
-        latest_robot_pose_.header.frame_id.c_str(),
-        global_frame_.c_str());
-    }
-
-    x = latest_robot_pose_.pose.pose.position.x;
-    y = latest_robot_pose_.pose.pose.position.y;
-
-    const auto & q = latest_robot_pose_.pose.pose.orientation;
-    yaw = quaternion_to_yaw(q.x, q.y, q.z, q.w);
-
-    return true;
   }
 
   static double quaternion_to_yaw(double x, double y, double z, double w)
@@ -440,6 +427,22 @@ private:
 
   bool line_is_free(const GridCell & a, const GridCell & b) const
   {
+    return line_is_free_internal(a, b, 0, 0);
+  }
+
+  bool line_is_free_ignore_endpoints(const GridCell & a, const GridCell & b) const
+  {
+    return line_is_free_internal(a, b, endpoint_ignore_cells_, endpoint_ignore_cells_);
+  }
+
+  bool line_is_free_internal(
+    const GridCell & a,
+    const GridCell & b,
+    int ignore_start_cells,
+    int ignore_goal_cells) const
+  {
+    std::vector<GridCell> ray_cells;
+
     int x0 = a.first;
     int y0 = a.second;
 
@@ -455,9 +458,7 @@ private:
     int err = dx - dy;
 
     while (true) {
-      if (!is_cell_free({x0, y0})) {
-        return false;
-      }
+      ray_cells.emplace_back(x0, y0);
 
       if (x0 == x1 && y0 == y1) {
         break;
@@ -473,6 +474,23 @@ private:
       if (e2 < dx) {
         err += dx;
         y0 += sy;
+      }
+    }
+
+    const int n = static_cast<int>(ray_cells.size());
+    const int start_skip = std::max(0, ignore_start_cells);
+    const int goal_skip = std::max(0, ignore_goal_cells);
+
+    for (int i = 0; i < n; ++i) {
+      const bool skip_start_side = i < start_skip;
+      const bool skip_goal_side = i >= n - goal_skip;
+
+      if (skip_start_side || skip_goal_side) {
+        continue;
+      }
+
+      if (!is_cell_free(ray_cells[static_cast<std::size_t>(i)])) {
+        return false;
       }
     }
 
@@ -493,7 +511,12 @@ private:
     q_near = heuristic_best_node(tree_nodes, g_cost, q_sample, heuristic_target);
     q_new = steer(q_near, q_sample, step_size);
 
-    if (q_new == q_near || !is_cell_free(q_new) || !line_is_free(q_near, q_new)) {
+    const bool q_new_is_allowed_endpoint = (q_new == heuristic_target);
+
+    if (q_new == q_near ||
+        (!q_new_is_allowed_endpoint && !is_cell_free(q_new)) ||
+        !line_is_free_ignore_endpoints(q_near, q_new))
+    {
       return false;
     }
 
@@ -525,7 +548,6 @@ private:
     GridCell & meeting_node,
     GridCell & last_near)
   {
-    GridCell last_new = q_target;
     last_near = q_target;
 
     for (int i = 0; i < max_connect_steps; ++i) {
@@ -548,11 +570,10 @@ private:
         return false;
       }
 
-      last_new = q_new;
       last_near = q_near;
 
       if (distance(q_new, q_target) <= static_cast<double>(connect_threshold_) &&
-          line_is_free(q_new, q_target))
+          line_is_free_ignore_endpoints(q_new, q_target))
       {
         if (g_cost.find(q_target) == g_cost.end()) {
           tree_nodes.push_back(q_target);
@@ -566,7 +587,6 @@ private:
       }
     }
 
-    (void)last_new;
     return false;
   }
 
@@ -652,9 +672,7 @@ private:
           q_new,
           q_near);
 
-
       if (extended) {
-
         GridCell meeting_node;
         GridCell connect_near;
 
@@ -671,14 +689,15 @@ private:
 
         if (connected) {
           if (a_is_start_tree) {
-            path = build_bidirectional_path(parent_a, has_parent_a, parent_b, has_parent_b, meeting_node);
+            path = build_bidirectional_path(
+              parent_a, has_parent_a, parent_b, has_parent_b, meeting_node);
           } else {
-            path = build_bidirectional_path(parent_b, has_parent_b, parent_a, has_parent_a, meeting_node);
+            path = build_bidirectional_path(
+              parent_b, has_parent_b, parent_a, has_parent_a, meeting_node);
           }
 
           return true;
         }
-      } else {
       }
 
       std::swap(tree_a, tree_b);
@@ -707,7 +726,7 @@ private:
       std::size_t j = path_grid.size() - 1;
 
       while (j > i + 1) {
-        if (line_is_free(path_grid[i], path_grid[j])) {
+        if (line_is_free_ignore_endpoints(path_grid[i], path_grid[j])) {
           break;
         }
 
@@ -777,7 +796,9 @@ private:
       const auto [x, y] = path_world[i];
       const GridCell cell = world_to_grid(x, y);
 
-      if (!is_cell_free(cell)) {
+      const bool endpoint = (i == 0 || i + 1 == path_world.size());
+
+      if (!endpoint && !is_cell_free(cell)) {
         return false;
       }
 
@@ -785,7 +806,7 @@ private:
         const auto [px, py] = path_world[i - 1];
         const GridCell prev_cell = world_to_grid(px, py);
 
-        if (!line_is_free(prev_cell, cell)) {
+        if (!line_is_free_ignore_endpoints(prev_cell, cell)) {
           return false;
         }
       }
@@ -868,11 +889,11 @@ private:
     const geometry_msgs::msg::PoseStamped & goal_msg)
   {
     if (!has_map_) {
-      return {false, "No dynamic map received yet. Cannot plan.", nav_msgs::msg::Path()};
+      return {false, "No map received yet. Cannot plan.", nav_msgs::msg::Path()};
     }
 
     if (free_cells_.empty()) {
-      return {false, "Dynamic map has no free cells available.", nav_msgs::msg::Path()};
+      return {false, "Map has no free cells available.", nav_msgs::msg::Path()};
     }
 
     double robot_x = 0.0;
@@ -880,7 +901,7 @@ private:
     double robot_yaw = 0.0;
 
     if (!get_robot_pose(robot_x, robot_y, robot_yaw)) {
-      return {false, "No robot pose available. Cannot plan.", nav_msgs::msg::Path()};
+      return {false, "No robot TF pose available. Cannot plan.", nav_msgs::msg::Path()};
     }
 
     if (!goal_msg.header.frame_id.empty() && goal_msg.header.frame_id != global_frame_) {
@@ -894,41 +915,8 @@ private:
     const double goal_x = goal_msg.pose.position.x;
     const double goal_y = goal_msg.pose.position.y;
 
-    const GridCell raw_start_grid = world_to_grid(robot_x, robot_y);
+    const GridCell start_grid = world_to_grid(robot_x, robot_y);
     const GridCell goal_grid = world_to_grid(goal_x, goal_y);
-
-    if (!is_cell_inside(raw_start_grid)) {
-      return {false, "Start cell is outside dynamic map.", nav_msgs::msg::Path()};
-    }
-
-    if (!is_cell_free(goal_grid)) {
-      return {false, "Goal cell is occupied or outside dynamic map.", nav_msgs::msg::Path()};
-    }
-
-    GridCell start_grid = raw_start_grid;
-
-    if (!is_cell_free(start_grid)) {
-      GridCell nearest_start;
-
-      if (!find_nearest_free_cell(
-            start_grid, nearest_start, start_free_search_radius_cells_))
-      {
-        return {
-          false,
-          "Start cell is occupied after obstacle inflation and no nearby free cell was found.",
-          nav_msgs::msg::Path()};
-      }
-
-      RCLCPP_WARN(
-        get_logger(),
-        "Start cell (%d,%d) is occupied after inflation. Using nearest free cell (%d,%d) instead.",
-        start_grid.first,
-        start_grid.second,
-        nearest_start.first,
-        nearest_start.second);
-
-      start_grid = nearest_start;
-    }
 
     std::vector<GridCell> path_grid;
 
@@ -937,7 +925,6 @@ private:
     }
 
     const auto original_points = path_grid.size();
-    const auto original_path_grid = path_grid;
 
     const WorldPoint start_world{robot_x, robot_y};
     const WorldPoint goal_world{goal_x, goal_y};
@@ -968,23 +955,22 @@ private:
 
     auto path_msg = build_path_msg(path_world);
 
-
-
     if (!path_msg.poses.empty()) {
-        const double goal_yaw = quaternion_to_yaw(
-            goal_msg.pose.orientation.x,
-            goal_msg.pose.orientation.y,
-            goal_msg.pose.orientation.z,
-            goal_msg.pose.orientation.w);
-        const auto [qz, qw] = yaw_to_quaternion(goal_yaw);
-        path_msg.poses.back().pose.orientation.x = 0.0;
-        path_msg.poses.back().pose.orientation.y = 0.0;
-        path_msg.poses.back().pose.orientation.z = qz;
-        path_msg.poses.back().pose.orientation.w = qw;
+      const double goal_yaw = quaternion_to_yaw(
+        goal_msg.pose.orientation.x,
+        goal_msg.pose.orientation.y,
+        goal_msg.pose.orientation.z,
+        goal_msg.pose.orientation.w);
+
+      const auto [qz, qw] = yaw_to_quaternion(goal_yaw);
+
+      path_msg.poses.back().pose.orientation.x = 0.0;
+      path_msg.poses.back().pose.orientation.y = 0.0;
+      path_msg.poses.back().pose.orientation.z = qz;
+      path_msg.poses.back().pose.orientation.w = qw;
     }
 
     path_pub_->publish(path_msg);
-
 
     const std::string message =
       "Path found with " + std::to_string(path_world.size()) +
@@ -1016,6 +1002,7 @@ private:
   {
     const auto [success, message, path] = compute_path_to_goal(*msg);
     (void)path;
+
     if (success) {
       RCLCPP_INFO(get_logger(), "%s", message.c_str());
     } else {
@@ -1063,49 +1050,49 @@ private:
   }
 
   std::string global_frame_;
-  std::string robot_pose_topic_;
+  std::string robot_frame_;
   std::string dynamic_map_topic_;
 
-  double robot_radius_ = 0.20;
-  int start_free_search_radius_cells_ = 20;
-  bool smooth_path_ = true;
-  double waypoint_spacing_ = 0.05;
+  double robot_radius_{0.0};
+  int start_free_search_radius_cells_{20};
+  int endpoint_ignore_cells_{3};
+  bool smooth_path_{true};
+  double waypoint_spacing_{0.05};
 
-  int max_iter_ = 5000;
-  int step_size_ = 2;
-  int connect_step_size_ = 2;
-  int max_connect_steps_ = 1;
-  double goal_bias_rate_ = 0.02;
-  int connect_threshold_ = 3;
-  int random_seed_ = 0;
+  int max_iter_{5000};
+  int step_size_{2};
+  int connect_step_size_{2};
+  int max_connect_steps_{1};
+  double goal_bias_rate_{0.02};
+  int connect_threshold_{3};
+  int random_seed_{0};
 
-  double alpha_ = 1.0;
-  double beta_ = 0.10;
-  double gamma_ = 0.20;
-
+  double alpha_{1.0};
+  double beta_{0.10};
+  double gamma_{0.20};
+  double tf_timeout_{0.05};
 
   cv::Mat grid_raw_;
   cv::Mat grid_;
 
-  double resolution_ = 0.05;
+  double resolution_{0.05};
   std::vector<double> origin_{0.0, 0.0, 0.0};
 
   std::vector<GridCell> free_cells_;
 
   std::mt19937 rng_;
 
-  bool has_map_ = false;
+  bool has_map_{false};
+
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
-
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr dynamic_map_sub_;
-  //rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr robot_pose_stamped_sub_;
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr robot_pose_stamped_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_;
   rclcpp::Service<PlanPath>::SharedPtr plan_path_srv_;
-
-  nav_msgs::msg::Odometry latest_robot_pose_;
-  bool has_robot_pose_ = false;
 };
 
 int main(int argc, char ** argv)

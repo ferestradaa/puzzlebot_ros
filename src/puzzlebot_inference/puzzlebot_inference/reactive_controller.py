@@ -20,7 +20,7 @@ class ReactiveLayer(Node):
 
         self.declare_parameter('tip_offset', 0.2)
         self.declare_parameter('clearance', 0.15)
-        self.declare_parameter('ramp_start', 0.4)
+        self.declare_parameter('ramp_start', 0.6)
         self.declare_parameter('cone_half_angle', 0.524)
         self.declare_parameter('evasion_gain', 2.5)
         self.declare_parameter('w_max', 0.3)
@@ -38,7 +38,6 @@ class ReactiveLayer(Node):
         self.corridor_half_width = self.get_parameter('corridor_half_width').value
         self.corridor_min_x = self.get_parameter('corridor_min_x').value
 
-        # sector del lidar a ignorar, en radianes (0 = frente)
         self.lidar_block_min = -0.30
         self.lidar_block_max = 0.30
 
@@ -58,8 +57,8 @@ class ReactiveLayer(Node):
         self.max_escape_attempts = 2
         self.backup_arc_w = 0.02
 
-        self.escape_turn_v = 0.0    # o un valor pequeño positivo si quieres avance mientras gira
-        self.escape_turn_w = 0.4    # signo lo pone evade_dir
+        self.escape_turn_v = 0.07   
+        self.escape_turn_w = 0.3    
 
         self.state = 'PASSTHROUGH'
         self.evade_dir = 0
@@ -81,6 +80,11 @@ class ReactiveLayer(Node):
 
         self._loop_count = 0
         self._last_scan_time = None
+
+        self.min_corridor_pts = 3 
+        self.far_dist = self.ramp_start * 3.0
+        self.fwd_filt = self.far_dist 
+        self.fwd_alpha = 0.4 
 
         self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
         self.create_subscription(Twist, '/cmd_vel_desired', self.desired_cb, 10)
@@ -158,7 +162,13 @@ class ReactiveLayer(Node):
             return float('inf'), 0, 0
 
         corridor = np.abs(by) <= self.corridor_half_width
-        forward_dist = float(np.min(bx[corridor])) if np.any(corridor) else float('inf')
+        corridor_pts = bx[corridor]
+
+
+        if corridor_pts.size >= 3:
+            forward_dist = float(np.percentile(corridor_pts, 10))
+        else:
+            forward_dist = float('inf')
 
         dist = np.hypot(bx, by)
         bearing = np.arctan2(by, bx)
@@ -219,9 +229,13 @@ class ReactiveLayer(Node):
             if self.elapsed(self.phase_start, now) > self.backup_duration:
                 self.state = 'ESCAPE_TURN'
                 self.phase_start = now
+
         elif self.state == 'ESCAPE_TURN':
             if min_dist > self.ramp_start:
                 self.reset_to_passthrough()
+            elif min_dist <= self.hard_stop:
+                self.state = 'ESCAPE_BACKUP'
+                self.phase_start = now
             elif self.elapsed(self.phase_start, now) > self.turn_timeout:
                 self.escape_attempts += 1
                 if self.escape_attempts >= self.max_escape_attempts:

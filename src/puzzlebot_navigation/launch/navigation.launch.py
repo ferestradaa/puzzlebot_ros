@@ -57,8 +57,8 @@ def generate_launch_description():
         map_pub, 
         #dynamic_map, 
         go_to_srv, 
-        #path_planner_v2, 
-        path_planner_v3, 
+        path_planner_v2, 
+        #path_planner_v3, 
         #path_planner,
        #dynamic_map, 
 

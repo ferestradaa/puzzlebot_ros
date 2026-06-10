@@ -21,8 +21,8 @@ def clamp(v, lo, hi):
 class PurePursuit(Node):
     def __init__(self):
         super().__init__('pure_pursuit_fork')
-        self.declare_parameter('v_max', 0.1)
-        self.declare_parameter('w_max', 0.1)
+        self.declare_parameter('v_max', 0.15)
+        self.declare_parameter('w_max', 0.2)
         self.declare_parameter('a_lin', 0.10)
         self.declare_parameter('a_ang', 1.20)
         self.declare_parameter('ld_min', 0.2)
@@ -35,7 +35,7 @@ class PurePursuit(Node):
         self.declare_parameter('final_yaw_tol', 0.05)
         self.declare_parameter('final_yaw_gain', 0.8)
         self.declare_parameter('map_frame', 'map')
-        self.declare_parameter('rate', 5.0)
+        self.declare_parameter('rate', 20.0)
 
         self.v_max          = self.get_parameter('v_max').value
         self.w_max          = self.get_parameter('w_max').value
@@ -67,7 +67,7 @@ class PurePursuit(Node):
         self.prev_w    = 0.0
 
         self.create_subscription(Path, '/path', self.path_cb, 10)
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel_desired', 10)
         self.goal_reached_pub = self.create_publisher(Bool, '/pure_pursuit/goal_reached', 10)
         self._goal_reached_latched = False
 

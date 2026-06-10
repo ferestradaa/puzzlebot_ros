@@ -23,7 +23,7 @@ public:
             std::bind(&VisualServoingActionServer::handle_cancel, this, std::placeholders::_1),
             std::bind(&VisualServoingActionServer::handle_accepted, this, std::placeholders::_1));
 
-        Kw_ = 0.1;
+        Kw_ = 0.11;
         Kv_ = 0.08;
         image_width_ = 640;
         active_ = false;
