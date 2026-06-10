@@ -27,7 +27,7 @@ class PurePursuit(Node):
         self.declare_parameter('a_ang', 1.20)
         self.declare_parameter('ld_min', 0.2)
         self.declare_parameter('ld_max', 0.60)
-        self.declare_parameter('ld_gain', 0.8)
+        self.declare_parameter('ld_gain', 2.5)
         self.declare_parameter('goal_tol', 0.08)
         self.declare_parameter('pivot_angle', 1.2)
         self.declare_parameter('pivot_gain', 1.0)
@@ -183,8 +183,8 @@ class PurePursuit(Node):
                 self._publish_reached()
                 self.get_logger().info('goal reached')
             return
-
-        ld     = clamp(self.ld_gain * self.v_max, self.ld_min, self.ld_max)
+        current_speed = abs(self.prev_v)
+        ld = clamp(self.ld_gain * max(current_speed, 0.03), self.ld_min, self.ld_max)
         near_i = self.nearest_index(x, y)
         lx, ly = self.lookahead_point(x, y, near_i, ld)
 

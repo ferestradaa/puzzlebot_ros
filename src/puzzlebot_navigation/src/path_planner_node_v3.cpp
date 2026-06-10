@@ -50,9 +50,10 @@ public:
   {
     declare_parameter<std::string>("global_frame", "map");
     declare_parameter<std::string>("robot_frame", "base_link");
-    declare_parameter<std::string>("dynamic_map_topic", "/map_dynamic");
+    //declare_parameter<std::string>("dynamic_map_topic", "/map_dynamic");
+    declare_parameter<std::string>("dynamic_map_topic", "/map");
 
-    declare_parameter<double>("robot_radius", 0.0);
+    declare_parameter<double>("robot_radius", 0.15);
     declare_parameter<int>("start_free_search_radius_cells", 20);
     declare_parameter<bool>("smooth_path", true);
     declare_parameter<double>("waypoint_spacing", 0.05);

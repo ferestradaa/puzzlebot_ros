@@ -124,7 +124,7 @@ def generate_launch_description():
         executable= 'pure_pursuit_fork', 
     )
 
-    pure_pursuit_py = Node(
+    reactive_controller = Node(
         package = 'puzzlebot_inference', 
         executable= 'reactive_controller', 
     )
@@ -151,6 +151,7 @@ def generate_launch_description():
         lidar,
         process_manager, 
         pure_pursuit_py,
+        reactive_controller, 
         #path_planner,
         navigation_launch,         
         move_forklift, 
