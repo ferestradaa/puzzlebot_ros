@@ -67,7 +67,7 @@ class PurePursuit(Node):
         self.prev_w    = 0.0
 
         self.create_subscription(Path, '/path', self.path_cb, 10)
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel_desired', 10)
+        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.goal_reached_pub = self.create_publisher(Bool, '/pure_pursuit/goal_reached', 10)
         self._goal_reached_latched = False
 

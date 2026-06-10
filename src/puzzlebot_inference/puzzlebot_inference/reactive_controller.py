@@ -22,7 +22,7 @@ class ReactiveLayer(Node):
         self.declare_parameter('clearance', 0.15)
         self.declare_parameter('ramp_start', 0.4)
         self.declare_parameter('cone_half_angle', 0.524)
-        self.declare_parameter('evasion_gain', 1.5)
+        self.declare_parameter('evasion_gain', 2.5)
         self.declare_parameter('w_max', 0.3)
         self.declare_parameter('base_frame', 'base_link')
         self.declare_parameter('corridor_half_width', 0.15)
@@ -51,11 +51,15 @@ class ReactiveLayer(Node):
 
         self.exit_margin = 0.2
         self.clear_needed = 5
-        self.stuck_timeout = 1.0
+        self.stuck_timeout = 0.8
         self.backup_speed = 0.08
         self.backup_duration = 1.0
         self.turn_timeout = 3.0
         self.max_escape_attempts = 2
+        self.backup_arc_w = 0.02
+
+        self.escape_turn_v = 0.0    # o un valor pequeño positivo si quieres avance mientras gira
+        self.escape_turn_w = 0.4    # signo lo pone evade_dir
 
         self.state = 'PASSTHROUGH'
         self.evade_dir = 0
@@ -203,7 +207,8 @@ class ReactiveLayer(Node):
                     self.reset_to_passthrough()
             else:
                 self.clear_frames = 0
-            if min_dist <= self.hard_stop:
+            stall_threshold = self.hard_stop + 0.10  
+            if min_dist <= stall_threshold:
                 if self.stuck_since is None:
                     self.stuck_since = now
                 elif self.elapsed(self.stuck_since, now) > self.stuck_timeout:
@@ -236,18 +241,30 @@ class ReactiveLayer(Node):
                 return 0.0, 0.0
             scale = clamp((min_dist - self.hard_stop) /
                         (self.ramp_start - self.hard_stop), 0.0, 1.0)
-            v_target = desired_v * scale
             prox = clamp(1.0 - scale, 0.0, 1.0)
-            evasion_w = self.evade_dir * clamp(self.evasion_gain * prox, 0.0, self.w_max)
+
+
+            v_min = 0.06 
+            v_target = max(desired_v * scale, v_min * prox)
+
+
+            w_evasion = self.evade_dir * clamp(self.evasion_gain * prox, 0.0, self.w_max * 2.0)
+            
             if desired_w * self.evade_dir >= 0:
-                w_target = desired_w + prox * evasion_w * 0.3
+                w_target = desired_w + prox * w_evasion * 0.3
+                
             else:
-                w_target = prox * evasion_w + (1.0 - prox) * desired_w
-            return v_target, clamp(w_target, -self.w_max, self.w_max)
+
+                w_target = prox * w_evasion + (1.0 - prox) * desired_w
+
+            return v_target, clamp(w_target, -self.w_max * 2.0, self.w_max * 2.0)
+        
         if self.state == 'ESCAPE_BACKUP':
-            return -self.backup_speed, 0.0
+            return -self.backup_speed, self.evade_dir * self.backup_arc_w
+        
         if self.state == 'ESCAPE_TURN':
-            return 0.0, self.evade_dir * self.w_max
+            return self.escape_turn_v, self.evade_dir * self.escape_turn_w
+        
         return 0.0, 0.0
 
     def control_loop(self):

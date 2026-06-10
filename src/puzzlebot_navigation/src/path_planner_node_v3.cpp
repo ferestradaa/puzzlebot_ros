@@ -53,7 +53,7 @@ public:
     //declare_parameter<std::string>("dynamic_map_topic", "/map_dynamic");
     declare_parameter<std::string>("dynamic_map_topic", "/map");
 
-    declare_parameter<double>("robot_radius", 0.15);
+    declare_parameter<double>("robot_radius", 0.20);
     declare_parameter<int>("start_free_search_radius_cells", 20);
     declare_parameter<bool>("smooth_path", true);
     declare_parameter<double>("waypoint_spacing", 0.05);
@@ -67,8 +67,8 @@ public:
     declare_parameter<int>("random_seed", 0);
 
     declare_parameter<double>("alpha", 1.0);
-    declare_parameter<double>("beta", 0.10);
-    declare_parameter<double>("gamma", 0.20);
+    declare_parameter<double>("beta", 0.40);
+    declare_parameter<double>("gamma", 0.60);
     declare_parameter<double>("tf_timeout", 0.05);
 
     global_frame_ = get_parameter("global_frame").as_string();
