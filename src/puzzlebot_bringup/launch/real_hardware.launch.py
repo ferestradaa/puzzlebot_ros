@@ -124,6 +124,11 @@ def generate_launch_description():
         executable= 'pure_pursuit_fork', 
     )
 
+    pure_pursuit_py = Node(
+        package = 'puzzlebot_inference', 
+        executable= 'reactive_controller', 
+    )
+
     process_manager = Node(
         package = 'puzzlebot_behavior', 
         executable= 'process_manager', 

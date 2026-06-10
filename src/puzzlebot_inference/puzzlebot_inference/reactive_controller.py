@@ -19,7 +19,7 @@ def clamp(v, lo, hi):
 
 class ReactiveLayer(Node):
     def __init__(self):
-        super().__init__('reactive_layer')
+        super().__init__('reactive_controller')
 
         # geometry and cone params
         self.declare_parameter('tip_offset', 0.2)

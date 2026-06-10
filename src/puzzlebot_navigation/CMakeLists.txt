@@ -220,6 +220,7 @@ ament_target_dependencies(
   tf2
   tf2_ros
   tf2_geometry_msgs
+  puzzlebot_interfaces
 )
 
 

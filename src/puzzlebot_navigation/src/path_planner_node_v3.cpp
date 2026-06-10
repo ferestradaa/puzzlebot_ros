@@ -50,7 +50,7 @@ public:
   {
     declare_parameter<std::string>("global_frame", "map");
     declare_parameter<std::string>("robot_frame", "base_link");
-    declare_parameter<std::string>("dynamic_map_topic", "/map");
+    declare_parameter<std::string>("dynamic_map_topic", "/map_dynamic");
 
     declare_parameter<double>("robot_radius", 0.0);
     declare_parameter<int>("start_free_search_radius_cells", 20);
@@ -186,6 +186,8 @@ private:
       return;
     }
 
+
+    /*
     RCLCPP_INFO_THROTTLE(
       get_logger(),
       *get_clock(),
@@ -194,7 +196,7 @@ private:
       grid_.cols,
       grid_.rows,
       resolution_,
-      free_cells_.size());
+      free_cells_.size());*/
   }
 
   void inflate_obstacles(double robot_radius)
