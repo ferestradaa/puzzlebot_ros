@@ -55,7 +55,7 @@ public:
 
     declare_parameter<double>("robot_radius", 0.20);
     declare_parameter<int>("start_free_search_radius_cells", 20);
-    declare_parameter<int>("endpoint_ignore_cells", 3);
+    declare_parameter<int>("endpoint_ignore_waypoints", 3);
     declare_parameter<bool>("smooth_path", true);
     declare_parameter<double>("waypoint_spacing", 0.05);
 
@@ -79,8 +79,8 @@ public:
     robot_radius_ = get_parameter("robot_radius").as_double();
     start_free_search_radius_cells_ =
       static_cast<int>(get_parameter("start_free_search_radius_cells").as_int());
-    endpoint_ignore_cells_ =
-      std::max(0, static_cast<int>(get_parameter("endpoint_ignore_cells").as_int()));
+    endpoint_ignore_waypoints_ =
+      std::max(0, static_cast<int>(get_parameter("endpoint_ignore_waypoints").as_int()));
     smooth_path_ = get_parameter("smooth_path").as_bool();
     waypoint_spacing_ = get_parameter("waypoint_spacing").as_double();
 
@@ -126,12 +126,12 @@ public:
 
     RCLCPP_INFO(
       get_logger(),
-      "Path planner ready | map_topic=%s | service=/plan_path | tf=%s->%s | robot_radius=%.2f | endpoint_ignore_cells=%d",
+      "Path planner ready | map_topic=%s | service=/plan_path | tf=%s->%s | robot_radius=%.2f | endpoint_ignore_waypoints=%d",
       dynamic_map_topic_.c_str(),
       global_frame_.c_str(),
       robot_frame_.c_str(),
       robot_radius_,
-      endpoint_ignore_cells_);
+      endpoint_ignore_waypoints_);
 
     param_callback_handle_ = add_on_set_parameters_callback(
       std::bind(&PathPlannerNode::on_parameter_update, this, std::placeholders::_1));
@@ -145,10 +145,10 @@ private:
     result.successful = true;
 
     for (const auto & param : parameters) {
-      if (param.get_name() == "endpoint_ignore_cells") {
+      if (param.get_name() == "endpoint_ignore_waypoints") {
         if (param.get_type() != rclcpp::ParameterType::PARAMETER_INTEGER) {
           result.successful = false;
-          result.reason = "endpoint_ignore_cells must be an integer.";
+          result.reason = "endpoint_ignore_waypoints must be an integer.";
           return result;
         }
 
@@ -156,19 +156,19 @@ private:
 
         if (value < 0) {
           result.successful = false;
-          result.reason = "endpoint_ignore_cells must be >= 0.";
+          result.reason = "endpoint_ignore_waypoints must be >= 0.";
           return result;
         }
       }
     }
 
     for (const auto & param : parameters) {
-      if (param.get_name() == "endpoint_ignore_cells") {
-        endpoint_ignore_cells_ = static_cast<int>(param.as_int());
+      if (param.get_name() == "endpoint_ignore_waypoints") {
+        endpoint_ignore_waypoints_ = static_cast<int>(param.as_int());
         RCLCPP_INFO(
           get_logger(),
-          "Updated endpoint_ignore_cells=%d",
-          endpoint_ignore_cells_);
+          "Updated endpoint_ignore_waypoints=%d",
+          endpoint_ignore_waypoints_);
       }
     }
 
@@ -427,22 +427,6 @@ private:
 
   bool line_is_free(const GridCell & a, const GridCell & b) const
   {
-    return line_is_free_internal(a, b, 0, 0);
-  }
-
-  bool line_is_free_ignore_endpoints(const GridCell & a, const GridCell & b) const
-  {
-    return line_is_free_internal(a, b, endpoint_ignore_cells_, endpoint_ignore_cells_);
-  }
-
-  bool line_is_free_internal(
-    const GridCell & a,
-    const GridCell & b,
-    int ignore_start_cells,
-    int ignore_goal_cells) const
-  {
-    std::vector<GridCell> ray_cells;
-
     int x0 = a.first;
     int y0 = a.second;
 
@@ -458,7 +442,9 @@ private:
     int err = dx - dy;
 
     while (true) {
-      ray_cells.emplace_back(x0, y0);
+      if (!is_cell_free({x0, y0})) {
+        return false;
+      }
 
       if (x0 == x1 && y0 == y1) {
         break;
@@ -477,19 +463,89 @@ private:
       }
     }
 
-    const int n = static_cast<int>(ray_cells.size());
-    const int start_skip = std::max(0, ignore_start_cells);
-    const int goal_skip = std::max(0, ignore_goal_cells);
+    return true;
+  }
 
-    for (int i = 0; i < n; ++i) {
-      const bool skip_start_side = i < start_skip;
-      const bool skip_goal_side = i >= n - goal_skip;
 
-      if (skip_start_side || skip_goal_side) {
+
+  bool line_is_free_ignore_exact_endpoints(const GridCell & a, const GridCell & b) const
+  {
+    int x0 = a.first;
+    int y0 = a.second;
+
+    const int x1 = b.first;
+    const int y1 = b.second;
+
+    const int dx = std::abs(x1 - x0);
+    const int dy = std::abs(y1 - y0);
+
+    const int sx = (x0 < x1) ? 1 : -1;
+    const int sy = (y0 < y1) ? 1 : -1;
+
+    int err = dx - dy;
+
+    while (true) {
+      const bool at_start = (x0 == a.first && y0 == a.second);
+      const bool at_goal = (x0 == x1 && y0 == y1);
+
+      if (!at_start && !at_goal && !is_cell_free({x0, y0})) {
+        return false;
+      }
+
+      if (at_goal) {
+        break;
+      }
+
+      const int e2 = 2 * err;
+
+      if (e2 > -dy) {
+        err -= dy;
+        x0 += sx;
+      }
+
+      if (e2 < dx) {
+        err += dx;
+        y0 += sy;
+      }
+    }
+
+    return true;
+  }
+
+  bool segment_validation_can_be_skipped(
+    std::size_t segment_index,
+    std::size_t segment_count) const
+  {
+    if (endpoint_ignore_waypoints_ <= 0 || segment_count == 0) {
+      return false;
+    }
+
+    const std::size_t ignore_segments =
+      static_cast<std::size_t>(endpoint_ignore_waypoints_);
+
+    return segment_index < ignore_segments ||
+           segment_index >= segment_count - std::min(ignore_segments, segment_count);
+  }
+
+  bool path_grid_is_free_with_endpoint_waypoint_exceptions(
+    const std::vector<GridCell> & path_grid) const
+  {
+    if (path_grid.empty()) {
+      return false;
+    }
+
+    if (path_grid.size() == 1) {
+      return true;
+    }
+
+    const std::size_t segment_count = path_grid.size() - 1;
+
+    for (std::size_t i = 0; i < segment_count; ++i) {
+      if (segment_validation_can_be_skipped(i, segment_count)) {
         continue;
       }
 
-      if (!is_cell_free(ray_cells[static_cast<std::size_t>(i)])) {
+      if (!line_is_free(path_grid[i], path_grid[i + 1])) {
         return false;
       }
     }
@@ -515,7 +571,7 @@ private:
 
     if (q_new == q_near ||
         (!q_new_is_allowed_endpoint && !is_cell_free(q_new)) ||
-        !line_is_free_ignore_endpoints(q_near, q_new))
+        !line_is_free_ignore_exact_endpoints(q_near, q_new))
     {
       return false;
     }
@@ -573,7 +629,7 @@ private:
       last_near = q_near;
 
       if (distance(q_new, q_target) <= static_cast<double>(connect_threshold_) &&
-          line_is_free_ignore_endpoints(q_new, q_target))
+          line_is_free_ignore_exact_endpoints(q_new, q_target))
       {
         if (g_cost.find(q_target) == g_cost.end()) {
           tree_nodes.push_back(q_target);
@@ -726,7 +782,7 @@ private:
       std::size_t j = path_grid.size() - 1;
 
       while (j > i + 1) {
-        if (line_is_free_ignore_endpoints(path_grid[i], path_grid[j])) {
+        if (line_is_free(path_grid[i], path_grid[j])) {
           break;
         }
 
@@ -792,23 +848,25 @@ private:
       return false;
     }
 
-    for (std::size_t i = 0; i < path_world.size(); ++i) {
-      const auto [x, y] = path_world[i];
-      const GridCell cell = world_to_grid(x, y);
+    if (path_world.size() == 1) {
+      return true;
+    }
 
-      const bool endpoint = (i == 0 || i + 1 == path_world.size());
+    const std::size_t segment_count = path_world.size() - 1;
 
-      if (!endpoint && !is_cell_free(cell)) {
-        return false;
+    for (std::size_t i = 0; i < segment_count; ++i) {
+      if (segment_validation_can_be_skipped(i, segment_count)) {
+        continue;
       }
 
-      if (i > 0) {
-        const auto [px, py] = path_world[i - 1];
-        const GridCell prev_cell = world_to_grid(px, py);
+      const auto [x0, y0] = path_world[i];
+      const auto [x1, y1] = path_world[i + 1];
 
-        if (!line_is_free_ignore_endpoints(prev_cell, cell)) {
-          return false;
-        }
+      const GridCell cell0 = world_to_grid(x0, y0);
+      const GridCell cell1 = world_to_grid(x1, y1);
+
+      if (!line_is_free(cell0, cell1)) {
+        return false;
       }
     }
 
@@ -953,6 +1011,13 @@ private:
 
     path_world = resample_path_world(path_world, waypoint_spacing_);
 
+    if (!world_path_is_free(path_world)) {
+      return {
+        false,
+        "Path was generated, but final validation failed outside endpoint waypoint exceptions.",
+        nav_msgs::msg::Path()};
+    }
+
     auto path_msg = build_path_msg(path_world);
 
     if (!path_msg.poses.empty()) {
@@ -1055,7 +1120,7 @@ private:
 
   double robot_radius_{0.0};
   int start_free_search_radius_cells_{20};
-  int endpoint_ignore_cells_{3};
+  int endpoint_ignore_waypoints_{3};
   bool smooth_path_{true};
   double waypoint_spacing_{0.05};
 

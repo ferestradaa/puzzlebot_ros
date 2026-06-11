@@ -22,7 +22,7 @@ class ReactiveLayer(Node):
         self.declare_parameter('clearance', 0.15)
         self.declare_parameter('ramp_start', 0.6)
         self.declare_parameter('cone_half_angle', 0.524)
-        self.declare_parameter('evasion_gain', 2.5)
+        self.declare_parameter('evasion_gain', 0.6)
         self.declare_parameter('w_max', 0.3)
         self.declare_parameter('base_frame', 'base_link')
         self.declare_parameter('corridor_half_width', 0.15)
@@ -47,6 +47,7 @@ class ReactiveLayer(Node):
         self.a_lin_up = 0.15
         self.a_lin_down = 0.6
         self.a_ang = 0.8
+        self.a_ang_escape = 0.4
 
         self.exit_margin = 0.2
         self.clear_needed = 5
@@ -55,10 +56,10 @@ class ReactiveLayer(Node):
         self.backup_duration = 1.0
         self.turn_timeout = 3.0
         self.max_escape_attempts = 2
-        self.backup_arc_w = 0.02
+        self.backup_arc_w = 0.15
 
-        self.escape_turn_v = 0.07   
-        self.escape_turn_w = 0.3    
+        self.escape_turn_v = 0.08
+        self.escape_turn_w = 0.2
 
         self.state = 'PASSTHROUGH'
         self.evade_dir = 0
@@ -69,6 +70,7 @@ class ReactiveLayer(Node):
 
         self.prev_v = 0.0
         self.prev_w = 0.0
+        self._idle = False
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -81,10 +83,10 @@ class ReactiveLayer(Node):
         self._loop_count = 0
         self._last_scan_time = None
 
-        self.min_corridor_pts = 3 
+        self.min_corridor_pts = 3
         self.far_dist = self.ramp_start * 3.0
-        self.fwd_filt = self.far_dist 
-        self.fwd_alpha = 0.4 
+        self.fwd_filt = self.far_dist
+        self.fwd_alpha = 0.4
 
         self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
         self.create_subscription(Twist, '/cmd_vel_desired', self.desired_cb, 10)
@@ -134,7 +136,6 @@ class ReactiveLayer(Node):
 
         angles = scan.angle_min + np.arange(n, dtype=np.float32) * scan.angle_increment
 
-        # anular sector bloqueado
         blocked = (angles >= self.lidar_block_min) & (angles <= self.lidar_block_max)
         ranges = ranges.copy()
         ranges[blocked] = np.inf
@@ -163,7 +164,6 @@ class ReactiveLayer(Node):
 
         corridor = np.abs(by) <= self.corridor_half_width
         corridor_pts = bx[corridor]
-
 
         if corridor_pts.size >= 3:
             forward_dist = float(np.percentile(corridor_pts, 10))
@@ -217,7 +217,7 @@ class ReactiveLayer(Node):
                     self.reset_to_passthrough()
             else:
                 self.clear_frames = 0
-            stall_threshold = self.hard_stop + 0.10  
+            stall_threshold = self.hard_stop + 0.10
             if min_dist <= stall_threshold:
                 if self.stuck_since is None:
                     self.stuck_since = now
@@ -229,7 +229,6 @@ class ReactiveLayer(Node):
             if self.elapsed(self.phase_start, now) > self.backup_duration:
                 self.state = 'ESCAPE_TURN'
                 self.phase_start = now
-
         elif self.state == 'ESCAPE_TURN':
             if min_dist > self.ramp_start:
                 self.reset_to_passthrough()
@@ -254,31 +253,22 @@ class ReactiveLayer(Node):
             if min_dist <= self.hard_stop:
                 return 0.0, 0.0
             scale = clamp((min_dist - self.hard_stop) /
-                        (self.ramp_start - self.hard_stop), 0.0, 1.0)
+                          (self.ramp_start - self.hard_stop), 0.0, 1.0)
             prox = clamp(1.0 - scale, 0.0, 1.0)
 
+            v_target = desired_v * scale
 
-            v_min = 0.06 
-            v_target = max(desired_v * scale, v_min * prox)
+            w_evasion = self.evade_dir * clamp(self.evasion_gain * prox, 0.0, self.w_max)
+            w_target = prox * w_evasion + scale * desired_w
 
+            return v_target, clamp(w_target, -self.w_max * 1.5, self.w_max * 1.5)
 
-            w_evasion = self.evade_dir * clamp(self.evasion_gain * prox, 0.0, self.w_max * 2.0)
-            
-            if desired_w * self.evade_dir >= 0:
-                w_target = desired_w + prox * w_evasion * 0.3
-                
-            else:
-
-                w_target = prox * w_evasion + (1.0 - prox) * desired_w
-
-            return v_target, clamp(w_target, -self.w_max * 2.0, self.w_max * 2.0)
-        
         if self.state == 'ESCAPE_BACKUP':
             return -self.backup_speed, self.evade_dir * self.backup_arc_w
-        
+
         if self.state == 'ESCAPE_TURN':
             return self.escape_turn_v, self.evade_dir * self.escape_turn_w
-        
+
         return 0.0, 0.0
 
     def control_loop(self):
@@ -289,18 +279,24 @@ class ReactiveLayer(Node):
             if log_this:
                 self.get_logger().warn('no scan received yet')
             return
+
         if self.latest_desired is None or self.last_desired_time is None:
             return
 
         now = self.get_clock().now()
         desired_age = (now - self.last_desired_time).nanoseconds * 1e-9
+
         if desired_age > self.desired_timeout.nanoseconds * 1e-9:
-            self.prev_v = 0.0
-            self.prev_w = 0.0
-            self.reset_to_passthrough()
-            self.cmd_pub.publish(Twist())
-            self.stuck_pub.publish(Bool(data=False))
+            if not self._idle:
+                self.prev_v = 0.0
+                self.prev_w = 0.0
+                self.reset_to_passthrough()
+                self.cmd_pub.publish(Twist())
+                self.stuck_pub.publish(Bool(data=False))
+                self._idle = True
             return
+
+        self._idle = False
 
         min_dist, left, right = self.analyze_cone(self.latest_scan)
         desired_v = self.latest_desired.linear.x
@@ -311,7 +307,8 @@ class ReactiveLayer(Node):
 
         cmd = Twist()
         cmd.linear.x = self.ramp(v_target, self.prev_v, self.a_lin_up, self.a_lin_down)
-        cmd.angular.z = self.ramp(w_target, self.prev_w, self.a_ang, self.a_ang)
+        a_ang = self.a_ang_escape if self.state in RECOVERY_STATES else self.a_ang
+        cmd.angular.z = self.ramp(w_target, self.prev_w, a_ang, a_ang)
         self.prev_v = cmd.linear.x
         self.prev_w = cmd.angular.z
 
@@ -324,6 +321,7 @@ class ReactiveLayer(Node):
                 f'cmd=({cmd.linear.x:.3f},{cmd.angular.z:.3f}) L={left} R={right}'
             )
         self.cmd_pub.publish(cmd)
+
 
 def main():
     rclpy.init()

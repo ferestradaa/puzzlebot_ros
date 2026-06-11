@@ -7,14 +7,11 @@
       </RetryUntilSuccessful>
       <KeepRunningUntilFailure>
         <Sequence name="PickPlaceCycle">
-          <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
-
           <GoToAction zone="inspect"/>
           <RetryUntilSuccessful num_attempts="-1">
             <Fallback name="SearchQR">
+              <!-- Hijo 1: buscar en inspect -->
               <Sequence name="SearchInspect">
-                <GoToAction zone="inspect"/>
-                <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
                     <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
@@ -27,9 +24,24 @@
                   </Sequence>
                 </Parallel>
               </Sequence>
+              <!-- Hijo 2: ir a inspect2 y buscar -->
+              <Sequence name="SearchInspect2">
+                <GoToAction zone="inspect2"/>
+                <Parallel success_count="1" failure_count="1">
+                  <Sequence>
+                    <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
+                    <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
+                    <AlwaysFailure/>
+                  </Sequence>
+                  <Sequence>
+                    <SetBlackboard output_key="search_zone" value="inspect2"/>
+                    <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+                  </Sequence>
+                </Parallel>
+              </Sequence>
+              <!-- Hijo 3: ir a center y buscar -->
               <Sequence name="SearchCenter">
                 <GoToAction zone="center"/>
-                <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
                     <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
@@ -42,13 +54,10 @@
                 </Parallel>
               </Sequence>
             </Fallback>
-
-
           </RetryUntilSuccessful>
           <SetHeightFromZone zone="{search_zone}" fork_height="{fork_height}"/>
           <Fallback name="RunAndCleanup">
             <Sequence name="DockingSequence">
-              <MoveForklift target_height="20.0" timeout_s="15.0" tolerance_mm="3.0"/>
               <RetryUntilSuccessful num_attempts="-1">
                 <Fallback name="VisualServoingWithRecovery">
                   <VisualServoingAction target_area="20000.0"/>
@@ -59,12 +68,8 @@
                   </Sequence>
                 </Fallback>
               </RetryUntilSuccessful>
-
-
-              <MoveForklift target_height="{fork_height}" timeout_s="15.0" tolerance_mm="3.0"/>
               <DriveRawAction linear_x="0.03"  angular_z="0.0" duration_sec="15.0"/>
               <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="3.0"/>
-              <MoveForklift target_height="140.0" timeout_s="15.0" tolerance_mm="6.0"/>
               <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
               <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="2.0"/>
               <DriveRawAction linear_x="0.0"   angular_z="0.08" duration_sec="6.0"/>
@@ -72,11 +77,8 @@
             <AlwaysSuccess/>
           </Fallback>
           <GoToAction zone="{qr_data}"/>
-          <GoToAction zone="Wolmar1"/>
-          <GoToAction zone="Wolmar2"/>
-          <DriveRawAction linear_x="0.03"   angular_z="0.0" duration_sec="15.0"/>
-          <MoveForklift target_height="0.0" timeout_s="15.0" tolerance_mm="3.0"/>
-          <DriveRawAction linear_x="-0.03"   angular_z="0.0" duration_sec="8.0"/>
+          <DriveRawAction linear_x="0.03"  angular_z="0.0" duration_sec="15.0"/>
+          <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
           <GoToAction zone="inspect"/>
         </Sequence>
       </KeepRunningUntilFailure>

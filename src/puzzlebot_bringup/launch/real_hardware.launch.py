@@ -153,7 +153,7 @@ def generate_launch_description():
         pure_pursuit_py,
         reactive_controller, 
         #path_planner,
-        navigation_launch,         
+        navigation_launch,            
         move_forklift, 
         desc_launch,
         control_launch, 

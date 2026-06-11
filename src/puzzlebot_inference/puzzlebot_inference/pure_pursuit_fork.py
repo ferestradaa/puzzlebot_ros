@@ -66,6 +66,8 @@ class PurePursuit(Node):
         self.prev_v    = 0.0
         self.prev_w    = 0.0
 
+        self._near_i = 0
+
         self.create_subscription(Path, '/path', self.path_cb, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel_desired', 10)
         self.goal_reached_pub = self.create_publisher(Bool, '/pure_pursuit/goal_reached', 10)
@@ -121,13 +123,16 @@ class PurePursuit(Node):
         cmd.angular.z = w
         self.cmd_pub.publish(cmd)
 
-    def nearest_index(self, x, y):
-        best_i, best_d = 0, float('inf')
-        for i, (px, py) in enumerate(self.path):
-            d = (px - x) ** 2 + (py - y) ** 2
-            if d < best_d:
-                best_d, best_i = d, i
-        return best_i
+    def advance_near_index(self, x, y):
+        n = len(self.path)
+        while self._near_i < n - 1:
+            cx, cy = self.path[self._near_i]
+            nx, ny = self.path[self._near_i + 1]
+            if math.hypot(nx - x, ny - y) < math.hypot(cx - x, cy - y):
+                self._near_i += 1
+            else:
+                break
+        return self._near_i
 
     def lookahead_point(self, x, y, start_i, ld):
         for i in range(start_i, len(self.path)):
@@ -185,7 +190,7 @@ class PurePursuit(Node):
             return
         current_speed = abs(self.prev_v)
         ld = clamp(self.ld_gain * max(current_speed, 0.03), self.ld_min, self.ld_max)
-        near_i = self.nearest_index(x, y)
+        near_i = self.advance_near_index(x, y)
         lx, ly = self.lookahead_point(x, y, near_i, ld)
 
         dx, dy = lx - x, ly - y
@@ -201,7 +206,7 @@ class PurePursuit(Node):
             v_target = 0.0
             w_target = clamp(self.pivot_gain * alpha, -self.w_max, self.w_max)
         else:
-            curvature = 2.0 * math.sin(alpha) / max(dist, 1e-3)
+            curvature = 2.0 * math.sin(alpha) / max(dist, self.ld_min)
             v_target = self.v_max * max(0.3, math.cos(alpha))
             w_target  = clamp(curvature * v_target, -self.w_max, self.w_max)
 
