@@ -11,13 +11,16 @@ from tf2_ros import Buffer, TransformListener
 
 RECOVERY_STATES = {'ESCAPE_BACKUP', 'ESCAPE_TURN', 'STUCK_HOLD'}
 
+
 def clamp(v, lo, hi):
     return max(lo, min(hi, v))
+
 
 class ReactiveLayer(Node):
     def __init__(self):
         super().__init__('reactive_controller')
 
+        # parametros configurables
         self.declare_parameter('tip_offset', 0.2)
         self.declare_parameter('clearance', 0.15)
         self.declare_parameter('ramp_start', 0.6)
@@ -38,29 +41,35 @@ class ReactiveLayer(Node):
         self.corridor_half_width = self.get_parameter('corridor_half_width').value
         self.corridor_min_x = self.get_parameter('corridor_min_x').value
 
+        # sector del lidar tapado por el chasis/horquilla, se ignora
         self.lidar_block_min = -0.30
         self.lidar_block_max = 0.30
 
+        # distancia frontal de parada dura
         self.hard_stop = self.tip_offset + self.clearance
 
-        self.dt = 0.033
+        # limites de aceleracion, un solo set para todos los estados
         self.a_lin_up = 0.15
         self.a_lin_down = 0.6
         self.a_ang = 0.8
-        self.a_ang_escape = 0.4
 
+        # periodo nominal del lazo y tope de dt tras un stall del executor
+        self.dt = 0.033
+        self.dt_max = 0.1
+
+        # histeresis de evasion y recuperacion
         self.exit_margin = 0.2
         self.clear_needed = 5
         self.stuck_timeout = 0.8
-        self.backup_speed = 0.08
+
+        # recuperacion: retroceso recto y giro en el sitio
+        self.backup_speed = 0.1
         self.backup_duration = 1.0
         self.turn_timeout = 3.0
         self.max_escape_attempts = 2
-        self.backup_arc_w = 0.15
+        self.escape_turn_w = 0.25
 
-        self.escape_turn_v = 0.08
-        self.escape_turn_w = 0.2
-
+        # estado
         self.state = 'PASSTHROUGH'
         self.evade_dir = 0
         self.clear_frames = 0
@@ -68,26 +77,25 @@ class ReactiveLayer(Node):
         self.phase_start = None
         self.escape_attempts = 0
 
+        # comando previo para la rampa
         self.prev_v = 0.0
         self.prev_w = 0.0
         self._idle = False
+        self._last_loop_time = None
 
+        # tf
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
+        # entradas
         self.latest_scan = None
         self.latest_desired = None
         self.last_desired_time = None
         self.desired_timeout = Duration(seconds=0.5)
 
         self._loop_count = 0
-        self._last_scan_time = None
 
-        self.min_corridor_pts = 3
-        self.far_dist = self.ramp_start * 3.0
-        self.fwd_filt = self.far_dist
-        self.fwd_alpha = 0.4
-
+        # io
         self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
         self.create_subscription(Twist, '/cmd_vel_desired', self.desired_cb, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
@@ -95,12 +103,6 @@ class ReactiveLayer(Node):
         self.create_timer(self.dt, self.control_loop)
 
     def scan_cb(self, msg):
-        now = self.get_clock().now()
-        if self._last_scan_time is not None:
-            dt = (now - self._last_scan_time).nanoseconds * 1e-9
-            if dt > 0.15:
-                pass
-        self._last_scan_time = now
         self.latest_scan = msg
 
     def desired_cb(self, msg):
@@ -108,12 +110,10 @@ class ReactiveLayer(Node):
         self.last_desired_time = self.get_clock().now()
 
     def get_laser_to_base_tf(self, frame_id):
+        # transformada estatica laser -> base, asume montaje plano (solo yaw)
         try:
             tf = self.tf_buffer.lookup_transform(
-                self.base_frame,
-                frame_id,
-                rclpy.time.Time()
-            )
+                self.base_frame, frame_id, rclpy.time.Time())
             tx = tf.transform.translation.x
             ty = tf.transform.translation.y
             yaw = 2.0 * math.atan2(tf.transform.rotation.z, tf.transform.rotation.w)
@@ -124,6 +124,7 @@ class ReactiveLayer(Node):
             return None
 
     def analyze_cone(self, scan):
+        # devuelve (distancia_frontal, conteo_izq, conteo_der) en base_link
         tf = self.get_laser_to_base_tf(scan.header.frame_id)
         if tf is None:
             return float('inf'), 0, 0
@@ -136,6 +137,7 @@ class ReactiveLayer(Node):
 
         angles = scan.angle_min + np.arange(n, dtype=np.float32) * scan.angle_increment
 
+        # ignora el sector tapado por el chasis
         blocked = (angles >= self.lidar_block_min) & (angles <= self.lidar_block_max)
         ranges = ranges.copy()
         ranges[blocked] = np.inf
@@ -149,6 +151,7 @@ class ReactiveLayer(Node):
         r = ranges[valid]
         a = angles[valid]
 
+        # pasa los puntos del laser a base_link
         lx = r * np.cos(a)
         ly = r * np.sin(a)
         cos_y = math.cos(yaw)
@@ -156,20 +159,22 @@ class ReactiveLayer(Node):
         bx = tx + cos_y * lx - sin_y * ly
         by = ty + sin_y * lx + cos_y * ly
 
+        # solo lo que esta delante
         ahead = bx > self.corridor_min_x
         bx = bx[ahead]
         by = by[ahead]
         if bx.size == 0:
             return float('inf'), 0, 0
 
+        # distancia frontal: percentil bajo dentro del corredor estrecho
         corridor = np.abs(by) <= self.corridor_half_width
         corridor_pts = bx[corridor]
-
         if corridor_pts.size >= 3:
             forward_dist = float(np.percentile(corridor_pts, 10))
         else:
             forward_dist = float('inf')
 
+        # conteo de obstaculos por lado dentro del cono
         dist = np.hypot(bx, by)
         bearing = np.arctan2(by, bx)
         in_cone = (np.abs(bearing) <= self.cone_half_angle) & (dist < self.ramp_start)
@@ -179,12 +184,14 @@ class ReactiveLayer(Node):
         return forward_dist, left_count, right_count
 
     def pick_dir(self, left_count, right_count):
+        # gira hacia el lado con menos obstaculos
         return 1 if left_count <= right_count else -1
 
-    def ramp(self, target, prev, a_up, a_down):
+    def ramp(self, target, prev, a_up, a_down, dt):
+        # limita el cambio por ciclo usando el dt real medido
         delta = target - prev
-        braking = (prev >= 0 and delta < 0) or (prev <= 0 and delta > 0)
-        step = (a_down if braking else a_up) * self.dt
+        decelerating = abs(target) < abs(prev)
+        step = (a_down if decelerating else a_up) * dt
         return prev + clamp(delta, -step, step)
 
     def elapsed(self, t0, now):
@@ -204,12 +211,14 @@ class ReactiveLayer(Node):
 
     def update_state(self, now, min_dist, left, right):
         laterals = left + right
+
         if self.state == 'PASSTHROUGH':
             if min_dist < self.ramp_start:
                 self.state = 'AVOID'
                 self.evade_dir = self.pick_dir(left, right)
                 self.clear_frames = 0
                 self.stuck_since = None
+
         elif self.state == 'AVOID':
             if min_dist > self.ramp_start + self.exit_margin and laterals == 0:
                 self.clear_frames += 1
@@ -217,6 +226,7 @@ class ReactiveLayer(Node):
                     self.reset_to_passthrough()
             else:
                 self.clear_frames = 0
+
             stall_threshold = self.hard_stop + 0.10
             if min_dist <= stall_threshold:
                 if self.stuck_since is None:
@@ -225,10 +235,12 @@ class ReactiveLayer(Node):
                     self.enter_escape(now)
             else:
                 self.stuck_since = None
+
         elif self.state == 'ESCAPE_BACKUP':
             if self.elapsed(self.phase_start, now) > self.backup_duration:
                 self.state = 'ESCAPE_TURN'
                 self.phase_start = now
+
         elif self.state == 'ESCAPE_TURN':
             if min_dist > self.ramp_start:
                 self.reset_to_passthrough()
@@ -242,6 +254,7 @@ class ReactiveLayer(Node):
                 else:
                     self.state = 'ESCAPE_BACKUP'
                     self.phase_start = now
+
         elif self.state == 'STUCK_HOLD':
             if min_dist > self.ramp_start:
                 self.reset_to_passthrough()
@@ -249,51 +262,73 @@ class ReactiveLayer(Node):
     def command_for_state(self, min_dist, desired_v, desired_w):
         if self.state == 'PASSTHROUGH':
             return desired_v, desired_w
+
         if self.state == 'AVOID':
             if min_dist <= self.hard_stop:
                 return 0.0, 0.0
             scale = clamp((min_dist - self.hard_stop) /
                           (self.ramp_start - self.hard_stop), 0.0, 1.0)
             prox = clamp(1.0 - scale, 0.0, 1.0)
-
             v_target = desired_v * scale
-
             w_evasion = self.evade_dir * clamp(self.evasion_gain * prox, 0.0, self.w_max)
             w_target = prox * w_evasion + scale * desired_w
-
-            return v_target, clamp(w_target, -self.w_max * 1.5, self.w_max * 1.5)
+            # respeta el limite angular fisico
+            return v_target, clamp(w_target, -self.w_max, self.w_max)
 
         if self.state == 'ESCAPE_BACKUP':
-            return -self.backup_speed, self.evade_dir * self.backup_arc_w
+            # retroceso recto, sin giro
+            return -self.backup_speed, 0.0
 
         if self.state == 'ESCAPE_TURN':
-            return self.escape_turn_v, self.evade_dir * self.escape_turn_w
+            # giro en el sitio hacia el lado libre, sin avanzar contra el obstaculo
+            return 0.0, self.evade_dir * self.escape_turn_w
 
+        # STUCK_HOLD
         return 0.0, 0.0
 
+    def publish_ramped(self, v_target, w_target, dt):
+        # unico punto de salida: todo cmd_vel pasa por la rampa
+        cmd = Twist()
+        cmd.linear.x = self.ramp(v_target, self.prev_v, self.a_lin_up, self.a_lin_down, dt)
+        cmd.angular.z = self.ramp(w_target, self.prev_w, self.a_ang, self.a_ang, dt)
+        self.prev_v = cmd.linear.x
+        self.prev_w = cmd.angular.z
+        self.cmd_pub.publish(cmd)
+        return cmd.linear.x, cmd.angular.z
+
     def control_loop(self):
+        now = self.get_clock().now()
+
+        # dt real medido y acotado, evita saltos de aceleracion tras un stall
+        if self._last_loop_time is None:
+            dt = self.dt
+        else:
+            dt = (now - self._last_loop_time).nanoseconds * 1e-9
+            dt = clamp(dt, 0.0, self.dt_max)
+        self._last_loop_time = now
+
         self._loop_count += 1
         log_this = (self._loop_count % 30 == 0)
 
+        # sin lidar: frena rampando a cero
         if self.latest_scan is None:
             if log_this:
-                self.get_logger().warn('no scan received yet')
+                self.get_logger().warn('no scan yet')
+            self.publish_ramped(0.0, 0.0, dt)
             return
 
-        if self.latest_desired is None or self.last_desired_time is None:
-            return
+        # comando deseado ausente o expirado: frena rampando a cero
+        desired_ok = (self.latest_desired is not None and
+                      self.last_desired_time is not None and
+                      (now - self.last_desired_time).nanoseconds * 1e-9
+                      <= self.desired_timeout.nanoseconds * 1e-9)
 
-        now = self.get_clock().now()
-        desired_age = (now - self.last_desired_time).nanoseconds * 1e-9
-
-        if desired_age > self.desired_timeout.nanoseconds * 1e-9:
+        if not desired_ok:
             if not self._idle:
-                self.prev_v = 0.0
-                self.prev_w = 0.0
                 self.reset_to_passthrough()
-                self.cmd_pub.publish(Twist())
-                self.stuck_pub.publish(Bool(data=False))
                 self._idle = True
+            self.publish_ramped(0.0, 0.0, dt)
+            self.stuck_pub.publish(Bool(data=False))
             return
 
         self._idle = False
@@ -304,23 +339,17 @@ class ReactiveLayer(Node):
 
         self.update_state(now, min_dist, left, right)
         v_target, w_target = self.command_for_state(min_dist, desired_v, desired_w)
-
-        cmd = Twist()
-        cmd.linear.x = self.ramp(v_target, self.prev_v, self.a_lin_up, self.a_lin_down)
-        a_ang = self.a_ang_escape if self.state in RECOVERY_STATES else self.a_ang
-        cmd.angular.z = self.ramp(w_target, self.prev_w, a_ang, a_ang)
-        self.prev_v = cmd.linear.x
-        self.prev_w = cmd.angular.z
+        out_v, out_w = self.publish_ramped(v_target, w_target, dt)
 
         self.stuck_pub.publish(Bool(data=(self.state in RECOVERY_STATES)))
 
+        '''
         if log_this:
             self.get_logger().info(
                 f'{self.state} fwd={min_dist:.3f} dir={self.evade_dir} '
                 f'des=({desired_v:.3f},{desired_w:.3f}) '
-                f'cmd=({cmd.linear.x:.3f},{cmd.angular.z:.3f}) L={left} R={right}'
-            )
-        self.cmd_pub.publish(cmd)
+                f'cmd=({out_v:.3f},{out_w:.3f}) L={left} R={right}')
+        '''
 
 
 def main():
@@ -333,6 +362,7 @@ def main():
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

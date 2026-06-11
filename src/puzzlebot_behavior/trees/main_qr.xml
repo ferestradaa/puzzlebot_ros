@@ -10,7 +10,6 @@
           <GoToAction zone="inspect"/>
           <RetryUntilSuccessful num_attempts="-1">
             <Fallback name="SearchQR">
-              <!-- Hijo 1: buscar en inspect -->
               <Sequence name="SearchInspect">
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
@@ -24,7 +23,6 @@
                   </Sequence>
                 </Parallel>
               </Sequence>
-              <!-- Hijo 2: ir a inspect2 y buscar -->
               <Sequence name="SearchInspect2">
                 <GoToAction zone="inspect2"/>
                 <Parallel success_count="1" failure_count="1">

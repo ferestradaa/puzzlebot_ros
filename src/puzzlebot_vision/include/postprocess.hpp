@@ -1,9 +1,3 @@
-// yolov8_postprocess.hpp - Preprocess y postprocess for YOLOv8 detection
-//
-// Asumes:
-//   - Input shape [1, 3, S, S] (default S=320)
-//   - Output shape [1, 4+num_classes, num_candidates]
-//   - Letterbox padding con valor 114 (estandar YOLO)
 
 #ifndef PUZZLEBOT_INFERENCE__YOLOV8_POSTPROCESS_HPP_
 #define PUZZLEBOT_INFERENCE__YOLOV8_POSTPROCESS_HPP_
