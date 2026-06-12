@@ -89,6 +89,7 @@ class ReactiveLayer(Node):
 
         self._active_source = "pure_pursuit"
         self._bypass_sources = {"visual_servoing"}
+        self._in_bypass = False
 
         self._reverse = False
 
@@ -233,7 +234,6 @@ class ReactiveLayer(Node):
                     self.reset_to_passthrough()
             else:
                 self.clear_frames = 0
-            # stuck solo cuenta cuando ya estamos en zona de reaccion activa
             stall_threshold = self.hard_stop + 0.10
             if min_dist <= stall_threshold:
                 if self.stuck_since is None:
@@ -298,7 +298,8 @@ class ReactiveLayer(Node):
             return 0.0, self.evade_dir * self.escape_turn_w
 
         if self.state == 'ESCAPE_FORWARD':
-            return self.escape_forward_speed, 0.0
+            speed = -self.escape_forward_speed if self._reverse else self.escape_forward_speed
+            return speed, 0.0
 
         # STUCK_HOLD
         return 0.0, 0.0
@@ -345,8 +346,16 @@ class ReactiveLayer(Node):
 
         if self._active_source in self._bypass_sources:
             self.reset_to_passthrough()
+            self.prev_v = 0.0
+            self.prev_w = 0.0
+            self._in_bypass = True
             self._last_loop_time = now
             return
+
+        if self._in_bypass:
+            self.prev_v = 0.0
+            self.prev_w = 0.0
+            self._in_bypass = False
 
         min_dist, left, right = self.analyze_cone(self.latest_scan)
         desired_v = self.latest_desired.linear.x
