@@ -32,6 +32,9 @@ add_executable(sim_encoders src/sim_encoders.cpp)
 add_executable(pure_pursuit_node src/pure_pursuit_node.cpp
                                  src/pure_pursuit.cpp)
 
+add_executable(controller_mux src/controller_mux.cpp)
+
+
 add_executable(visual_servoing src/visual_servoing.cpp)
 add_executable(drive_raw_server src/drive_raw_server.cpp)
 add_executable(fixed_apriltags_node src/fixed_apriltags_node.cpp)
@@ -114,6 +117,17 @@ tf2_geometry_msgs
 ament_index_cpp
 )
 
+
+ament_target_dependencies(controller_mux
+rclcpp
+nav_msgs
+std_msgs
+tf2_geometry_msgs
+tf2
+tf2_ros
+ament_index_cpp
+)
+
 target_include_directories(odometry PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -136,7 +150,7 @@ target_link_libraries(fixed_apriltags_node yaml-cpp Eigen3::Eigen)
 
 
 
-install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node visual_servoing drive_raw_server fixed_apriltags_node
+install(TARGETS joint_state_pub sim_encoders odometry odometry_raw pure_pursuit_node visual_servoing drive_raw_server fixed_apriltags_node controller_mux
   DESTINATION lib/${PROJECT_NAME}
 )
 

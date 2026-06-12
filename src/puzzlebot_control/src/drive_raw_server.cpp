@@ -13,7 +13,7 @@ public:
 
     DriveRawActionServer() : Node("drive_raw_action_server")
     {
-        cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+        cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>("/cmd_vel/drive_raw", 10);
         scan_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
             "/scan", 10, 
             std::bind(&DriveRawActionServer::scan_callback, this, std::placeholders::_1));

@@ -57,6 +57,11 @@ def generate_launch_description():
         executable='visual_servoing',
     )
 
+    control_mutex = Node(
+        package='puzzlebot_control', 
+        executable='controller_mux',
+    )
+
 
     fixed_april = Node(
         package='puzzlebot_control', 
@@ -76,7 +81,8 @@ def generate_launch_description():
             #odom_raw,
             visual_servoing, 
             drive_raw, 
-            fixed_april
+            fixed_april, 
+            control_mutex
         ])
 
 

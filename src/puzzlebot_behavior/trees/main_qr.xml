@@ -6,13 +6,22 @@
         <IsLocalizedCondition/>
       </RetryUntilSuccessful>
       <KeepRunningUntilFailure>
+
         <Sequence name="PickPlaceCycle">
+
+        <SetControllerSource source="pure_pursuit"/>
           <GoToAction zone="inspect"/>
+          <SetBlackboard output_key="search_zone" value="inspect"/>
+
           <RetryUntilSuccessful num_attempts="-1">
             <Fallback name="SearchQR">
+
               <Sequence name="SearchInspect">
+              <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
+
+                  <SetControllerSource source="drive_raw"/>
                     <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
                     <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
                     <AlwaysFailure/>
@@ -23,10 +32,13 @@
                   </Sequence>
                 </Parallel>
               </Sequence>
+
               <Sequence name="SearchInspect2">
+              <SetControllerSource source="pure_pursuit"/>
                 <GoToAction zone="inspect2"/>
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
+                  <SetControllerSource source="drive_raw"/>
                     <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
                     <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
                     <AlwaysFailure/>
@@ -37,11 +49,13 @@
                   </Sequence>
                 </Parallel>
               </Sequence>
-              <!-- Hijo 3: ir a center y buscar -->
+
               <Sequence name="SearchCenter">
+              <SetControllerSource source="pure_pursuit"/>
                 <GoToAction zone="center"/>
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
+                    <SetControllerSource source="drive_raw"/>
                     <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
                     <AlwaysFailure/>
                   </Sequence>
@@ -52,10 +66,14 @@
                 </Parallel>
               </Sequence>
             </Fallback>
+
           </RetryUntilSuccessful>
+
           <SetHeightFromZone zone="{search_zone}" fork_height="{fork_height}"/>
+
           <Fallback name="RunAndCleanup">
             <Sequence name="DockingSequence">
+            <SetControllerSource source="visual_servoing"/>
               <RetryUntilSuccessful num_attempts="-1">
                 <Fallback name="VisualServoingWithRecovery">
                   <VisualServoingAction target_area="20000.0"/>
@@ -66,6 +84,10 @@
                   </Sequence>
                 </Fallback>
               </RetryUntilSuccessful>
+
+              <MoveForklift target_height="{fork_height}" timeout_s="15.0" tolerance_mm="3.0"/>
+
+              <SetControllerSource source="drive_raw"/>
               <DriveRawAction linear_x="0.03"  angular_z="0.0" duration_sec="15.0"/>
               <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="3.0"/>
               <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
@@ -74,8 +96,10 @@
             </Sequence>
             <AlwaysSuccess/>
           </Fallback>
+
+          <SetControllerSource source="pure_pursuit"/>
           <GoToAction zone="{qr_data}"/>
-          <DriveRawAction linear_x="0.03"  angular_z="0.0" duration_sec="15.0"/>
+          <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
           <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
           <GoToAction zone="inspect"/>
         </Sequence>

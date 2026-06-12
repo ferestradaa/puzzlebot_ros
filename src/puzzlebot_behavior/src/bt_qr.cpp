@@ -17,6 +17,7 @@
 #include "process_manager.hpp"
 #include "set_height_from_zone.hpp"
 #include "voice_cmd.hpp"
+#include "controller_source.hpp"
 
 class BTexecutor : public rclcpp::Node {
 public:
@@ -28,71 +29,93 @@ public:
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::CheckMapAvailable>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::IsLocalizedCondition>(
             "IsLocalizedCondition",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::IsLocalizedCondition>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::WaitForQRPoseAction>(
             "WaitForQRPoseAction",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::WaitForQRPoseAction>(name, conf, bt_node_);
             });
+            
         factory_.registerBuilder<puzzlebot_bt::WaitForQRPoseAction>(
             "WaitForQRPose",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::WaitForQRPoseAction>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::GoToAction>(
             "GoToAction",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::GoToAction>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::QrDetectionAction>(
             "QrDetectionAction",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::QrDetectionAction>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::EnableDetections>(
             "EnableDetections",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::EnableDetections>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::GetTargetPose>(
             "GetTargetPose",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::GetTargetPose>(name, conf);
             });
+            
         factory_.registerBuilder<puzzlebot_bt::MoveForklift>(
             "MoveForklift",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::MoveForklift>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::DriveRawAction>(
             "DriveRawAction",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::DriveRawAction>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::VisualServoingAction>(
             "VisualServoingAction",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::VisualServoingAction>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::LaunchNodeAction>(
             "LaunchNode",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::LaunchNodeAction>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::KillNodeAction>(
             "KillNode",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::KillNodeAction>(name, conf, bt_node_);
             });
+
         factory_.registerBuilder<puzzlebot_bt::SetHeightFromZone>(
             "SetHeightFromZone",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::SetHeightFromZone>(name, conf, bt_node_);
             });
+
+
+        factory_.registerBuilder<puzzlebot_bt::SetControllerSource>(
+            "SetControllerSource",
+            [this](const std::string& name, const BT::NodeConfig& conf) {
+                return std::make_unique<puzzlebot_bt::SetControllerSource>(name, conf, bt_node_);
+            });
+
+        
 
         std::string pkg_path = ament_index_cpp::get_package_share_directory("puzzlebot_behavior");
         YAML::Node config = YAML::LoadFile(pkg_path + "/config/config.yaml");

@@ -7,21 +7,26 @@ class VisualServoingActionServer : public rclcpp::Node {
 public:
     using VisualServoing = puzzlebot_interfaces::action::VisualServoing;
     using GoalHandleVisualServoing = rclcpp_action::ServerGoalHandle<VisualServoing>;
+
     VisualServoingActionServer() : Node("visual_servoing_action_server") {
+
         bbox_sub_ = create_subscription<vision_msgs::msg::Detection2DArray>(
             "pallet_inference_centroid", 1,
             std::bind(&VisualServoingActionServer::detections_callback, this, std::placeholders::_1));
-        cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+
+        cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel/visual_servoing", 10);
         action_server_ = rclcpp_action::create_server<VisualServoing>(
             this,
             "visual_servoing",
             std::bind(&VisualServoingActionServer::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
             std::bind(&VisualServoingActionServer::handle_cancel, this, std::placeholders::_1),
             std::bind(&VisualServoingActionServer::handle_accepted, this, std::placeholders::_1));
+
         Kw_ = 0.11;
         Kv_ = 0.08;
         image_width_ = 640;
         active_ = false;
+
         last_current_area_ = 0.0;
         last_detection_time_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
         RCLCPP_INFO(get_logger(), "Visual Servoing action server initialized");

@@ -24,7 +24,7 @@ public:
             return BT::NodeStatus::FAILURE;
         }
 
-        if (zone == "inspect")
+        if (zone == "inspect" || zone == "inspect2")
             setOutput("fork_height", 58.0);
         else if (zone == "center")
             setOutput("fork_height", 20.0);
