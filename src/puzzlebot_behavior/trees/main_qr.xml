@@ -17,7 +17,7 @@
             <Fallback name="SearchQR">
 
               <Sequence name="SearchInspect">
-              <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
+              <MoveForklift target_height="25.0" timeout_s="15.0" tolerance_mm="3.0"/>
                 <Parallel success_count="1" failure_count="1">
                   <Sequence>
 
@@ -76,7 +76,7 @@
             <SetControllerSource source="visual_servoing"/>
               <RetryUntilSuccessful num_attempts="-1">
                 <Fallback name="VisualServoingWithRecovery">
-                  <VisualServoingAction target_area="20000.0"/>
+                  <VisualServoingAction target_area="22000.0"/>
                   <Sequence name="VSBackupRecovery">
                     <DriveRawAction linear_x="-0.02" angular_z="0.0" duration_sec="8.0"/>
                     <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="1.0"/>
@@ -92,14 +92,15 @@
               <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="3.0"/>
               <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
               <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="2.0"/>
+              <DriveRawAction linear_x="0.0"   angular_z="0.06" duration_sec="9.0"/>
             </Sequence>
             <AlwaysSuccess/>
           </Fallback>
 
           <SetControllerSource source="pure_pursuit"/>
-          <SetReverseMode reverse="true"/>
+          <!--<SetReverseMode reverse="true"/>-->
           <GoToAction zone="{qr_data}"/>
-          <DriveRawAction linear_x="0.0" angular_z="0.05" duration_sec="8.0"/>
+          <!--<DriveRawAction linear_x="0.0" angular_z="0.05" duration_sec="8.0"/>-->
           <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
           <SetReverseMode reverse="false"/>
           <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
