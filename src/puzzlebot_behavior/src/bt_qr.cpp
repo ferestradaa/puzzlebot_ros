@@ -18,6 +18,7 @@
 #include "set_height_from_zone.hpp"
 #include "voice_cmd.hpp"
 #include "controller_source.hpp"
+#include "set_reverse_controller.hpp"
 
 class BTexecutor : public rclcpp::Node {
 public:
@@ -113,6 +114,12 @@ public:
             "SetControllerSource",
             [this](const std::string& name, const BT::NodeConfig& conf) {
                 return std::make_unique<puzzlebot_bt::SetControllerSource>(name, conf, bt_node_);
+            });
+
+        factory_.registerBuilder<puzzlebot_bt::SetReverseMode>(
+            "SetReverseMode",
+            [this](const std::string& name, const BT::NodeConfig& conf) {
+                return std::make_unique<puzzlebot_bt::SetReverseMode>(name, conf, bt_node_);
             });
 
         

@@ -17,18 +17,25 @@ class ControllerMux : public rclcpp::Node
 public:
     ControllerMux() : Node("controller_mux")
     {
-        declare_parameter("default_source", "pure_pursuit");
-        declare_parameter("output_topic",   "/cmd_vel_desired");
-        declare_parameter("source_topic",   "/cmd_vel/active_source");
-        declare_parameter("timeout_sec",    0.5);
+        declare_parameter("default_source",  "pure_pursuit");
+        declare_parameter("output_topic",    "/cmd_vel_desired");
+        declare_parameter("bypass_topic",    "/cmd_vel");
+        declare_parameter("source_topic",    "/cmd_vel/active_source");
+        declare_parameter("timeout_sec",     0.5);
+        declare_parameter("bypass_sources",  std::vector<std::string>{"visual_servoing"});
 
         active_source_ = get_parameter("default_source").as_string();
         double timeout = get_parameter("timeout_sec").as_double();
         timeout_ = rclcpp::Duration::from_seconds(timeout);
 
-        cmd_pub_  = create_publisher<geometry_msgs::msg::Twist>(
+        auto bypass_list = get_parameter("bypass_sources").as_string_array();
+        bypass_sources_ = std::unordered_set<std::string>(bypass_list.begin(), bypass_list.end());
+
+        cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>(
             get_parameter("output_topic").as_string(), 10);
 
+        bypass_pub_ = create_publisher<geometry_msgs::msg::Twist>(
+            get_parameter("bypass_topic").as_string(), 10);
 
         source_sub_ = create_subscription<std_msgs::msg::String>(
             get_parameter("source_topic").as_string(), 10,
@@ -46,8 +53,8 @@ public:
         }
 
         timer_ = create_wall_timer(
-                std::chrono::milliseconds(20),
-                std::bind(&ControllerMux::loop, this));
+            std::chrono::milliseconds(20),
+            std::bind(&ControllerMux::loop, this));
 
         RCLCPP_INFO(get_logger(), "controller_mux ready, default source: %s", active_source_.c_str());
     }
@@ -67,34 +74,42 @@ private:
             return;
         }
         if (requested == active_source_) return;
-        RCLCPP_INFO(get_logger(), "source: %s -> %s", active_source_.c_str(), requested.c_str());
-        active_source_ = requested;    }
 
+        if (bypass_sources_.count(active_source_)) {
+            bypass_pub_->publish(geometry_msgs::msg::Twist{});
+        }
+
+        RCLCPP_INFO(get_logger(), "source: %s -> %s", active_source_.c_str(), requested.c_str());
+        active_source_ = requested;
+    }
 
     void loop()
     {
         auto t = now();
         auto it_recv = last_recv_.find(active_source_);
-
         bool timed_out = false;
         if (it_recv != last_recv_.end()) {
             double elapsed = (t - it_recv->second).seconds();
             timed_out = (it_recv->second.nanoseconds() == 0) || (elapsed > timeout_.seconds());
         }
 
+        bool is_bypass = bypass_sources_.count(active_source_) > 0;
+        auto & pub = is_bypass ? bypass_pub_ : cmd_pub_;
+
         if (timed_out) {
-            cmd_pub_->publish(geometry_msgs::msg::Twist{});
-           // RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
-            //    "source '%s' timed out, publishing zero", active_source_.c_str());
+            pub->publish(geometry_msgs::msg::Twist{});
             return;
         }
 
-        cmd_pub_->publish(latest_cmds_[active_source_]);
+        pub->publish(latest_cmds_[active_source_]);
     }
 
     std::string active_source_;
     rclcpp::Duration timeout_{0, 0};
+    std::unordered_set<std::string> bypass_sources_;
+
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr bypass_pub_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr  source_sub_;
     rclcpp::TimerBase::SharedPtr timer_;
     std::vector<rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr> subs_;

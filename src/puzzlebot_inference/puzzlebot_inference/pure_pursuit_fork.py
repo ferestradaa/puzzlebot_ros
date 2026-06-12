@@ -68,7 +68,10 @@ class PurePursuit(Node):
 
         self._near_i = 0
 
+        self.reverse   = False
+
         self.create_subscription(Path, '/path', self.path_cb, 10)
+        self.create_subscription(Bool, '/pure_pursuit/reverse', self.reverse_cb, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel/pure_pursuit', 10)
         self.goal_reached_pub = self.create_publisher(Bool, '/pure_pursuit/goal_reached', 10)
         self._goal_reached_latched = False
@@ -102,6 +105,10 @@ class PurePursuit(Node):
                 self.get_logger().info('goal yaw set to %.3f rad' % self.goal_yaw)
             else:
                 self.goal_yaw = None
+
+    def reverse_cb(self, msg: Bool):
+            self.reverse = msg.data
+            self.get_logger().info('reverse mode: %s' % self.reverse)
 
 
     def _publish_reached(self):
@@ -194,8 +201,12 @@ class PurePursuit(Node):
         lx, ly = self.lookahead_point(x, y, near_i, ld)
 
         dx, dy = lx - x, ly - y
-        x_r =  math.cos(th) * dx + math.sin(th) * dy
-        y_r = -math.sin(th) * dx + math.cos(th) * dy
+
+        th_eff = angle_wrap(th + math.pi) if self.reverse else th
+
+        x_r =  math.cos(th) * dx + math.sin(th_eff) * dy
+        y_r = -math.sin(th) * dx + math.cos(th_eff) * dy
+
         alpha = math.atan2(y_r, x_r)
         dist  = math.hypot(x_r, y_r)
 
@@ -209,6 +220,10 @@ class PurePursuit(Node):
             curvature = 2.0 * math.sin(alpha) / max(dist, self.ld_min)
             v_target = self.v_max * max(0.3, math.cos(alpha))
             w_target  = clamp(curvature * v_target, -self.w_max, self.w_max)
+
+
+        if self.reverse: 
+            v_target = -v_target
 
         self.publish_cmd(v_target, w_target)
 

@@ -92,14 +92,16 @@
               <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="3.0"/>
               <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
               <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="2.0"/>
-              <DriveRawAction linear_x="0.0"   angular_z="0.08" duration_sec="6.0"/>
             </Sequence>
             <AlwaysSuccess/>
           </Fallback>
 
           <SetControllerSource source="pure_pursuit"/>
+          <SetReverseMode reverse="true"/>
           <GoToAction zone="{qr_data}"/>
+          <DriveRawAction linear_x="0.0" angular_z="0.05" duration_sec="8.0"/>
           <MoveForklift target_height="23.0" timeout_s="15.0" tolerance_mm="3.0"/>
+          <SetReverseMode reverse="false"/>
           <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
           <GoToAction zone="inspect"/>
         </Sequence>

@@ -8,6 +8,7 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool
 import tf2_ros
 from tf2_ros import Buffer, TransformListener
+from std_msgs.msg import Bool, String  
 
 RECOVERY_STATES = {'ESCAPE_BACKUP', 'ESCAPE_TURN', 'ESCAPE_FORWARD', 'STUCK_HOLD'}
 
@@ -85,11 +86,23 @@ class ReactiveLayer(Node):
         self.desired_timeout = Duration(seconds=0.5)
         self._loop_count = 0
 
+
+        self._active_source = "pure_pursuit"
+        self._bypass_sources = {"visual_servoing"}
+
+        self._reverse = False
+
         self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
         self.create_subscription(Twist, '/cmd_vel_desired', self.desired_cb, 10)
+        self.create_subscription(String, '/cmd_vel/active_source', self._source_cb, 10)
+        self.create_subscription(Bool, '/pure_pursuit/reverse', self._reverse_cb, 10)
+
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.stuck_pub = self.create_publisher(Bool, '/reactive_stuck', 10)
         self.create_timer(self.dt, self.control_loop)
+
+    def _source_cb(self, msg):
+        self._active_source = msg.data
 
     def scan_cb(self, msg):
         self.latest_scan = msg
@@ -97,6 +110,10 @@ class ReactiveLayer(Node):
     def desired_cb(self, msg):
         self.latest_desired = msg
         self.last_desired_time = self.get_clock().now()
+
+
+    def _reverse_cb(self, msg: Bool):
+        self._reverse = msg.data
 
     def get_laser_to_base_tf(self, frame_id):
         try:
@@ -143,22 +160,32 @@ class ReactiveLayer(Node):
         bx = tx + cos_y * lx - sin_y * ly
         by = ty + sin_y * lx + cos_y * ly
 
-        ahead = bx > self.corridor_min_x
+
+
+        if self._reverse:
+            ahead = bx < -self.corridor_min_x
+        else:
+            ahead = bx > self.corridor_min_x
+
         bx = bx[ahead]
         by = by[ahead]
         if bx.size == 0:
             return float('inf'), 0, 0
 
         corridor = np.abs(by) <= self.corridor_half_width
+        
         corridor_pts = bx[corridor]
         if corridor_pts.size >= 3:
-            forward_dist = float(np.percentile(corridor_pts, 10))
+            if self._reverse:
+                forward_dist = float(-np.percentile(-corridor_pts, 10))
+            else:
+                forward_dist = float(np.percentile(corridor_pts, 10))
         else:
             forward_dist = float('inf')
 
+
         dist = np.hypot(bx, by)
         bearing = np.arctan2(by, bx)
-        # conteo solo dentro de react_dist para no reaccionar a obstaculos lejanos
         in_cone = (np.abs(bearing) <= self.cone_half_angle) & (dist < self.react_dist)
         left_count = int(np.sum(in_cone & (by >= 0.0)))
         right_count = int(np.sum(in_cone & (by < 0.0)))
@@ -253,10 +280,8 @@ class ReactiveLayer(Node):
         if self.state == 'AVOID':
             if min_dist <= self.hard_stop:
                 return 0.0, 0.0
-            # entre detect_dist y react_dist: Pure Pursuit sigue mandando
             if min_dist >= self.react_dist:
                 return desired_v, desired_w
-            # debajo de react_dist: evasion activa
             scale = clamp((min_dist - self.hard_stop) /
                           (self.react_dist - self.hard_stop), 0.0, 1.0)
             prox = clamp(1.0 - scale, 0.0, 1.0)
@@ -266,7 +291,8 @@ class ReactiveLayer(Node):
             return v_target, clamp(w_target, -self.w_max, self.w_max)
 
         if self.state == 'ESCAPE_BACKUP':
-            return -self.backup_speed, 0.0
+            speed = self.backup_speed if self._reverse else -self.backup_speed
+            return speed, 0.0
 
         if self.state == 'ESCAPE_TURN':
             return 0.0, self.evade_dir * self.escape_turn_w
@@ -316,6 +342,12 @@ class ReactiveLayer(Node):
             return
 
         self._idle = False
+
+        if self._active_source in self._bypass_sources:
+            self.reset_to_passthrough()
+            self._last_loop_time = now
+            return
+
         min_dist, left, right = self.analyze_cone(self.latest_scan)
         desired_v = self.latest_desired.linear.x
         desired_w = self.latest_desired.angular.z
