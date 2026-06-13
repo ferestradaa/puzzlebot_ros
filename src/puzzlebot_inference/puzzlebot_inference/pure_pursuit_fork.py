@@ -23,7 +23,7 @@ class PurePursuit(Node):
         super().__init__('pure_pursuit_fork')
         self.declare_parameter('v_max', 0.15)
         self.declare_parameter('w_max', 0.2)
-        self.declare_parameter('a_lin', 0.10)
+        self.declare_parameter('a_lin', 0.15)
         self.declare_parameter('a_ang', 1.20)
         self.declare_parameter('ld_min', 0.2)
         self.declare_parameter('ld_max', 0.60)
@@ -171,7 +171,8 @@ class PurePursuit(Node):
                 self.get_logger().info('goal reached')
             return
         current_speed = abs(self.prev_v)
-        ld = clamp(self.ld_gain * max(current_speed, 0.03), self.ld_min, self.ld_max)
+        ld_raw = clamp(self.ld_gain * max(current_speed, 0.08), self.ld_min, self.ld_max)
+        ld = min(ld_raw, dist_to_goal)
         near_i = self.advance_near_index(x, y)
         lx, ly = self.lookahead_point(x, y, near_i, ld)
         dx, dy = lx - x, ly - y
@@ -193,6 +194,7 @@ class PurePursuit(Node):
         if self.reverse: 
             v_target = -v_target
         self.publish_cmd(v_target, w_target)
+        
     def stop(self):
         cmd = Twist()
         self.cmd_pub.publish(cmd)
