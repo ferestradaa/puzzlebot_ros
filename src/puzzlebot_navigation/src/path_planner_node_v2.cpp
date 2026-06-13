@@ -55,7 +55,7 @@ public:
 
     declare_parameter<double>("robot_radius", 0.20);
     declare_parameter<int>("start_free_search_radius_cells", 20);
-    declare_parameter<int>("endpoint_ignore_waypoints", 3);
+    declare_parameter<int>("endpoint_ignore_waypoints", 15);
     declare_parameter<bool>("smooth_path", true);
     declare_parameter<double>("waypoint_spacing", 0.05);
 
@@ -67,8 +67,8 @@ public:
     declare_parameter<int>("connect_threshold", 3);
     declare_parameter<int>("random_seed", 0);
 
-    declare_parameter<double>("alpha", 1.0);
-    declare_parameter<double>("beta", 0.10);
+    declare_parameter<double>("alpha", 0.6);
+    declare_parameter<double>("beta", 0.40);
     declare_parameter<double>("gamma", 0.20);
     declare_parameter<double>("tf_timeout", 0.05);
 

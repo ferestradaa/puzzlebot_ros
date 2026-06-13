@@ -6,6 +6,7 @@
 #include <fstream>
 #include <thread>
 #include <atomic>
+#include <limits>
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "tf2_ros/buffer.h"
@@ -32,11 +33,15 @@ struct ZonePose {
 class GoToServer : public rclcpp::Node {
 public:
   GoToServer() : Node("go_to_server") {
-    pos_thr_         = declare_parameter<double>("pos_threshold", 0.10);
-    yaw_thr_         = declare_parameter<double>("yaw_threshold", 0.10);
-    fb_rate_         = declare_parameter<double>("feedback_rate", 5.0);
-    timeout_         = declare_parameter<double>("goal_timeout", 120.0);
-    replan_cooldown_ = declare_parameter<double>("replan_cooldown", 1.5);
+    pos_thr_            = declare_parameter<double>("pos_threshold", 0.10);
+    yaw_thr_            = declare_parameter<double>("yaw_threshold", 0.10);
+    fb_rate_            = declare_parameter<double>("feedback_rate", 5.0);
+    timeout_            = declare_parameter<double>("goal_timeout", 120.0);
+    replan_cooldown_    = declare_parameter<double>("replan_cooldown", 1.5);
+    stall_distance_thr_ = declare_parameter<double>("stall_distance_threshold", 0.15);
+    stall_time_         = declare_parameter<double>("stall_time", 4.0);
+    planner_retries_    = declare_parameter<int>("planner_retries", 3);
+    planner_retry_wait_ = declare_parameter<double>("planner_retry_wait", 1.0);
 
     load_zones();
 
@@ -151,18 +156,29 @@ private:
   bool call_planner(const geometry_msgs::msg::PoseStamped & target) {
     auto req  = std::make_shared<PlanPath::Request>();
     req->goal = target;
-    auto future = planner_cli_->async_send_request(req);
-    if (future.wait_for(5s) != std::future_status::ready) {
-      RCLCPP_ERROR(get_logger(), "Planner timeout");
-      return false;
+
+    for (int attempt = 0; attempt < planner_retries_; ++attempt) {
+      auto future = planner_cli_->async_send_request(req);
+      if (future.wait_for(5s) != std::future_status::ready) {
+        RCLCPP_WARN(get_logger(), "Planner timeout (attempt %d/%d)", attempt + 1, planner_retries_);
+      } else {
+        auto resp = future.get();
+        if (resp->success) {
+          path_pub_->publish(resp->path);
+          return true;
+        }
+        RCLCPP_WARN(get_logger(), "Planner failed (attempt %d/%d): %s",
+                    attempt + 1, planner_retries_, resp->message.c_str());
+      }
+
+      if (attempt + 1 < planner_retries_) {
+        rclcpp::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds>(
+          std::chrono::duration<double>(planner_retry_wait_)));
+      }
     }
-    auto resp = future.get();
-    if (!resp->success) {
-      RCLCPP_ERROR(get_logger(), "Planner failed: %s", resp->message.c_str());
-      return false;
-    }
-    path_pub_->publish(resp->path);
-    return true;
+
+    RCLCPP_ERROR(get_logger(), "Planner failed after %d attempts", planner_retries_);
+    return false;
   }
 
   void execute(const std::shared_ptr<GoalHandle> gh) {
@@ -190,9 +206,11 @@ private:
       return;
     }
 
-    auto fb    = std::make_shared<GoTo::Feedback>();
+    auto fb               = std::make_shared<GoTo::Feedback>();
     rclcpp::Rate rate(fb_rate_);
-    auto start = now();
+    auto start            = now();
+    double last_best_dist = std::numeric_limits<double>::max();
+    auto last_progress_t  = now();
 
     while (rclcpp::ok()) {
       if (gh->is_canceling()) {
@@ -213,8 +231,10 @@ private:
         needs_replan_ = false;
         double elapsed = (now() - last_replan_time_).seconds();
         if (elapsed >= replan_cooldown_) {
-          RCLCPP_INFO(get_logger(), "Path blocked, replanning...");
+          RCLCPP_INFO(get_logger(), "Replanning...");
           last_replan_time_ = now();
+          last_best_dist    = std::numeric_limits<double>::max();
+          last_progress_t   = now();
           if (!call_planner(target)) {
             result->success    = false;
             result->error_code = GoTo::Result::PLANNER_FAIL;
@@ -222,7 +242,8 @@ private:
             return;
           }
         } else {
-          RCLCPP_DEBUG(get_logger(), "Replan cooldown active (%.1fs remaining)", replan_cooldown_ - elapsed);
+          RCLCPP_DEBUG(get_logger(), "Replan cooldown active (%.1fs remaining)",
+                       replan_cooldown_ - elapsed);
         }
       }
 
@@ -230,9 +251,23 @@ private:
       if (get_robot_pose(rx, ry, ryaw)) {
         double dist = std::hypot(gx - rx, gy - ry);
         double ang  = std::abs(std::atan2(std::sin(gyaw - ryaw), std::cos(gyaw - ryaw)));
+
         fb->distance_remaining = static_cast<float>(dist);
         fb->angle_remaining    = static_cast<float>(ang);
         gh->publish_feedback(fb);
+
+        if (last_best_dist - dist > stall_distance_thr_) {
+          last_best_dist  = dist;
+          last_progress_t = now();
+        }
+
+        double stall_elapsed = (now() - last_progress_t).seconds();
+        if (stall_elapsed > stall_time_) {
+          RCLCPP_WARN(get_logger(), "Stall detected (%.1fs without progress)", stall_elapsed);
+          last_progress_t = now();
+          last_best_dist  = dist;
+          needs_replan_   = true;
+        }
       }
 
       if (goal_reached_) break;
@@ -246,6 +281,8 @@ private:
 
   std::map<std::string, ZonePose> zones_;
   double pos_thr_, yaw_thr_, fb_rate_, timeout_, replan_cooldown_;
+  double stall_distance_thr_, stall_time_, planner_retry_wait_;
+  int planner_retries_;
 
   std::shared_ptr<tf2_ros::Buffer>            tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;

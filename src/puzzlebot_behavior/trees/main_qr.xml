@@ -69,7 +69,7 @@
 
             </RetryUntilSuccessful>
 
-            <SetHeightFromZone zone="{search_zone}" fork_height="{fork_height}"/>
+            <SetHeightFromZone zone="{search_zone}" fork_height="{fork_height}" lift_height="{lift_height}"/>
 
             <Fallback name="RunAndCleanup">
               <Sequence name="DockingSequence">
@@ -85,17 +85,16 @@
                   </Fallback>
                 </RetryUntilSuccessful>
 
-                <MoveForklift target_height="{fork_height}" timeout_s="15.0" tolerance_mm="3.0"/>
 
                 <SetControllerSource source="drive_raw"/>
-                <DriveRawAction linear_x="0.04"  angular_z="0.0" duration_sec="15.0"/>
+                <DriveRawAction linear_x="0.03"  angular_z="0.0" duration_sec="12.0"/>
                 <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="3.0"/>
 
-              <MoveForklift target_height="80.0" timeout_s="15.0" tolerance_mm="3.0"/>
+              <MoveForklift target_height="{lift_height}" timeout_s="15.0" tolerance_mm="3.0"/>
 
                 <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
                 <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="2.0"/>
-                <DriveRawAction linear_x="0.0"   angular_z="0.06" duration_sec="9.0"/>
+                <DriveRawAction linear_x="0.0"   angular_z="0.08" duration_sec="12.0"/>
               </Sequence>
               <AlwaysSuccess/>
             </Fallback>

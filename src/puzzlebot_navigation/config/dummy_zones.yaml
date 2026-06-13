@@ -1,7 +1,7 @@
 zones:
   inspect:
     x: 1.0
-    y: 3.0
+    y: 3.2
     yaw: 3.14
 
   inspect2:
