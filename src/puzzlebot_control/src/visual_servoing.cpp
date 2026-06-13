@@ -57,7 +57,7 @@ private:
         const rclcpp_action::GoalUUID &,
         std::shared_ptr<const VisualServoing::Goal> goal)
     {
-        RCLCPP_INFO(get_logger(), "Goal recibido: target_area=%.0f", goal->target_area);
+        RCLCPP_INFO(get_logger(), "Goal reicived: target_area=%.0f", goal->target_area);
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
 
@@ -85,7 +85,7 @@ private:
                      : DockPhase::DOCK;
         }
 
-        RCLCPP_INFO(get_logger(), "Iniciando fase: %s",
+        RCLCPP_INFO(get_logger(), "initializeing phase: %s",
             phase_ == DockPhase::ALIGN_YAW ? "ALIGN_YAW" : "DOCK");
 
         auto result       = std::make_shared<VisualServoing::Result>();
@@ -113,7 +113,7 @@ private:
             if ((this->now() - phase_start).seconds() > phase_timeout_) {
                 publish_stop();
                 result->success = false;
-                result->message = "Timeout de fase: " +
+                result->message = "Timeout of phase: " +
                     std::string(phase_ == DockPhase::ALIGN_YAW ? "ALIGN_YAW" : "DOCK");
                 gh->abort(result);
                 return;
@@ -161,7 +161,7 @@ private:
                     phase_start = this->now();
                     frames_in_tol_     = 0;
                     frames_out_of_tol_ = 0;
-                    RCLCPP_INFO(get_logger(), "Transicion a DOCK");
+                    RCLCPP_INFO(get_logger(), "transition  to DOCK");
                 }
 
             } else {
@@ -218,7 +218,7 @@ private:
                 if (frames_in_tol_ >= required_frames_) {
                     publish_stop();
                     result->success = true;
-                    result->message = "Docking completado";
+                    result->message = "Docking completed";
                     gh->succeed(result);
                     return;
                 }

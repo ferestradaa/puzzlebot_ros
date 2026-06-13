@@ -1,4 +1,4 @@
-  <root BTCPP_format="4">
+    <root BTCPP_format="4">
     <BehaviorTree ID="PuzzlebotTree">
       <Sequence name="MainSequence">
         <CheckMapAvailable timeout_sec="10.0"/>
@@ -94,7 +94,7 @@
 
                 <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
                 <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="2.0"/>
-                <DriveRawAction linear_x="0.0"   angular_z="0.08" duration_sec="12.0"/>
+                <DriveRawAction linear_x="0.0"   angular_z="0.08" duration_sec="8.0"/>
               </Sequence>
               <AlwaysSuccess/>
             </Fallback>
@@ -113,7 +113,7 @@
               </Fallback>
             </RetryUntilSuccessful>
             <!--<SetReverseMode reverse="false"/>-->
-            <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
+            <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="10.0"/>
             <GoToAction zone="inspect"/>
           </Sequence>
         </KeepRunningUntilFailure>s
