@@ -191,7 +191,7 @@ def load_robot(usd_path: str, robot_prim_path):
     if not prim.IsValid():
         raise RuntimeError(f"No valid prim: {robot_prim_path}")
     xform = UsdGeom.XformCommonAPI(prim)
-    xform.SetTranslate(Gf.Vec3d(0.5, 0.5, 0.0))
+    xform.SetTranslate(Gf.Vec3d(1.5, 1.5, 0.0))
 
 
 def main():

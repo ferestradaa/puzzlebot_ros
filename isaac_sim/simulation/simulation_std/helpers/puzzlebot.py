@@ -100,7 +100,7 @@ class Puzzlebot():
             drive = UsdPhysics.DriveAPI.Apply(prim, "angular")
             drive.GetTypeAttr().Set("velocity")
             drive.GetMaxForceAttr().Set(1000.0)
-            drive.GetDampingAttr().Set(100)
+            drive.GetDampingAttr().Set(20000)
             drive.GetStiffnessAttr().Set(0.0)
 
             physx_joint = PhysxSchema.PhysxJointAPI.Apply(prim)
