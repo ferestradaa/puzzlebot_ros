@@ -22,7 +22,7 @@ public:
         declare_parameter("bypass_topic",    "/cmd_vel");
         declare_parameter("source_topic",    "/cmd_vel/active_source");
         declare_parameter("timeout_sec",     0.5);
-        declare_parameter("bypass_sources",  std::vector<std::string>{"visual_servoing"});
+        declare_parameter("bypass_sources",  std::vector<std::string>{"visual_servoing", "drive_raw"});
 
         active_source_ = get_parameter("default_source").as_string();
         double timeout = get_parameter("timeout_sec").as_double();

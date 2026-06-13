@@ -87,7 +87,6 @@ class Puzzlebot():
             max_ang = rb_api.GetMaxAngularVelocityAttr().Get()
             print(f"[sim] {wp} maxAngularVelocity = {max_ang}")
 
-        # configurar drives y quitar caps de joint
         joints = [
             f"{self.robot_prim_path}/joints/base_to_left_wheel",
             f"{self.robot_prim_path}/joints/base_to_right_wheel",
@@ -125,7 +124,6 @@ class Puzzlebot():
             print(f"[sim] caster_wheel_link no encontrado")
             return
 
-        # bind en el link directamente, los collision children heredan
         binding = UsdShade.MaterialBindingAPI.Apply(caster_prim)
         binding.Bind(
             UsdShade.Material(mat_prim),

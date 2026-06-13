@@ -88,7 +88,7 @@ class ReactiveLayer(Node):
 
 
         self._active_source = "pure_pursuit"
-        self._bypass_sources = {"visual_servoing"}
+        self._bypass_sources = {"visual_servoing", "drive_raw"}
         self._in_bypass = False
 
         self._reverse = False
@@ -324,13 +324,6 @@ class ReactiveLayer(Node):
         self._loop_count += 1
         log_this = (self._loop_count % 30 == 0)
 
-        if self._active_source in self._bypass_sources:
-            self.reset_to_passthrough()
-            self.prev_v = 0.0
-            self.prev_w = 0.0
-            self._in_bypass = True
-            return
-
         if self.latest_scan is None:
             if log_this:
                 self.get_logger().warn('no scan yet')
@@ -350,6 +343,14 @@ class ReactiveLayer(Node):
             return
 
         self._idle = False
+
+        if self._active_source in self._bypass_sources:
+            self.reset_to_passthrough()
+            self.prev_v = 0.0
+            self.prev_w = 0.0
+            self._in_bypass = True
+            self._last_loop_time = now
+            return
 
         if self._in_bypass:
             self.prev_v = 0.0

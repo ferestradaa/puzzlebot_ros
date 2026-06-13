@@ -141,7 +141,6 @@ def setup_world() -> World:
             print(f"[sim] color gris aplicado a: {path}")
             break
 
-    # crear scope y material de fisica
     stage.DefinePrim("/World/PhysicsMaterials", "Scope")
     mat_prim = stage.DefinePrim("/World/PhysicsMaterials/GroundMat", "Material")
     gnd_mat = UsdPhysics.MaterialAPI.Apply(mat_prim)
