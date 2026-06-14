@@ -176,7 +176,10 @@ class MastNode(Node):
             self.moving        = False
             self.setpoint      = None
             self.confirmations = 0
-            self.get_logger().warn(f'UPPER LIMIT reached: {distance:.1f}')
+            self.get_logger().warn(
+                    f'UPPER LIMIT reached: {distance:.1f}',
+                    throttle_duration_sec=5.0
+                    )
             self.prev_pos = distance
             return
 

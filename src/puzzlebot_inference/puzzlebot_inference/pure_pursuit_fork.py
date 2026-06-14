@@ -21,7 +21,7 @@ def clamp(v, lo, hi):
 class PurePursuit(Node):
     def __init__(self):
         super().__init__('pure_pursuit_fork')
-        self.declare_parameter('v_max', 0.15)
+        self.declare_parameter('v_max', 0.17)
         self.declare_parameter('w_max', 0.2)
         self.declare_parameter('a_lin', 0.15)
         self.declare_parameter('a_ang', 1.20)

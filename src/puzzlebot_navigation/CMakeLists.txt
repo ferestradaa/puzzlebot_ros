@@ -95,6 +95,11 @@ add_executable(path_planner_node_v3
   src/path_planner_node_v3.cpp
 )
 
+add_executable(a_star
+  src/a_star.cpp
+)
+
+
 
 
 
@@ -128,6 +133,10 @@ target_include_directories(path_planner_node_v3 PRIVATE
   include
 )
 
+target_include_directories(a_star PRIVATE
+  include
+)
+
 
 target_include_directories(dynamic_map_node PRIVATE
   include
@@ -144,6 +153,11 @@ target_link_libraries(path_planner_node_v2
 )
 
 target_link_libraries(path_planner_node_v3
+  yaml-cpp
+  ${OpenCV_LIBS}
+)
+
+target_link_libraries(a_star
   yaml-cpp
   ${OpenCV_LIBS}
 )
@@ -201,6 +215,22 @@ ament_target_dependencies(
   puzzlebot_interfaces
 )
 
+
+ament_target_dependencies(
+  a_star
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  ament_index_cpp
+  OpenCV
+  puzzlebot_interfaces
+)
+
+
 ament_target_dependencies(
   map_server_node
   rclcpp
@@ -255,6 +285,7 @@ install(TARGETS
   path_planner_node
   path_planner_node_v2
   path_planner_node_v3
+  a_star
   dynamic_map_node
   map_server_node
   go_to_server

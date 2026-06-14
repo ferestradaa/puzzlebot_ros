@@ -21,9 +21,6 @@ def generate_launch_description():
         executable='go_to_server',
     )
 
-
-
-
     dynamic_map = Node(
         package = 'puzzlebot_navigation', 
         executable = 'dynamic_map_node', 
@@ -52,12 +49,19 @@ def generate_launch_description():
         executable= 'pure_pursuit_node', 
     )
 
+
+    a_star = Node(
+        package= 'puzzlebot_navigation', 
+        executable= 'a_star', 
+    )
+
     return LaunchDescription([
 
         map_pub, 
         #dynamic_map, 
         go_to_srv, 
-        path_planner_v2, 
+        #path_planner_v2, 
+        a_star, 
         #path_planner_v3, 
         #path_planner,
        #dynamic_map, 

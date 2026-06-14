@@ -1,7 +1,7 @@
 zones:
   inspect:
     x: 1.0
-    y: 3.2
+    y: 3.3
     yaw: 3.14
 
   inspect2:
@@ -26,11 +26,11 @@ zones:
 
   Emezon:
     x: 4.2
-    y: 2.7
+    y: 2.5
     yaw: -0.01
 
   Wolmar:
-    x: 4.0
+    x: 4.2
     y: 3.2
     yaw: -0.01
 
@@ -45,7 +45,7 @@ zones:
     yaw: -0.01
 
   Popsi:
-    x: 4.3
+    x: 4.2
     y: 2.0
     yaw: -0.01
 

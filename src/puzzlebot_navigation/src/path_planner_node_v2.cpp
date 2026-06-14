@@ -52,11 +52,11 @@ public:
     declare_parameter<int>("endpoint_ignore_waypoints", 15);
     declare_parameter<bool>("smooth_path", true);
     declare_parameter<double>("waypoint_spacing", 0.05);
-    declare_parameter<int>("max_iter", 5000);
+    declare_parameter<int>("max_iter", 20000);
     declare_parameter<int>("step_size", 2);
     declare_parameter<int>("connect_step_size", 2);
-    declare_parameter<int>("max_connect_steps", 1);
-    declare_parameter<double>("goal_bias_rate", 0.02);
+    declare_parameter<int>("max_connect_steps", 50);
+    declare_parameter<double>("goal_bias_rate", 0.12);
     declare_parameter<int>("connect_threshold", 3);
     declare_parameter<int>("random_seed", 0);
     declare_parameter<double>("alpha", 0.6);

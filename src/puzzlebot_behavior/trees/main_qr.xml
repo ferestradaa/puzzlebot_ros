@@ -1,4 +1,4 @@
-    <root BTCPP_format="4">
+<root BTCPP_format="4">
     <BehaviorTree ID="PuzzlebotTree">
       <Sequence name="MainSequence">
         <CheckMapAvailable timeout_sec="10.0"/>
@@ -9,6 +9,9 @@
 
           <Sequence name="PickPlaceCycle">
 
+          <RetryUntilSuccessful num_attempts="-1">
+            <IsLocalizedCondition/>
+          </RetryUntilSuccessful>
           <SetControllerSource source="pure_pursuit"/>
             <GoToAction zone="inspect"/>
             <SetBlackboard output_key="search_zone" value="inspect"/>
@@ -80,7 +83,7 @@
                   <Fallback name="VisualServoingWithRecovery">
                     <VisualServoingAction target_area="25000.0"/>
                     <Sequence name="VSBackupRecovery">
-                      <DriveRawAction linear_x="-0.02" angular_z="0.0" duration_sec="8.0"/>
+                      <DriveRawAction linear_x="-0.02" angular_z="0.0" duration_sec="9.0"/>
                       <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="1.0"/>
                       <AlwaysFailure/>
                     </Sequence>
@@ -121,10 +124,10 @@
 
             -->
             <AlwaysSuccess/>
-            <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="10.0"/>
-            <GoToAction zone="inspect"/>
+            <SetControllerSource source="drive_raw"/>
+             <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="10.0"/>
           </Sequence>
-        </KeepRunningUntilFailure>s
+        </KeepRunningUntilFailure>
       </Sequence>
     </BehaviorTree>
   </root>
