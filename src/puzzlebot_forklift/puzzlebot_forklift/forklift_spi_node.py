@@ -45,19 +45,22 @@ class MastNode(Node):
         self.pwm = GPIO.PWM(PIN_ENA, PWM_FREQUENCY)
         self.pwm.start(0)
 
-        self.history       = []
-        self.current_pos   = 0.0
-        self.prev_pos      = 0.0
-        self.setpoint      = None
-        self.moving        = False
-        self.confirmations = 0
-        self.manual_speed  = None
+        self.history        = []
+        self.current_pos    = 0.0
+        self.prev_pos       = 0.0
+        self.setpoint       = None
+        self.moving         = False
+        self.confirmations  = 0
+        self.manual_speed   = None
         self.startup_cycles = 0
 
-        self.pub_height    = self.create_publisher(Float32, '/forklift/height', 10)
-        self.sub_setpoint  = self.create_subscription(
+        self._last_i2c_warn   = 0.0
+        self._last_reset_warn = 0.0
+
+        self.pub_height   = self.create_publisher(Float32, '/forklift/height', 10)
+        self.sub_setpoint = self.create_subscription(
             Float32, '/forklift/setpoint', self.setpoint_callback, 10)
-        self.sub_speed     = self.create_subscription(
+        self.sub_speed    = self.create_subscription(
             Int32, '/mast/speed', self.speed_callback, 10)
         self.timer = self.create_timer(0.05, self.loop)
 
@@ -76,14 +79,20 @@ class MastNode(Node):
             self.bus.write_byte_data(DEVICE_ADDRESS, 0x00, 0x02)
             time.sleep(0.01)
         except Exception as e:
-            self.get_logger().warn(f'Sensor reset failed: {e}')
+            now = time.time()
+            if now - self._last_reset_warn > 5.0:
+                self.get_logger().warn(f'Sensor reset failed: {e}')
+                self._last_reset_warn = now
 
     def read_distance(self):
         try:
             data = self.bus.read_i2c_block_data(DEVICE_ADDRESS, 0x1E, 2)
             raw  = float((data[0] << 8) + data[1])
         except Exception as e:
-            self.get_logger().warn(f'I2C read error: {e}')
+            now = time.time()
+            if now - self._last_i2c_warn > 5.0:
+                self.get_logger().warn(f'I2C read error: {e}')
+                self._last_i2c_warn = now
             return None
 
         if raw == 0.0:
@@ -181,11 +190,11 @@ class MastNode(Node):
             self.prev_pos = distance
             return
 
-        error        = self.setpoint - self.current_pos
-        desired_dir  = 1 if error > 0 else -1
-        actual_dir   = self.actual_direction(distance)
+        error       = self.setpoint - self.current_pos
+        desired_dir = 1 if error > 0 else -1
+        actual_dir  = self.actual_direction(distance)
 
-        # Dead zone — 3 confirmations
+        # Dead zone - 3 confirmations
         if abs(error) <= TOLERANCE:
             self.confirmations   += 1
             self.startup_cycles   = 0

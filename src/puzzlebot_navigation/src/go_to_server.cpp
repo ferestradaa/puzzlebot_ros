@@ -33,7 +33,7 @@ struct ZonePose {
 class GoToServer : public rclcpp::Node {
 public:
   GoToServer() : Node("go_to_server") {
-    pos_thr_            = declare_parameter<double>("pos_threshold", 0.10);
+    pos_thr_            = declare_parameter<double>("pos_threshold", 0.15);
     yaw_thr_            = declare_parameter<double>("yaw_threshold", 0.10);
     fb_rate_            = declare_parameter<double>("feedback_rate", 5.0);
     timeout_            = declare_parameter<double>("goal_timeout", 120.0);

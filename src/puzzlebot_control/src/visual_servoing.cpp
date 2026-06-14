@@ -12,8 +12,8 @@ public:
     enum class DockPhase     { ALIGN_YAW, DOCK };
 
     VisualServoingActionServer() : Node("visual_servoing_action_server") {
-        Kw_                   = declare_parameter<double>("Kw", 0.1);
-        Kv_                   = declare_parameter<double>("Kv", 0.09);
+        Kw_                   = declare_parameter<double>("Kw", 0.12);
+        Kv_                   = declare_parameter<double>("Kv", 0.12);
         Kw_yaw_               = declare_parameter<double>("Kw_yaw", 0.6);
         image_width_          = declare_parameter<double>("image_width", 640.0);
         yaw_align_threshold_  = declare_parameter<double>("yaw_align_threshold", 0.15);
@@ -33,7 +33,7 @@ public:
             });
 
         qr_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
-            "/qr_pose_camera", 1,
+            "/qr_detection/pose", 1,
             [this](const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
                 double tx = msg->pose.position.x;
                 double tz = msg->pose.position.z;
@@ -152,7 +152,7 @@ private:
                 } else {
                     publish_stop();
                     frames_yaw_aligned_++;
-                    RCLCPP_INFO(get_logger(), "ALIGN_YAW convergiendo, frames=%d", frames_yaw_aligned_);
+                    RCLCPP_INFO(get_logger(), "ALIGN_YAW converving, frames=%d", frames_yaw_aligned_);
                 }
                 cmd_pub_->publish(cmd);
 
@@ -208,8 +208,17 @@ private:
                 }
 
                 RCLCPP_INFO(get_logger(),
+                    "[DOCK] area=%.0f  tol_frames=%d",
+                    bbox_area, frames_in_tol_);
+
+                /*
+                RCLCPP_INFO(get_logger(),
                     "[DOCK] ex=%.1f ey=%.1f area=%.0f lin=%.3f ang=%.3f tol_frames=%d",
                     ex, ey, bbox_area, cmd.linear.x, cmd.angular.z, frames_in_tol_);
+
+
+
+                */
 
                 auto fb = std::make_shared<VisualServoing::Feedback>();
                 fb->current_area = static_cast<float>(bbox_area);

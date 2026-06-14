@@ -17,13 +17,15 @@
               <Fallback name="SearchQR">
 
                 <Sequence name="SearchInspect">
-                <MoveForklift target_height="25.0" timeout_s="15.0" tolerance_mm="3.0"/>
+
+               <!-- <MoveForklift target_height="25.0" timeout_s="15.0" tolerance_mm="3.0"/> -->
+
                   <Parallel success_count="1" failure_count="1">
                     <Sequence>
 
                     <SetControllerSource source="drive_raw"/>
-                      <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
-                      <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
+                      <DriveRawAction linear_x="0.0" angular_z="0.04" duration_sec="10.0"/>
+                      <DriveRawAction linear_x="0.0" angular_z="-0.04" duration_sec="10.0"/>
                       <AlwaysFailure/>
                     </Sequence>
                     <Sequence>
@@ -39,8 +41,8 @@
                   <Parallel success_count="1" failure_count="1">
                     <Sequence>
                     <SetControllerSource source="drive_raw"/>
-                      <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
-                      <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
+                      <DriveRawAction linear_x="0.0" angular_z="0.04" duration_sec="10.0"/>
+                      <DriveRawAction linear_x="0.0" angular_z="-0.04" duration_sec="10.0"/>
                       <AlwaysFailure/>
                     </Sequence>
                     <Sequence>
@@ -56,7 +58,7 @@
                   <Parallel success_count="1" failure_count="1">
                     <Sequence>
                       <SetControllerSource source="drive_raw"/>
-                      <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
+                      <DriveRawAction linear_x="0.0" angular_z="0.04" duration_sec="30.0"/>
                       <AlwaysFailure/>
                     </Sequence>
                     <Sequence>
@@ -74,7 +76,7 @@
             <Fallback name="RunAndCleanup">
               <Sequence name="DockingSequence">
               <SetControllerSource source="visual_servoing"/>
-                <RetryUntilSuccessful num_attempts="-1">
+                <RetryUntilSuccessful num_attempts="2">
                   <Fallback name="VisualServoingWithRecovery">
                     <VisualServoingAction target_area="25000.0"/>
                     <Sequence name="VSBackupRecovery">
@@ -90,7 +92,7 @@
                 <DriveRawAction linear_x="0.03"  angular_z="0.0" duration_sec="12.0"/>
                 <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="3.0"/>
 
-              <MoveForklift target_height="{lift_height}" timeout_s="15.0" tolerance_mm="3.0"/>
+             <!-- <MoveForklift target_height="{lift_height}" timeout_s="15.0" tolerance_mm="3.0"/>-->
 
                 <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
                 <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="2.0"/>
@@ -103,16 +105,22 @@
             <!--<SetReverseMode reverse="true"/>-->
             <GoToAction zone="{qr_data}"/>
             <!--<DriveRawAction linear_x="0.0" angular_z="0.05" duration_sec="8.0"/>-->
+
+            <!--
             <RetryUntilSuccessful num_attempts="2">
               <Fallback>
-                <MoveForklift target_height="25.0" timeout_s="15.0" tolerance_mm="3.0"/>
+
+                <MoveForklift target_height="25.0" timeout_s="15.0" tolerance_mm="3.0"/> 
+
                 <Sequence>
                   <MoveForklift target_height="30.0" timeout_s="5.0" tolerance_mm="5.0"/>
                   <AlwaysFailure/>
                 </Sequence>
               </Fallback>
             </RetryUntilSuccessful>
-            <!--<SetReverseMode reverse="false"/>-->
+
+            -->
+            <AlwaysSuccess/>
             <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="10.0"/>
             <GoToAction zone="inspect"/>
           </Sequence>

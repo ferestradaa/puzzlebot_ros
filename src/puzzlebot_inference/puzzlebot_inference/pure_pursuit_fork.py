@@ -28,7 +28,7 @@ class PurePursuit(Node):
         self.declare_parameter('ld_min', 0.2)
         self.declare_parameter('ld_max', 0.60)
         self.declare_parameter('ld_gain', 2.5)
-        self.declare_parameter('goal_tol', 0.08)
+        self.declare_parameter('goal_tol', 0.15)
         self.declare_parameter('pivot_angle', 1.2)
         self.declare_parameter('pivot_gain', 1.0)
         self.declare_parameter('align_band', 0.15)
@@ -92,20 +92,23 @@ class PurePursuit(Node):
             last_q = msg.poses[-1].pose.orientation
             if abs(last_q.w - 1.0) > 1e-3 or abs(last_q.z) > 1e-3:
                 self.goal_yaw = yaw_from_quat(last_q)
-                self.get_logger().info('goal yaw set to %.3f rad' % self.goal_yaw)
+                #self.get_logger().info('goal yaw set to %.3f rad' % self.goal_yaw)
             else:
                 self.goal_yaw = None
     def reverse_cb(self, msg: Bool):
             self.reverse = msg.data
             self.get_logger().info('reverse mode: %s' % self.reverse)
+
     def _publish_reached(self):
         msg = Bool()
         msg.data = True
         self.goal_reached_pub.publish(msg)
         self._goal_reached_latched = True
+
     def ramp(self, target, prev, accel):
         step = accel * self.dt
         return prev + clamp(target - prev, -step, step)
+    
     def publish_cmd(self, v_target, w_target):
         v = self.ramp(v_target, self.prev_v, self.a_lin)
         w = self.ramp(w_target, self.prev_w, self.a_ang)
@@ -114,6 +117,7 @@ class PurePursuit(Node):
         cmd.linear.x = v
         cmd.angular.z = w
         self.cmd_pub.publish(cmd)
+
     def advance_near_index(self, x, y):
         n = len(self.path)
         while self._near_i < n - 1:
@@ -124,12 +128,14 @@ class PurePursuit(Node):
             else:
                 break
         return self._near_i
+    
     def lookahead_point(self, x, y, start_i, ld):
         for i in range(start_i, len(self.path)):
             px, py = self.path[i]
             if math.hypot(px - x, py - y) >= ld:
                 return px, py
         return self.path[-1]
+    
     def control_loop(self):
         self.update_pose_from_tf()
         if self.pose is None or len(self.path) < 2:
@@ -146,9 +152,13 @@ class PurePursuit(Node):
                 self.get_logger().info('goal reached')
                 return
             yaw_err = angle_wrap(self.goal_yaw - th)
+
+            '''
             self.get_logger().info(
                 'aligning: yaw_err=%.3f' % yaw_err,
                 throttle_duration_sec=0.3)
+            '''
+
             if abs(yaw_err) < self.final_yaw_tol:
                 self.stop()
                 self.path    = []
@@ -157,21 +167,27 @@ class PurePursuit(Node):
                 self.get_logger().info('goal reached with final orientation')
                 return
             w_target = clamp(self.final_yaw_gain * yaw_err, -self.w_max, self.w_max)
+
+            if abs(yaw_err) < 0.02:
+                w_target = 0.0
+
             self.publish_cmd(0.0, w_target)
             return
+        
         if dist_to_goal < self.goal_tol:
             self.stop()
             if self.goal_yaw is not None:
                 self.aligning = True
-                self.get_logger().info('position reached, starting final alignment')
+                #self.get_logger().info('position reached, starting final alignment')
             else:
                 self.stop()
                 self.path = []
                 self._publish_reached()
                 self.get_logger().info('goal reached')
             return
+        
         current_speed = abs(self.prev_v)
-        ld_raw = clamp(self.ld_gain * max(current_speed, 0.08), self.ld_min, self.ld_max)
+        ld_raw = clamp(self.ld_gain * max(current_speed, 0.11), self.ld_min, self.ld_max)
         ld = min(ld_raw, dist_to_goal)
         near_i = self.advance_near_index(x, y)
         lx, ly = self.lookahead_point(x, y, near_i, ld)
@@ -181,16 +197,22 @@ class PurePursuit(Node):
         y_r = -math.sin(th_eff) * dx + math.cos(th_eff) * dy
         alpha = math.atan2(y_r, x_r)
         dist  = math.hypot(x_r, y_r)
+
         if abs(alpha) < self.align_band:
             v_target = self.v_max
             w_target = 0.0
+
         elif abs(alpha) > self.pivot_angle:
             v_target = 0.0
             w_target = clamp(self.pivot_gain * alpha, -self.w_max, self.w_max)
+
         else:
             curvature = 2.0 * math.sin(alpha) / max(dist, self.ld_min)
             v_target = self.v_max * max(0.3, math.cos(alpha))
-            w_target  = clamp(curvature * v_target, -self.w_max, self.w_max)
+            w_raw = clamp(curvature * v_target, -self.w_max, self.w_max)
+            blend = clamp((abs(alpha) - self.align_band) / self.align_band, 0.0, 1.0)
+            w_target = blend * w_raw
+
         if self.reverse: 
             v_target = -v_target
         self.publish_cmd(v_target, w_target)
@@ -200,6 +222,7 @@ class PurePursuit(Node):
         self.cmd_pub.publish(cmd)
         self.prev_v = 0.0
         self.prev_w = 0.0
+
 def main():
     rclpy.init()
     node = PurePursuit()
@@ -212,5 +235,6 @@ def main():
             node.stop()
         node.destroy_node()
         rclpy.shutdown()
+
 if __name__ == '__main__':
     main()
