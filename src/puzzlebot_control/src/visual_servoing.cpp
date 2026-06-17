@@ -12,8 +12,8 @@ public:
     enum class DockPhase { ALIGN_YAW, DOCK };
 
     VisualServoingActionServer() : Node("visual_servoing_action_server") {
-        Kw_                  = declare_parameter<double>("Kw", 0.11);
-        Kv_                  = declare_parameter<double>("Kv", 0.12);
+        Kw_                  = declare_parameter<double>("Kw", 0.1);
+        Kv_                  = declare_parameter<double>("Kv", 0.15);
         Kw_yaw_              = declare_parameter<double>("Kw_yaw", 0.6);
         image_width_         = declare_parameter<double>("image_width", 640.0);
         yaw_align_threshold_ = declare_parameter<double>("yaw_align_threshold", 0.15);

@@ -74,13 +74,12 @@ private:
             return;
         }
         if (requested == active_source_) return;
-
         if (bypass_sources_.count(active_source_)) {
             bypass_pub_->publish(geometry_msgs::msg::Twist{});
         }
-
-        RCLCPP_INFO(get_logger(), "source: %s -> %s", active_source_.c_str(), requested.c_str());
+        RCLCPP_INFO(get_logger(), "source: %s is %s", active_source_.c_str(), requested.c_str());
         active_source_ = requested;
+        last_recv_[requested] = now();
     }
 
     void loop()
