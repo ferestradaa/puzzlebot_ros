@@ -31,6 +31,8 @@ class Puzzlebot():
         self._rp_camera = None
         self._rp_lidar  = None
         self._twist = {"v": 0.0, "w": 0.0}
+
+        self.ANGULAR_GAIN = 5.0
     
     
     def import_urdf_to_usd(self, urdf_path: str, usd_output: str) -> str:
@@ -347,6 +349,7 @@ class Puzzlebot():
 
 
     def _read_twist_from_graph(self):
+        
         try:
             lin = og.Controller.attribute(
                 f"{self.graph_path}/DiffDrive.outputs:linearVelocity"
@@ -355,7 +358,7 @@ class Puzzlebot():
                 f"{self.graph_path}/DiffDrive.outputs:angularVelocity"
             ).get()
             self._twist["v"] = float(lin[0]) if lin is not None and len(lin) > 0 else 0.0
-            self._twist["w"] = float(ang[2]) if ang is not None and len(ang) > 2 else 0.0
+            self._twist["w"] = float(ang[2]) * self.ANGULAR_GAIN if ang is not None and len(ang) > 2 else 0.0
         except Exception:
             pass
 
