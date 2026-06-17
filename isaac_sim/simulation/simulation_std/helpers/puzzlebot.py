@@ -145,8 +145,8 @@ class Puzzlebot():
         stage.DefinePrim("/World/PhysicsMaterials", "Scope")
         mat_prim = stage.DefinePrim("/World/PhysicsMaterials/WheelMat", "Material")
         mat = UsdPhysics.MaterialAPI.Apply(mat_prim)
-        mat.CreateStaticFrictionAttr().Set(1.0)
-        mat.CreateDynamicFrictionAttr().Set(1.0)
+        mat.CreateStaticFrictionAttr().Set(1.5)
+        mat.CreateDynamicFrictionAttr().Set(1.5)
         mat.CreateRestitutionAttr().Set(0.0)
         PhysxSchema.PhysxMaterialAPI.Apply(mat_prim).CreateFrictionCombineModeAttr().Set("multiply")
 
@@ -165,7 +165,29 @@ class Puzzlebot():
                 materialPurpose="physics"
             )
             print(f"[sim] WheelMat binded to: {wp}")
+            
+    def tune_solver(self):
+        from pxr import PhysxSchema
+        stage = omni.usd.get_context().get_stage()
 
+        root = stage.GetPrimAtPath(self.articulation_path)
+        art = PhysxSchema.PhysxArticulationAPI.Apply(root)
+        art.CreateSolverPositionIterationCountAttr().Set(32)   
+        art.CreateSolverVelocityIterationCountAttr().Set(4)
+        art.CreateSleepThresholdAttr().Set(0.0)               
+        art.CreateStabilizationThresholdAttr().Set(0.0)       
+
+        bodies = [
+            f"{self.robot_prim_path}/chassis_link",
+            f"{self.robot_prim_path}/left_wheel_link",
+            f"{self.robot_prim_path}/right_wheel_link",
+        ]
+        for bp in bodies:
+            prim = stage.GetPrimAtPath(bp)
+            if prim.IsValid():
+                rb = PhysxSchema.PhysxRigidBodyAPI.Apply(prim)
+                rb.CreateSleepThresholdAttr().Set(0.0)
+                rb.CreateStabilizationThresholdAttr().Set(0.0)
 
     def setup_sensors(self) -> bool:
         stage = _usd.get_context().get_stage()

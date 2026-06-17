@@ -8,6 +8,10 @@ simulation_app = SimulationApp({
     "renderer": "RaytracedLighting",
 })
 
+import carb
+#carb.settings.get_settings().set_bool("/physics/collisionCylinderCustomGeometry", True)
+#carb.settings.get_settings().set_bool("/physics/collisionConeCustomGeometry", True)
+
 import omni.usd
 import omni.kit.commands
 import omni.graph.core as og
@@ -45,7 +49,7 @@ simulation_app.update()
 def setup_world(world_usd_path) -> World:
     world = World(
         stage_units_in_meters=1.0,
-        physics_dt=1.0 / 30.0,
+        physics_dt=1.0 / 240.0,
         rendering_dt=1.0 / 30.0,
     )
     add_reference_to_stage(usd_path=world_usd_path, prim_path="/World")
@@ -181,8 +185,6 @@ def setup_world() -> World:
     return world
     '''
 
-
-
 def load_robot(usd_path: str, robot_prim_path):
     
     add_reference_to_stage(usd_path=usd_path, prim_path=robot_prim_path)
@@ -246,6 +248,7 @@ def main():
     puzzlebot.fix_wheel_drives_live()
     puzzlebot.fix_wheel_friction()
     puzzlebot.fix_caster_wheel()
+    puzzlebot.tune_solver()
 
 
     if not puzzlebot.setup_sensors():
@@ -335,6 +338,9 @@ def main():
         elapsed = time.time() - t0
         if elapsed < TARGET_DT:
             time.sleep(TARGET_DT - elapsed)
+
+
+        
 
     print("[sim] Closing")
     simulation_app.close()
