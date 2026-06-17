@@ -23,40 +23,38 @@ find_package(puzzlebot_interfaces REQUIRED)
 include_directories(bt_nodes)
 
 
-add_executable(bt_executor
-   src/bt_executor.cpp)
+#add_executable(bt_executor
+ #  src/bt_executor.cpp)
 
 add_executable(bt_qr
    src/bt_qr.cpp)
 
-add_executable(bt_inference
-   src/bt_inference.cpp)
-
-add_executable(bt_voice
-   src/bt_voice.cpp)
 
 add_executable(process_manager
    src/process_manager.cpp)
 
    
-target_include_directories(bt_executor PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
+#target_include_directories(bt_executor PUBLIC
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#)
 
 
-ament_target_dependencies(bt_executor
-   behaviortree_cpp 
-   rclcpp
-   rclcpp_action
-   ament_index_cpp
-   geometry_msgs
-   std_srvs
-   puzzlebot_interfaces
-   tf2_ros
-   tf2_geometry_msgs
-   tf2
-   
-)
+
+
+    #        ament_target_dependencies(bt_executor
+    #           behaviortree_cpp 
+    #           rclcpp
+    #           rclcpp_action
+     #          ament_index_cpp
+     #          geometry_msgs
+     #          std_srvs
+     #          puzzlebot_interfaces
+     #          tf2_ros
+     #          tf2_geometry_msgs
+      #         tf2
+      #         
+      #      )
+
 
 
 ament_target_dependencies(bt_qr
@@ -74,33 +72,6 @@ ament_target_dependencies(bt_qr
 )
 
 
-ament_target_dependencies(bt_inference
-   behaviortree_cpp 
-   rclcpp
-   rclcpp_action
-   ament_index_cpp
-   geometry_msgs
-   std_srvs
-   puzzlebot_interfaces
-   tf2_ros
-   tf2_geometry_msgs
-   tf2
-)
-
-
-ament_target_dependencies(bt_voice
-   behaviortree_cpp 
-   rclcpp
-   rclcpp_action
-   ament_index_cpp
-   geometry_msgs
-   std_srvs
-   puzzlebot_interfaces
-   tf2_ros
-   tf2_geometry_msgs
-   tf2
-   
-)
 
 ament_target_dependencies(process_manager
     rclcpp
@@ -109,7 +80,7 @@ ament_target_dependencies(process_manager
    
 )
   
-install(TARGETS bt_executor bt_inference process_manager bt_qr bt_voice
+install(TARGETS  process_manager bt_qr 
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -121,18 +92,13 @@ install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
 )
 
-target_link_libraries(bt_executor
-   yaml-cpp)
+#target_link_libraries(bt_executor
+ #  yaml-cpp)
 
 target_link_libraries(bt_qr
    yaml-cpp)
 
-target_link_libraries(bt_inference
-   yaml-cpp)
 
-
-target_link_libraries(bt_voice
-   yaml-cpp)
 
 
 
