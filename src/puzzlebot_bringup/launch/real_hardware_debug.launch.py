@@ -95,6 +95,12 @@ def generate_launch_description():
             os.path.join(control, 'launch', 'control.launch.py')),
         launch_arguments={'use_sim': use_sim, 'use_sim_time': use_sim_time}.items()
     )
+
+    move_forklift = Node(
+        package='puzzlebot_forklift',
+        executable='forklift_spi_node',
+        output='screen'
+    )
     
 
 #   uses no vision 
@@ -108,6 +114,7 @@ def generate_launch_description():
         camera_info, 
         desc_launch,
         control_launch, 
+        move_forklift,
 
     ])
 

@@ -78,15 +78,18 @@
               <Sequence name="DockingSequence">
               <SetControllerSource source="visual_servoing"/>
                 <RetryUntilSuccessful num_attempts="2">
-                  <Fallback name="VisualServoingWithRecovery">
+                <Fallback name="VisualServoingWithRecovery">
+                  <Sequence>
+                    <SetControllerSource source="visual_servoing"/>
                     <VisualServoingAction target_area="25000.0"/>
-                    <Sequence name="VSBackupRecovery">
+                  </Sequence>
+                  <Sequence name="VSBackupRecovery">
                     <SetControllerSource source="drive_raw"/>
-                      <DriveRawAction linear_x="-0.02" angular_z="0.0" duration_sec="9.0"/>
-                      <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="1.0"/>
-                      <AlwaysFailure/>
-                    </Sequence>
-                  </Fallback>
+                    <DriveRawAction linear_x="-0.02" angular_z="0.0" duration_sec="9.0"/>
+                    <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="1.0"/>
+                    <AlwaysFailure/>
+                  </Sequence>
+                </Fallback>
                 </RetryUntilSuccessful>
 
 
