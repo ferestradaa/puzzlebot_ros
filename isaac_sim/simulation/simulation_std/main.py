@@ -292,6 +292,8 @@ def main():
     world.scene.add(wheeled_robot)
     world.reset()
 
+    wheeled_robot.set_world_pose(position=np.array([4.0, 0.9, 0.0]))
+
     diff_controller = DifferentialController(
         name="diff_ctrl",
         wheel_radius=WHEEL_RADIUS,
