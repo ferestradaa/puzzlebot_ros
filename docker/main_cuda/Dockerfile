@@ -78,6 +78,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir "numpy<2" onnxruntime-gpu==1.16.3
+RUN pip install pupil-apriltags
 
 COPY docker/main_cuda/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
