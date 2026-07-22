@@ -1,6 +1,6 @@
 # puzzlebot_ros
 
-ROS2 stack for the [Manchester Robotics Puzzlebot](https://manchester-robotics.com/puzzlebot) differential drive platform, with a matching Isaac Sim counterpart. Both real and simulated robots run the same navigation, control, and behavior stack, built from scratch without Nav2.
+ROS2 stack for autonomous navigation and pallet lifting with a forklift attachment on the [Manchester Robotics Puzzlebot](https://manchester-robotics.com/puzzlebot) differential-drive platform, with a matching Isaac Sim counterpart. Both real and simulated robots run the same navigation, control, and behavior stack, built from scratch without Nav2.
 
 ## Hardware
 
@@ -25,7 +25,6 @@ ROS2 stack for the [Manchester Robotics Puzzlebot](https://manchester-robotics.c
 - `isaac_sim/` — Isaac Sim counterpart (assets, worlds, simulation scripts)
 - `jetson/` — Jetson Nano setup and deployment
 - `docker/` — containers for host (simulation)
-- Same stack runs unmodified on hardware and in the Isaac Sim counterpart.
 
 ## Installation
 
@@ -42,7 +41,7 @@ cd isaac_sim/simulation/simulation_std/
 
 ### Docker (host, GPU)
 
-Create the container to run the ros2 stack for simulation: 
+Create the container to run the ROS2 stack for simulation: 
 
 ```
 cd docker
