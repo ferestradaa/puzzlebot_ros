@@ -24,6 +24,7 @@ public:
     this->declare_parameter<std::string>(
       "engine_path",
       "/home/puzzlebot/puzz_ws/src/puzzlebot_inference/models/real/two_sides.engine");
+      
     this->declare_parameter<std::string>("image_topic", "/camera/image_raw");
     this->declare_parameter<std::string>("detections_topic", "/pallet_inference_centroid");
     this->declare_parameter<std::string>("debug_image_topic", "/pallet_detections/image");
