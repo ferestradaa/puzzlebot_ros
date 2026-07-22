@@ -11,7 +11,6 @@ ROS2 stack for the [Manchester Robotics Puzzlebot](https://manchester-robotics.c
 
 - ROS2 Humble
 - Isaac Sim 5.1
-- C++ and Python
 
 ## Capabilities
 
@@ -38,14 +37,39 @@ ROS2 stack for the [Manchester Robotics Puzzlebot](https://manchester-robotics.c
 - `jetson/` — Jetson Nano setup and deployment
 - `docker/` — containers for host and Jetson
 
+
+## Installation
+
+Install Isaac Sim 5.1 [here](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/installation/download.html)
+
 ## Running
 
-Real hardware:
+### Simulation
+
 ```
-ros2 launch puzzlebot_bringup real_hardware.launch.py
+cd isaac_sim/simulation/simulation_std/
+<path to your Isaac Sim 5.1 installation>/main.py
 ```
 
-Isaac Sim:
+### Docker (host, GPU)
+
+```
+cd docker
+docker compose build puzzlebot_cuda
+docker compose up puzzlebot_cuda -d
+docker compose exec puzzlebot_cuda bash
+```
+
+Inside the container:
+
+```
+colcon build
+```
+
+Then launch:
+
+
+Simulated Stack:
 ```
 ros2 launch puzzlebot_bringup sim_hardware.launch.py
 ```
