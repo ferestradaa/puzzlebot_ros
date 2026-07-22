@@ -48,10 +48,12 @@ Install Isaac Sim 5.1 [here](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/in
 
 ```
 cd isaac_sim/simulation/simulation_std/
-<path to your Isaac Sim 5.1 installation>/main.py
+<path to your Isaac Sim 5.1 installation>/python.sh main.py
 ```
 
 ### Docker (host, GPU)
+
+Create the container to run the ros2 stack for simulation: 
 
 ```
 cd docker
