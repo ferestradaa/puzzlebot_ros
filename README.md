@@ -14,29 +14,18 @@ ROS2 stack for the [Manchester Robotics Puzzlebot](https://manchester-robotics.c
 
 ## Capabilities
 
-- EKF localization fused with AprilTag detections
-- A* global path planning over an occupancy grid, with dynamic map updates
-- Pure Pursuit and Stanley path tracking controllers
-- Reactive obstacle avoidance (VFH-based local controller)
-- Behavior orchestration via BehaviorTree.CPP
-- QR-based docking and visual servoing
-- Pallet detection with ONNX models (CPU, GPU, and sim variants)
-- Same stack runs unmodified on hardware and in the Isaac Sim counterpart
-
-## Structure
-
-- `src/puzzlebot_navigation` — path planning, occupancy grid, local
-- `src/puzzlebot_control` — odometry, pure pursuit, controller mux, visual servoing, reactive controller
-- `src/puzzlebot_inference` — ONNX runtime and Tensor RT inference for pallet detection models
-- `src/puzzlebot_behavior` — behavior trees and BT node implementations
-- `src/puzzlebot_forklift` — forklift mast SPI control
-- `src/puzzlebot_vision` — vision pipeline
-- `src/puzzlebot_description` — URDF/robot description
-- `src/puzzlebot_bringup` — launch files for real and simulated hardware
-- `isaac_sim/` — simulated counterpart (assets, worlds, simulation scripts)
+- `puzzlebot_navigation` — A* global path planning over an occupancy grid 
+- `puzzlebot_control` — EKF localization, Pure Pursuit path tracking, controller mux, visual servoing, reactive obstacle avoidance (VFH-based)
+- `puzzlebot_inference` — Pallet detection with ONNX/TensorRT models (CPU, GPU, and sim variants)
+- `puzzlebot_behavior` — behavior orchestration via BehaviorTree.CPP
+- `puzzlebot_forklift` — forklift mast SPI control
+- `puzzlebot_vision` — vision pipeline
+- `puzzlebot_description` — URDF/robot description
+- `puzzlebot_bringup` — launch files for real and simulated hardware
+- `isaac_sim/` — Isaac Sim counterpart (assets, worlds, simulation scripts)
 - `jetson/` — Jetson Nano setup and deployment
-- `docker/` — containers for host and Jetson
-
+- `docker/` — containers for host (simulation)
+- Same stack runs unmodified on hardware and in the Isaac Sim counterpart.
 
 ## Installation
 
