@@ -1,6 +1,6 @@
 # puzzlebot_ros
 
-ROS2 stack for the Puzzlebot differential drive platform, with a matching Isaac Sim counterpart. Both real and simulated robots run the same navigation, control, and behavior stack, built from scratch without Nav2.
+ROS2 stack for the [Manchester Robotics Puzzlebot](https://manchester-robotics.com/puzzlebot) differential drive platform, with a matching Isaac Sim counterpart. Both real and simulated robots run the same navigation, control, and behavior stack, built from scratch without Nav2.
 
 ## Hardware
 
