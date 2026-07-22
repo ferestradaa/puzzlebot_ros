@@ -66,6 +66,7 @@ Inside the container:
 
 ```
 colcon build
+source install/setup.bash
 ```
 
 Then launch:
