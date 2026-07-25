@@ -17,8 +17,6 @@ services:
       - FASTRTPS_DEFAULT_PROFILES_FILE=/ws/fastdds_no_shm.xml
     devices:
       - /dev/snd:/dev/snd
-      - /dev/video0:/dev/video0 
-      - /dev/video0:/dev/video1
       - /dev/dri:/dev/dri
     group_add:
       - audio 
@@ -56,8 +54,6 @@ services:
       - FASTRTPS_DEFAULT_PROFILES_FILE=/ws/fastdds_no_shm.xml
     devices:
       - /dev/snd:/dev/snd
-      - /dev/video0:/dev/video0 
-      - /dev/video0:/dev/video1
       - /dev/dri:/dev/dri
     group_add:
       - audio 
