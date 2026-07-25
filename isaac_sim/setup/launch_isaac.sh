@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/isaac_env.sh"
 
-SIM_SCRIPT="$SCRIPT_DIR/simulation/simulation_std/main.py"
+SIM_SCRIPT="$SCRIPT_DIR/../simulation/simulation_std/main.py"
 
 if [ ! -d "$ISAAC_SIM_PATH" ]; then
     echo "Isaac Sim not found at $ISAAC_SIM_PATH"
@@ -16,6 +16,7 @@ if [ ! -f "$SIM_SCRIPT" ]; then
     echo "Simulation entry point not found at $SIM_SCRIPT"
     exit 1
 fi
+
 BRIDGE_LIBS="$ISAAC_SIM_PATH/exts/isaacsim.ros2.bridge/humble/lib"
 
 if [ ! -d "$BRIDGE_LIBS" ]; then
