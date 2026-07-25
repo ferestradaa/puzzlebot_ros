@@ -35,4 +35,4 @@ env -i \
     RMW_IMPLEMENTATION="$RMW_IMPLEMENTATION" \
     ROS_DOMAIN_ID="$ROS_DOMAIN_ID" \
     LD_LIBRARY_PATH="$BRIDGE_LIBS" \
-    bash "$ISAAC_SIM_PATH/isaac-sim.sh" "$@"
+    bash "$ISAAC_SIM_PATH/isaac-sim.sh" "$SIM_SCRIPT" "$@"

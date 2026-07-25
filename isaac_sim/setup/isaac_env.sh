@@ -1,5 +1,5 @@
 #Path to the local isaac sim 5.1 instalation
-#modify this to match your local instalation
+#modify this to match your local instalation plis
 
 export ISAAC_SIM_PATH="$HOME/isaacsim/isaac-sim-standalone-5.1.0-linux-x86_64"
 
