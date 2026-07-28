@@ -23,7 +23,7 @@
       return {
         BT::InputPort<std::string>("zone"),
         BT::InputPort<geometry_msgs::msg::PoseStamped>("target_pose")
-      };resolve_target
+      };
     }
 
     BT::NodeStatus onStart() override {
