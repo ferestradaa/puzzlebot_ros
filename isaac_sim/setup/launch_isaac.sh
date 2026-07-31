@@ -8,7 +8,7 @@ SIM_SCRIPT="$SCRIPT_DIR/../simulation/simulation_std/main.py"
 
 if [ ! -d "$ISAAC_SIM_PATH" ]; then
     echo "Isaac Sim not found at $ISAAC_SIM_PATH"
-    echo "Edit isaac_sim/setup/isaac_env.sh and set ISAAC_SIM_PATH to your install path"
+    echo "Edit isaac_sim/setup/isaac_env.sh and set ISAAC_SIM_PATH to your install path plisssss"
     exit 1
 fi
 
@@ -22,6 +22,7 @@ BRIDGE_LIBS="$ISAAC_SIM_PATH/exts/isaacsim.ros2.bridge/humble/lib"
 if [ ! -d "$BRIDGE_LIBS" ]; then
     echo "ROS2 bridge libs not found at $BRIDGE_LIBS"
     echo "Check your Isaac Sim installation"
+
     exit 1
 fi
 

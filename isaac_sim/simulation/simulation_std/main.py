@@ -15,8 +15,17 @@ import carb
 import omni.usd
 import omni.kit.commands
 import omni.graph.core as og
+
+
+#from omni.isaac.core import World
+from isaacsim.core.api import World
+from isaacsim.core.utils.extensions import enable_extension
+
+
 from omni.isaac.core import World
 from omni.isaac.core.utils.extensions import enable_extension
+
+
 from isaacsim.core.utils.stage import add_reference_to_stage
 from pxr import UsdGeom, Gf
 from isaacsim.core.api.objects import GroundPlane

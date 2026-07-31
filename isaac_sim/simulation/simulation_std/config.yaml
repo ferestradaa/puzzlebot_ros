@@ -38,3 +38,4 @@ ros2:
 
 world:
  stage_path: "worlds/puzz_scene.usd"
+ #stage_path: "worlds/gaussian_scene.usd"
