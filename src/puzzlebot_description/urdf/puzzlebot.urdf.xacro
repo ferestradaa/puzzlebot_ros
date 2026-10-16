@@ -172,145 +172,141 @@
   <!-- lidar -->
   <link name="${prefix}laser">
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="${lidar_cx} 0 ${lidar_cz}" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.04" radius="0.05"/>
+        <cylinder length="${lidar_length}" radius="${lidar_radius}"/>
       </geometry>
     </collision>
-
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="${lidar_cx} 0 ${lidar_cz}" rpy="0 0 0"/>
       <mass value="${lidar_mass}"/>
-      <xacro:cylinder_inertia
-        m="${lidar_mass}"
-        r="0.05"
-        l="0.04"/>
+      <inertia ixx="4.76e-05" ixy="0.0" ixz="0.0" iyy="4.76e-05" iyz="0.0" izz="6.3e-05"/>
     </inertial>
   </link>
   <joint name="${prefix}chassis_to_lidar" type="fixed">
     <parent link="${prefix}chassis_link"/>
     <child  link="${prefix}laser"/>
-    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 3.14"/>
+    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 ${PI}"/>
   </joint>
 
 
+  <!-- outer mast: fixed to the chassis -->
+  <link name="${prefix}outer_mast_link">
+    <visual>
+      <origin xyz="${outer_mast_visual_x} 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://puzzlebot_description/meshes/outer_mast.obj"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="${outer_mast_com}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${outer_mast_box}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <!-- COM at the centroid of the collision box, not at the link frame -->
+      <origin xyz="${outer_mast_com}" rpy="0 0 0"/>
+      <mass value="${outer_mast_mass}"/>
+      <inertia ixx="2.73e-04" ixy="0.0" ixz="0.0" iyy="2.46e-04" iyz="0.0" izz="3.7e-05"/>
+    </inertial>
+  </link>
+  <joint name="${prefix}outer_mast_joint" type="fixed">
+    <parent link="${prefix}chassis_link"/>
+    <child  link="${prefix}outer_mast_link"/>
+    <origin xyz="${outer_mast_x} ${outer_mast_y} ${outer_mast_z}" rpy="0 0 0"/>
+  </joint>
 
 
-    <!-- outer_mast  -->
-<link name="${prefix}outer_mast_link">
-  <visual>
+  <!-- inner mast: prismatic stage 2, lifts out of the outer mast -->
+  <link name="${prefix}inner_mast_link">
+    <visual>
+      <origin xyz="0 0 ${inner_mast_visual_z}" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://puzzlebot_description/meshes/inner_mast.obj"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="${inner_mast_com}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${inner_mast_box}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="${inner_mast_com}" rpy="0 0 0"/>
+      <mass value="${inner_mast_mass}"/>
+      <inertia ixx="1.916e-04" ixy="0.0" ixz="0.0" iyy="1.716e-04" iyz="0.0" izz="2.19e-05"/>
+    </inertial>
+  </link>
+  <joint name="${prefix}inner_mast_joint" type="prismatic">
+    <parent link="${prefix}outer_mast_link"/>
+    <child  link="${prefix}inner_mast_link"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
-    <geometry>
-    <!-- <mesh filename="../meshes3/outer_mast.obj"/> -->
-      <!--<mesh filename="file://${mesh_outer_mast}"/> -->
-      <mesh filename="package://puzzlebot_description/meshes/outer_mast.obj"/>
-    </geometry>
-    <material name="black"/>
-  </visual>
-  <collision>
-    <origin xyz="0 0 ${mast_height/2}" rpy="0 0 0"/>
-    <geometry>
-      <box size="${mast_thickness} ${mast_width} ${mast_height}"/>
-    </geometry>
-  </collision>
-  <inertial>
-    <origin xyz="0 0 ${mast_height/2}" rpy="0 0 0"/>
-    <mass value="0.001"/>
-    <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
-  </inertial>
-</link>
-<joint name="${prefix}outer_mast_joint" type="fixed">
-  <parent link="${prefix}base_footprint"/>
-  <child  link="${prefix}outer_mast_link"/>
-  <origin xyz="${forks_x} ${forks_y} ${forks_z}" rpy="0 0 0"/>
-</joint>
+    <axis xyz="0 0 1"/>
+    <limit lower="${inner_lower}" upper="${inner_upper}" effort="10" velocity="0.05"/>
+    <dynamics damping="2.0" friction="0.5"/>
+  </joint>
 
 
-
-<link name="${prefix}inner_mast_link">
-  <visual>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <geometry>
- <!-- <mesh filename="../meshes3/inner_mast.obj"/> -->
-     <!-- <mesh filename="file://${mesh_inner_mast}"/>-->
-      <mesh filename="package://puzzlebot_description/meshes/inner_mast.obj"/>
-    </geometry>
-    <material name="black"/>
-  </visual>
-  <collision>
-    <origin xyz="0 0 ${mast_height/2}" rpy="0 0 0"/>
-    <geometry>
-      <box size="${mast_thickness} ${mast_width} ${mast_height}"/>
-    </geometry>
-  </collision>
-  <inertial>
-    <origin xyz="0 0 ${mast_height/2}" rpy="0 0 0"/>
-    <mass value="0.001"/>
-    <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
-  </inertial>
-</link>
-<joint name="${prefix}inner_mast_joint" type="fixed">
-  <parent link="${prefix}outer_mast_link"/>
-  <child  link="${prefix}inner_mast_link"/>
-  <origin xyz="0 0 0" rpy="0 0 0"/>
-  <axis xyz="0 0 1"/>
-  <limit lower="0.0" upper="${inner_travel}" effort="50" velocity="0.1"/>
-  <dynamics damping="1.0" friction="0.5"/>
-</joint>
-
-
-
-    <!-- FORKS -->
-<link name="${prefix}forks_link">
-  <visual>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <geometry>
-  <!-- <mesh filename="../meshes3/forks.obj"/> -->
-      <!--<mesh filename="file://${mesh_forks}"/>-->
-      <mesh filename="package://puzzlebot_description/meshes/forks.obj"/>
-    </geometry>
-    <material name="black"/>
-  </visual>
-  <!-- left finger -->
-  <collision>
-    <origin xyz="${fork_length/2} ${fork_separation/2} ${fork_thickness/2}" rpy="0 0 0"/>
-    <geometry>
-      <box size="${fork_length} ${fork_width} ${fork_thickness}"/>
-    </geometry>
-  </collision>
-  <!-- right finger -->
-  <collision>
-    <origin xyz="${fork_length/2} ${-fork_separation/2} ${fork_thickness/2}" rpy="0 0 0"/>
-    <geometry>
-      <box size="${fork_length} ${fork_width} ${fork_thickness}"/>
-    </geometry>
-  </collision>
-  <inertial>
-    <origin xyz="${fork_length/2} 0 0" rpy="0 0 0"/>
-    <mass value="0.001"/>
-    <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
-  </inertial>
-</link>
-<joint name="${prefix}forks_joint" type="prismatic">
-  <parent link="${prefix}inner_mast_link"/>
-  <child  link="${prefix}forks_link"/>
-  <origin xyz="0 0 0" rpy="0 0 0"/>
-  <axis xyz="0 0 1"/>
-  <limit lower="0.0" upper="${fork_travel}" effort="50" velocity="0.03"/>
-  <dynamics damping="1.0" friction="0.5"/>
-</joint>
+  <!-- forks: carriage that slides up the inner mast (stage 1) -->
+  <link name="${prefix}forks_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://puzzlebot_description/meshes/forks.obj"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <!-- carriage backplate -->
+    <collision>
+      <origin xyz="${back_origin}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${back_size}"/>
+      </geometry>
+    </collision>
+    <!-- left tine -->
+    <collision>
+      <origin xyz="${tine_l_origin}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${tine_size}"/>
+      </geometry>
+    </collision>
+    <!-- right tine -->
+    <collision>
+      <origin xyz="${tine_r_origin}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${tine_size}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="${forks_com}" rpy="0 0 0"/>
+      <mass value="${forks_mass}"/>
+      <inertia ixx="1.672e-04" ixy="1.712e-05" ixz="3.227e-05" iyy="1.378e-04" iyz="-7.54e-06" izz="2.432e-04"/>
+    </inertial>
+  </link>
+  <joint name="${prefix}forks_joint" type="prismatic">
+    <parent link="${prefix}inner_mast_link"/>
+    <child  link="${prefix}forks_link"/>
+    <origin xyz="0 0 ${forks_z}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="${forks_lower}" upper="${forks_upper}" effort="10" velocity="0.05"/>
+    <dynamics damping="2.0" friction="0.5"/>
+  </joint>
 
 
+  <!-- Frame at the front end of the tines. Not in the Isaac URDF (it has no mass or geometry), but
+       navigation looks it up (go_to_server, pure_pursuit_fork) so it stays here. -->
+  <link name="${prefix}fork_tip_link"/>
+  <joint name="${prefix}forks_to_tip" type="fixed">
+    <parent link="${prefix}forks_link"/>
+    <child  link="${prefix}fork_tip_link"/>
+    <origin xyz="${fork_tip_x} 0 ${fork_tip_z}" rpy="0 0 0"/>
+  </joint>
 
-<link name="${prefix}fork_tip_link"/>
-<joint name="${prefix}forks_to_tip" type="fixed">
-  <parent link="${prefix}forks_link"/>
-  <child  link="${prefix}fork_tip_link"/>
-  <origin xyz="${fork_length} 0 ${fork_thickness/2}" rpy="0 0 0"/>
-</joint>
 
-
-  <!-- camera -->
+  <!-- camera: carried by the forks -->
   <link name="${prefix}camera_link">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -325,17 +321,22 @@
   <joint name="${prefix}chassis_to_camera" type="fixed">
     <parent link="${prefix}forks_link"/>
     <child  link="${prefix}camera_link"/>
-    <origin xyz="${camera_x} ${camera_y} ${camera_z}"
-            rpy="0 3.1416 3.1416"/>
+    <origin xyz="${camera_x} ${camera_y} ${camera_z}" rpy="0 0 0"/>
   </joint>
 
 
-<!-- optical frame -->
-  <link name="${prefix}camera_color_optical_frame"/>
-<joint name="${prefix}optical_frame" type="fixed">
-  <parent link="${prefix}camera_link"/>
-  <child link="${prefix}camera_color_optical_frame"/>
-  <origin xyz="0.05 0 0" rpy="${PI/2} 0 ${PI/2}"/>
-</joint>
+  <!-- optical frame -->
+  <link name="${prefix}camera_color_optical_frame">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${optical_mass}"/>
+      <inertia ixx="${optical_inertia}" ixy="0.0" ixz="0.0" iyy="${optical_inertia}" iyz="0.0" izz="${optical_inertia}"/>
+    </inertial>
+  </link>
+  <joint name="${prefix}optical_frame" type="fixed">
+    <parent link="${prefix}camera_link"/>
+    <child  link="${prefix}camera_color_optical_frame"/>
+    <origin xyz="0 0 0" rpy="${-PI/2} 0 ${-PI/2}"/>
+  </joint>
 
 </robot>
