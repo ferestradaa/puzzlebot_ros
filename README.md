@@ -1,5 +1,7 @@
 # puzzlebot_ros
 
+![RViz visualization](docs/images/puzz.png)
+
 ROS2 stack for autonomous navigation and pallet lifting with a forklift attachment on the [Manchester Robotics Puzzlebot](https://manchester-robotics.com/puzzlebot) differential-drive platform, with a matching Isaac Sim counterpart. Both real and simulated robots run the same navigation, control, and behavior stack, built from scratch without Nav2.
 
 ## Hardware
