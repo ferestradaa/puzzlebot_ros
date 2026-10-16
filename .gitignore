@@ -11,6 +11,9 @@ isaac_sim/simulation/ros2
 isaac_sim/simulation/sim_utils
 isaac_sim/simulation/main.py
 
+
+isaac_sim/simulation/simulation_std/generated_usd/
+
 *.gv
 *.pdf
 *.zip
