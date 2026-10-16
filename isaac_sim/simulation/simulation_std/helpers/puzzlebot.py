@@ -35,10 +35,15 @@ class Puzzlebot():
 
         self.ANGULAR_GAIN = 5.0
 
-        self.MAST_MIN = -0.05  # matches the URDF lower limit of inner_mast_joint
-        self.MAST_MAX = 0.25   # matches the URDF upper limit
+        # Stages in the order they extend: carriage (forks) rides up the inner mast first,
+        # then the inner mast lifts out of the outer one. Travel comes from the URDF limits.
+        self.MAST_JOINTS = ["forks_joint", "inner_mast_joint"]
+        self.MAST_MIN = -np.inf
+        self.MAST_MAX = np.inf
         self._mast_target = 0.0
         self._mast_idx = None
+        self._mast_lo = None
+        self._mast_hi = None
         self.MAST_STIFFNESS = 1000.0
         self.MAST_DAMPING = 40.0
 
@@ -118,22 +123,24 @@ class Puzzlebot():
             physx_joint.CreateJointFrictionAttr().Set(0.0)
             physx_joint.CreateMaxJointVelocityAttr().Set(1000.0)
 
-    def fix_mast_drive_live(self, stiffness=1000.0, damping=40.0, max_force=10.0):
-        """Position drive for the forklift mast. Target is metres of lift above
-        the retracted pose: 0 puts the forks at the outer_mast_link origin
-        (0.12 m ahead of / 0.04 m below chassis_link), 0.15 is full travel."""
+    def fix_mast_drive_live(self, stiffness=1000.0, damping=40.0, max_force=50.0):
+        """Position drives for every prismatic stage of the forklift mast (see MAST_JOINTS)."""
         stage = omni.usd.get_context().get_stage()
-        prim = stage.GetPrimAtPath(f"{self.robot_prim_path}/joints/inner_mast_joint")
-        if not prim.IsValid():
-            print("[sim] inner_mast_joint not found")
-            return
-        drive = UsdPhysics.DriveAPI.Apply(prim, "linear")
-        drive.GetTypeAttr().Set("force")
-        drive.GetStiffnessAttr().Set(stiffness)
-        drive.GetDampingAttr().Set(damping)
-        drive.GetMaxForceAttr().Set(max_force)
-        drive.GetTargetPositionAttr().Set(0.0)
-        drive.GetTargetVelocityAttr().Set(0.0)
+        for name in self.MAST_JOINTS:
+            prim = stage.GetPrimAtPath(f"{self.robot_prim_path}/joints/{name}")
+            if not prim.IsValid() or not prim.IsA(UsdPhysics.PrismaticJoint):
+                print(f"[sim] {name} not a prismatic joint, skipping mast drive")
+                continue
+            drive = UsdPhysics.DriveAPI.Apply(prim, "linear")
+            drive.GetTypeAttr().Set("force")
+            drive.GetStiffnessAttr().Set(stiffness)
+            drive.GetDampingAttr().Set(damping)
+            drive.GetMaxForceAttr().Set(max_force)
+            drive.GetTargetPositionAttr().Set(0.0)
+            drive.GetTargetVelocityAttr().Set(0.0)
+            # the URDF friction (0.5) is a coefficient on the constraint force of the cantilevered
+            # load, which exceeds what the drive can push, so the stage would stall
+            PhysxSchema.PhysxJointAPI.Apply(prim).CreateJointFrictionAttr().Set(0.0)
 
     def fix_fork_collision_live(self, links=("forks_link",)):
         """Turn off collision on the visual mesh of the given links.
@@ -404,27 +411,59 @@ class Puzzlebot():
         print("[sim] Action Graph ROS2 OK")
         return True
 
+    def _init_mast(self, robot):
+        names = [n for n in self.MAST_JOINTS if n in robot.dof_names]
+        if not names:
+            print("[sim] no mast joints found in articulation")
+            self._mast_idx = []
+            return
+        self._mast_idx = [robot.get_dof_index(n) for n in names]
+        props = robot.dof_properties
+        self._mast_lo = np.array([props["lower"][i] for i in self._mast_idx], dtype=float)
+        self._mast_hi = np.array([props["upper"][i] for i in self._mast_idx], dtype=float)
+        self.MAST_MIN = float(self._mast_lo.sum())
+        self.MAST_MAX = float(self._mast_hi.sum())
+        print(f"[sim] mast stages {names}: height range [{self.MAST_MIN:.3f}, {self.MAST_MAX:.3f}] m")
+
+        # PhysX comes up with kp=0 for these DOFs after articulation init, so set them explicitly
+        ctrl = robot.get_articulation_controller()
+        kps, kds = ctrl.get_gains()
+        kps, kds = np.array(kps, dtype=float), np.array(kds, dtype=float)
+        kps[self._mast_idx] = self.MAST_STIFFNESS
+        kds[self._mast_idx] = self.MAST_DAMPING
+        ctrl.set_gains(kps=kps, kds=kds)
+
+    def _split_height(self, height):
+        """Total lift -> per-stage targets. 0 is the rest pose (every stage at 0); above it each stage
+        fills to its upper limit before the next one moves, below it the same with the lower limits."""
+        targets = np.zeros_like(self._mast_lo)
+        remaining = abs(height)
+        for i, (lo, hi) in enumerate(zip(self._mast_lo, self._mast_hi)):
+            room = hi if height >= 0 else -lo
+            take = float(np.clip(remaining, 0.0, max(room, 0.0)))
+            targets[i] = take if height >= 0 else -take
+            remaining -= take
+        return targets
+
     def update_mast(self, robot):
-        """Read /forklift/height_target, saturate to [MAST_MIN, MAST_MAX] and send it as a position
-        target to the prismatic joint through the articulation (USD edits don't reach PhysX once it runs)."""
+        """Read /forklift/height_target (total fork height, metres), saturate it to the combined travel
+        of all stages and send per-stage position targets through the articulation
+        (USD edits don't reach PhysX once it runs)."""
+        if self._mast_idx is None:
+            self._init_mast(robot)
+        if not self._mast_idx:
+            return
         try:
             val = og.Controller.attribute(f"{self.graph_path}/MastTarget.outputs:data").get()
             if val is not None:
                 self._mast_target = float(np.clip(val, self.MAST_MIN, self.MAST_MAX))
         except Exception:
             pass
-        if self._mast_idx is None:
-            self._mast_idx = robot.get_dof_index("inner_mast_joint")
-            # PhysX comes up with kp=0 for this DOF after articulation init, so set it explicitly
-            ctrl = robot.get_articulation_controller()
-            kps, kds = ctrl.get_gains()
-            kps, kds = np.array(kps, dtype=float), np.array(kds, dtype=float)
-            kps[self._mast_idx] = self.MAST_STIFFNESS
-            kds[self._mast_idx] = self.MAST_DAMPING
-            ctrl.set_gains(kps=kps, kds=kds)
+        targets = self._split_height(self._mast_target)
+        order = np.argsort(self._mast_idx)   # keep DOF indices ascending, with targets in matching order
         robot.apply_action(ArticulationAction(
-            joint_positions=np.array([self._mast_target]),
-            joint_indices=np.array([self._mast_idx])))
+            joint_positions=targets[order],
+            joint_indices=np.array(self._mast_idx)[order]))
 
     def reset_mast(self):
         self._mast_target = 0.0
