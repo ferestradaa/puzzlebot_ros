@@ -20,9 +20,6 @@
   <!-- Offset en X: las ruedas no están centradas, van ligeramente adelante -->
   <xacro:property name="wheel_x_offset"   value="0.05"/>
 
-<!-- Distance from base link to the front edge of the chasis -->
-  <xacro:property name="baselink_2_front"   value="0.09"/>
-  <xacro:property name="front_2_forklift"   value="0.05"/>
 
 
   <xacro:property name="caster_radius" value="0.0065"/>
@@ -38,37 +35,57 @@
   <xacro:property name="camera_width"  value="0.01"/>
   <xacro:property name="camera_height" value="0.06"/>
 
-  <!-- camera position over the chassis /OVER THE FORKS-->
-  <xacro:property name="camera_x" value="0.01"/>
+  <!-- camera pose in forks_link, so it rides up and down with the carriage -->
+  <xacro:property name="camera_x" value="0.015"/>
   <xacro:property name="camera_y" value="0.0"/>
-  <xacro:property name="camera_z" value="0.15"/>
-  <!--<xacro:property name="forks_z" value="0.005"-->
+  <xacro:property name="camera_z" value="0.1"/>
+  <!-- a link without <inertial> gets 1 kg in PhysX, so even the optical frame carries a token mass -->
+  <xacro:property name="optical_mass" value="0.0001"/>
+  <xacro:property name="optical_inertia" value="1e-9"/>
 
 
   <xacro:property name="lidar_mass"   value="0.1"/>
   <xacro:property name="lidar_x"      value="0.03"/>
   <xacro:property name="lidar_y"      value="0.0"/>
   <xacro:property name="lidar_z"      value="0.115"/>
+  <!-- sized from the lidar head in the chassis mesh; expressed in the laser frame, which is yawed 180 deg -->
+  <xacro:property name="lidar_radius" value="0.0355"/>
+  <xacro:property name="lidar_length" value="0.044"/>
+  <xacro:property name="lidar_cx"     value="-0.0095"/>
+  <xacro:property name="lidar_cz"     value="-0.014"/>
 
 
-  <!-- fork position over the baseFRONT FRONT-->
-  <xacro:property name="forks_x" value="${baselink_2_front + front_2_forklift}"/>
-  <xacro:property name="forks_y" value="0.0"/>
-  <xacro:property name="forks_z" value="0.005"/>
-  <xacro:property name="forks_yaw" value= "0.0"/>  
+  <!-- outer mast: fixed to the chassis_link -->
+  <xacro:property name="outer_mast_x" value="0.12"/>
+  <xacro:property name="outer_mast_y" value="0.0"/>
+  <xacro:property name="outer_mast_z" value="-0.04"/>
+  <xacro:property name="outer_mast_mass" value="0.1"/>
+  <xacro:property name="outer_mast_visual_x" value="0.01"/>
+  <xacro:property name="outer_mast_box" value="0.025 0.0621 0.1698"/>
+  <xacro:property name="outer_mast_com" value="-0.0032 -0.0003 0.0856"/>
 
+  <!-- inner mast: smaller cross section so it nests inside the outer one -->
+  <xacro:property name="inner_mast_mass" value="0.08"/>
+  <xacro:property name="inner_mast_visual_z" value="0.023"/>
+  <xacro:property name="inner_mast_box" value="0.012 0.0561 0.16"/>
+  <xacro:property name="inner_mast_com" value="-0.0078 -0.0005 0.1125"/>
+  <xacro:property name="inner_lower" value="-0.04"/>
+  <xacro:property name="inner_upper" value="0.25"/>
 
-<xacro:property name="mast_height"      value="0.169"/>
-<xacro:property name="mast_width"       value="0.0628"/>
-<xacro:property name="mast_thickness"   value="0.01"/>
-
-<xacro:property name="fork_length"      value="0.109"/>
-<xacro:property name="fork_width"       value="0.017"/>
-<xacro:property name="fork_thickness"   value="0.003"/>
-<xacro:property name="fork_separation"  value="0.045"/>  <!-- distance between 2 fingers -->
-
-<xacro:property name="inner_travel"     value="0.20"/>
-<xacro:property name="fork_travel"      value="0.20"/>
+  <!-- forks (carriage). 0.04 cancels the outer mast drop so the forks keep their height at rest -->
+  <xacro:property name="forks_z" value="0.04"/>
+  <xacro:property name="forks_mass" value="0.15"/>
+  <xacro:property name="forks_com" value="0.0178 0.0097 0.0196"/>
+  <xacro:property name="forks_lower" value="-0.01"/>
+  <xacro:property name="forks_upper" value="0.10"/>
+  <xacro:property name="back_origin"  value="0.0056 0.01255 0.025"/>
+  <xacro:property name="back_size"    value="0.0112 0.1087 0.0417"/>
+  <xacro:property name="tine_l_origin" value="0.0578 0.0231 0.002"/>
+  <xacro:property name="tine_r_origin" value="0.0578 -0.0224 0.002"/>
+  <xacro:property name="tine_size"    value="0.1053 0.0184 0.004"/>
+  <!-- front end of the tines, used as the pallet-engaging frame -->
+  <xacro:property name="fork_tip_x" value="0.1105"/>
+  <xacro:property name="fork_tip_z" value="0.002"/>
 
 
   <xacro:property name="mesh_chassis"

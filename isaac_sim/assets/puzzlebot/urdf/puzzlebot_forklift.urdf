@@ -294,7 +294,7 @@
   <joint name="chassis_to_camera" type="fixed">
     <parent link="forks_link"/>
     <child link="camera_link"/>
-    <origin rpy="0 0 0" xyz="0.09 0.0 0.1"/>
+    <origin rpy="0 0 0" xyz="0.015 0.0 0.1"/>
   </joint>
   <!-- optical frame -->
   <link name="camera_color_optical_frame">
