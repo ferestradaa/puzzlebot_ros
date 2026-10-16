@@ -6,6 +6,7 @@ from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node 
 from launch.conditions import IfCondition
 from launch_ros.actions import SetParameter
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -13,7 +14,8 @@ def generate_launch_description():
     pkg_share = get_package_share_directory('puzzlebot_description')
 
     urdf_file = os.path.join(pkg_share, 'urdf', 'puzzlebot.urdf.xacro') #loads xacro.urdf file that describes the whole robot
-    robot_description = Command(['xacro ', urdf_file])
+    # value_type=str: otherwise ROS tries to parse the URDF text as YAML and fails on comments containing ':'
+    robot_description = ParameterValue(Command(['xacro ', urdf_file]), value_type=str)
     rviz = LaunchConfiguration('rviz')
 
     
