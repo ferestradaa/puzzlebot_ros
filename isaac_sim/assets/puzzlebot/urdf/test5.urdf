@@ -146,18 +146,22 @@
     <origin rpy="0 0 0" xyz="0.05 -0.095 0"/>
     <axis xyz="0 1 0"/>
   </joint>
+
+
   <!-- lidar -->
   <link name="laser">
+    <!-- sized from the lidar head in the chassis mesh (r 0.0355, z 0.079-0.123 in chassis frame);
+         origin is expressed in this link's frame, which is yawed 180 deg -->
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="-0.0095 0 -0.014"/>
       <geometry>
-        <cylinder length="0.04" radius="0.05"/>
+        <cylinder length="0.044" radius="0.0355"/>
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="-0.0095 0 -0.014"/>
       <mass value="0.1"/>
-      <inertia ixx="7.583333333333335e-05" ixy="0.0" ixz="0.0" iyy="7.583333333333335e-05" iyz="0.0" izz="0.00012500000000000003"/>
+      <inertia ixx="4.76e-05" ixy="0.0" ixz="0.0" iyy="4.76e-05" iyz="0.0" izz="6.3e-05"/>
     </inertial>
   </link>
   <joint name="chassis_to_lidar" type="fixed">
@@ -168,27 +172,109 @@
   <!-- outer_mast  -->
 
 
-<link name="forks_link">
-  <visual>
+    <!-- outer mast: fixed to chassis, box spans z 0.015 to 0.185 in its own frame -->
+  <link name="outer_mast_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.01 0.0 0.0"/>
+      <geometry>
+        <mesh filename="../meshes3/outer_mast.obj"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.0032 -0.0003 0.0856"/>
+      <geometry>
+        <box size="0.025 0.0621 0.1698"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <!-- COM at the centroid of the collision box, not at the link frame -->
+      <origin rpy="0 0 0" xyz="-0.0032 -0.0003 0.0856"/>
+      <mass value="0.1"/>
+      <inertia ixx="2.73e-04" ixy="0.0" ixz="0.0" iyy="2.46e-04" iyz="0.0" izz="3.7e-05"/>
+    </inertial>
+  </link>
+  <joint name="outer_mast_joint" type="fixed">
+    <parent link="chassis_link"/>
+    <child link="outer_mast_link"/>
+    <origin rpy="0 0 0" xyz="0.12 0.0 -0.04"/>
+  </joint>
+
+  <!-- inner mast: smaller cross section so it nests inside the outer mast -->
+  <link name="inner_mast_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.023"/>
+      <geometry>
+        <mesh filename="../meshes3/inner_mast.obj"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.0078 -0.0005 0.1125"/>
+      <geometry>
+        <box size="0.012 0.0561 0.16"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.0078 -0.0005 0.1125"/>
+      <mass value="0.08"/>
+      <inertia ixx="1.916e-04" ixy="0.0" ixz="0.0" iyy="1.716e-04" iyz="0.0" izz="2.19e-05"/>
+    </inertial>
+  </link>
+  <joint name="inner_mast_joint" type="prismatic">
+    <parent link="outer_mast_link"/>
+    <child link="inner_mast_link"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
-    <geometry>
-      <mesh filename="../meshes3/forks.obj"/>
-    </geometry>
-    <material name="black"/>
-  </visual>
-  <inertial>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <mass value="0.001"/>
-    <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
-  </inertial>
-</link>
-<joint name="forks_joint" type="prismatic">
-  <parent link="chassis_link"/>
-  <child link="forks_link"/>
-  <origin rpy="0 0 0" xyz="0.12 0 0"/>
-  <axis xyz="0 0 1"/>
-  <limit effort="10" lower="0.0" upper="0.20" velocity="0.1"/>
-</joint>
+    <axis xyz="0 0 1"/>
+    <!-- travel capped so the inner section keeps overlap inside the outer one -->
+    <limit effort="10" lower="-0.05" upper="0.25" velocity="0.05"/>
+    <dynamics damping="2.0" friction="0.5"/>
+  </joint>
+
+  <!-- forks: carried by the inner mast, not by the chassis -->
+  <link name="forks_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes3/forks.obj"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <!-- carriage backplate -->
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0056 0.01255 0.025"/>
+      <geometry>
+        <box size="0.0112 0.1087 0.0417"/>
+      </geometry>
+    </collision>
+    <!-- left tine -->
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0578 0.0231 0.002"/>
+      <geometry>
+        <box size="0.1053 0.0184 0.004"/>
+      </geometry>
+    </collision>
+    <!-- right tine -->
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0578 -0.0224 0.002"/>
+      <geometry>
+        <box size="0.1053 0.0184 0.004"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0178 0.0097 0.0196"/>
+      <mass value="0.15"/>
+      <inertia ixx="1.672e-04" ixy="1.712e-05" ixz="3.227e-05" iyy="1.378e-04" iyz="-7.54e-06" izz="2.432e-04"/>
+    </inertial>
+  </link>
+  <joint name="forks_joint" type="fixed">
+    <parent link="inner_mast_link"/>
+    <child link="forks_link"/>
+    <!-- 0.04 cancels the outer mast drop so the forks keep their previous height -->
+    <origin rpy="0 0 0" xyz="0 0 0.04"/>
+  </joint>
+
+
 
   <!-- camera -->
   <link name="camera_link">
