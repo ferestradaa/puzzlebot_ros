@@ -17,11 +17,6 @@ import omni.kit.commands
 import omni.graph.core as og
 
 
-#from omni.isaac.core import World
-from isaacsim.core.api import World
-from isaacsim.core.utils.extensions import enable_extension
-
-
 from omni.isaac.core import World
 from omni.isaac.core.utils.extensions import enable_extension
 
@@ -63,12 +58,14 @@ def setup_world(world_usd_path) -> World:
     )
     add_reference_to_stage(usd_path=world_usd_path, prim_path="/World")
 
+    '''
     world.scene.add_default_ground_plane(
         z_position=0.0,
         static_friction=1.0,
         dynamic_friction=1.0,
         restitution=0.0,
     )
+    
 
     stage = omni.usd.get_context().get_stage()
     stage.DefinePrim("/World/PhysicsMaterials", "Scope")
@@ -89,110 +86,12 @@ def setup_world(world_usd_path) -> World:
             )
             print(f"[sim] GroundMat binded to: {path}")
             break
-
-    return world
-
-
-'''
-def setup_world(world_usd_path) -> World:
-    world = World(
-        stage_units_in_meters=1.0,
-        physics_dt=1.0 / 60.0,
-        rendering_dt=1.0 / 30.0,
-    )
-    add_reference_to_stage(usd_path=world_usd_path, prim_path="/World")
-    
-    stage = omni.usd.get_context().get_stage()
-    
-    # Busca el prim con PhysxSceneAPI aplicado
-    physx_scene_prim = None
-    for prim in stage.Traverse():
-        if prim.HasAPI(PhysxSchema.PhysxSceneAPI):
-            physx_scene_prim = prim
-            break
-        
-    if physx_scene_prim:
-        attr = physx_scene_prim.GetAttribute("physxScene:sleepThreshold")
-        if attr.IsValid():
-            attr.Set(0.0)
-        else:
-            # Crear el atributo si no existe
-            physx_scene_prim.CreateAttribute("physxScene:sleepThreshold", Sdf.ValueTypeNames.Float).Set(0.0)
-        
-    return world
-'''
-
-'''
-def setup_world() -> World:
-    from pxr import UsdShade, UsdPhysics, PhysxSchema, Vt, Gf, Sdf
-
-    world = World(
-        stage_units_in_meters=1.0,
-        physics_dt=1.0 / 60.0,
-        rendering_dt=1.0 / 30.0,
-    )
-    world.scene.add_default_ground_plane(
-        z_position=0.0,
-        static_friction=1.0,
-        dynamic_friction=1.0,
-        restitution=0.0,
-    )
-
-    stage = omni.usd.get_context().get_stage()
-
-    # cambiar color del plano a gris
-    for prim in stage.Traverse():
-        path = str(prim.GetPath())
-        if "defaultGroundPlane" in path and prim.GetTypeName() == "Mesh":
-            display_color = prim.GetAttribute("primvars:displayColor")
-            if display_color.IsValid():
-                display_color.Set(Vt.Vec3fArray([Gf.Vec3f(0.463, 0.471, 0.478)]))
-            else:
-                prim.CreateAttribute("primvars:displayColor", Sdf.ValueTypeNames.Color3fArray).Set(
-                    Vt.Vec3fArray([Gf.Vec3f(0.463, 0.471, 0.478)])
-                )
-            print(f"[sim] color gris aplicado a: {path}")
-            break
-
-    stage.DefinePrim("/World/PhysicsMaterials", "Scope")
-    mat_prim = stage.DefinePrim("/World/PhysicsMaterials/GroundMat", "Material")
-    gnd_mat = UsdPhysics.MaterialAPI.Apply(mat_prim)
-    gnd_mat.CreateStaticFrictionAttr().Set(1.0)
-    gnd_mat.CreateDynamicFrictionAttr().Set(1.0)
-    gnd_mat.CreateRestitutionAttr().Set(0.0)
-    PhysxSchema.PhysxMaterialAPI.Apply(mat_prim).CreateFrictionCombineModeAttr().Set("average")
-
-    ground_collision = stage.GetPrimAtPath("/World/defaultGroundPlane/CollisionPlane")
-    if ground_collision.IsValid():
-        UsdShade.MaterialBindingAPI.Apply(ground_collision).Bind(
-            UsdShade.Material(mat_prim),
-            bindingStrength=UsdShade.Tokens.strongerThanDescendants,
-            materialPurpose="physics"
-        )
-        print("[sim] GroundMat binded to /World/defaultGroundPlane/CollisionPlane")
-    else:
-        for prim in stage.Traverse():
-            path = str(prim.GetPath())
-            if "defaultGroundPlane" in path and prim.HasAPI(UsdPhysics.CollisionAPI):
-                UsdShade.MaterialBindingAPI.Apply(prim).Bind(
-                    UsdShade.Material(mat_prim),
-                    bindingStrength=UsdShade.Tokens.strongerThanDescendants,
-                    materialPurpose="physics"
-                )
-                print(f"[sim] GroundMat binded to: {path}")
-                break
-
-    for prim in stage.Traverse():
-        if prim.HasAPI(PhysxSchema.PhysxSceneAPI):
-            attr = prim.GetAttribute("physxScene:sleepThreshold")
-            if attr.IsValid():
-                attr.Set(0.0)
-            else:
-                prim.CreateAttribute("physxScene:sleepThreshold", Sdf.ValueTypeNames.Float).Set(0.0)
-            break
-
-    return world
+            
     '''
+
+    return world
+
+
 
 def load_robot(usd_path: str, robot_prim_path):
     
@@ -255,6 +154,9 @@ def main():
     simulation_app.update()
 
     puzzlebot.fix_wheel_drives_live()
+    puzzlebot.fix_mast_drive_live()
+    puzzlebot.fix_fork_collision_live()
+    puzzlebot.apply_textures()
     puzzlebot.fix_wheel_friction()
     puzzlebot.fix_caster_wheel()
     puzzlebot.tune_solver()
@@ -302,6 +204,7 @@ def main():
     world.reset()
 
     wheeled_robot.set_world_pose(position=np.array([4.0, 0.9, 0.0]))
+    RESPAWN_POS = np.array([1.0, 1.0, 0.0])
 
     diff_controller = DifferentialController(
         name="diff_ctrl",
@@ -334,8 +237,15 @@ def main():
                 wheel_base=WHEEL_BASE,
             )
             step = 0
+            wheeled_robot.set_world_pose(position=RESPAWN_POS,
+                                         orientation=np.array([1.0, 0.0, 0.0, 0.0]))
+            wheeled_robot.set_linear_velocity(np.zeros(3))
+            wheeled_robot.set_angular_velocity(np.zeros(3))
+            puzzlebot.reset_mast()
 
         puzzlebot._read_twist_from_graph()
+        puzzlebot.update_mast(wheeled_robot)
+
         cmd = np.array([puzzlebot._twist["v"],
                         puzzlebot._twist["w"]])
 
