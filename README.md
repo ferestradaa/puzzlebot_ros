@@ -2,7 +2,7 @@
 
 
 <p align="center">
-  <img src="docs/images/puzz.png" alt="RViz visualization" width="800">
+  <img src="docs/img/puzz.png" alt="RViz visualization" width="800">
 </p>
 
 
