@@ -1,0 +1,2269 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary cameraSettings = {
+            dictionary Front = {
+                double3 position = (5, 0, 0)
+                double radius = 5
+            }
+            dictionary Perspective = {
+                double3 position = (2.209537921802606, 1.220865273262335, 0.5580152151524432)
+                double3 target = (1.3776855924236546, 2.3781944545439146, 0.0820116689827331)
+            }
+            dictionary Right = {
+                double3 position = (0, -5, 0)
+                double radius = 5
+            }
+            dictionary Top = {
+                double3 position = (0, 0, 5)
+                double radius = 5
+            }
+            string boundCamera = "/OmniverseKit_Persp"
+        }
+        dictionary omni_layer = {
+            string authoring_layer = "./track_world.usda"
+        }
+        dictionary renderSettings = {
+        }
+    }
+    defaultPrim = "World"
+    endTimeCode = 1000000
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Xform "puzz_scene"
+    {
+        double3 xformOp:rotateZYX = (0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZYX", "xformOp:scale"]
+
+        def Scope "scene"
+        {
+            def Mesh "floor" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                float3[] extent = [(-0.04, -0.04, -0.05), (4.88, 3.71, 0)]
+                int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                rel material:binding = </World/puzz_scene/Looks/Floor>
+                rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token physics:approximation = "convexHull"
+                point3f[] points = [(-0.04, -0.04, -0.05), (4.88, -0.04, -0.05), (4.88, 3.71, -0.05), (-0.04, 3.71, -0.05), (-0.04, -0.04, 0), (4.88, -0.04, 0), (4.88, 3.71, 0), (-0.04, 3.71, 0)]
+                texCoord2f[] primvars:st = [(-0.025, -0.03125), (-0.025, -0.03125), (3.05, -0.03125), (3.05, -0.03125), (-0.025, -0.025), (3.05, -0.025), (3.05, 2.31875), (-0.025, 2.31875), (-0.025, -0.03125), (3.05, -0.03125), (3.05, 0), (-0.025, 0), (3.05, -0.03125), (3.05, -0.03125), (3.05, 0), (3.05, 0), (3.05, -0.03125), (-0.025, -0.03125), (-0.025, 0), (3.05, 0), (-0.025, -0.03125), (-0.025, -0.03125), (-0.025, 0), (-0.025, 0)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+            }
+        }
+
+        def Scope "obstacles" (
+            active = true
+        )
+        {
+            def Mesh "wall_west" (
+                apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.04, -0.04, 0), (-0.01, 3.71, 0.6)]
+                int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                rel material:binding = </World/puzz_scene/Looks/MDF> (
+                    bindMaterialAs = "strongerThanDescendants"
+                )
+                rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+                point3f[] points = [(-0.04, -0.04, 0), (-0.01, -0.04, 0), (-0.01, 3.71, 0), (-0.04, 3.71, 0), (-0.04, -0.04, 0.6), (-0.01, -0.04, 0.6), (-0.01, 3.71, 0.6), (-0.04, 3.71, 0.6)]
+                uniform token subdivisionScheme = "none"
+                uniform token[] xformOpOrder = []
+            }
+
+            def Mesh "wall_east" (
+                apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(4.85, -0.04, 0), (4.88, 3.71, 0.6)]
+                int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                rel material:binding = </World/puzz_scene/Looks/MDF> (
+                    bindMaterialAs = "strongerThanDescendants"
+                )
+                rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+                point3f[] points = [(4.85, -0.04, 0), (4.88, -0.04, 0), (4.88, 3.71, 0), (4.85, 3.71, 0), (4.85, -0.04, 0.6), (4.88, -0.04, 0.6), (4.88, 3.71, 0.6), (4.85, 3.71, 0.6)]
+                uniform token subdivisionScheme = "none"
+                uniform token[] xformOpOrder = []
+            }
+
+            def Mesh "wall_south" (
+                apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.04, -0.04, 0), (4.88, -0.01, 0.6)]
+                int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                rel material:binding = </World/puzz_scene/Looks/MDF> (
+                    bindMaterialAs = "strongerThanDescendants"
+                )
+                rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+                point3f[] points = [(-0.04, -0.04, 0), (4.88, -0.04, 0), (4.88, -0.01, 0), (-0.04, -0.01, 0), (-0.04, -0.04, 0.6), (4.88, -0.04, 0.6), (4.88, -0.01, 0.6), (-0.04, -0.01, 0.6)]
+                uniform token subdivisionScheme = "none"
+                uniform token[] xformOpOrder = []
+            }
+
+            def Mesh "wall_north" (
+                apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.04, 3.68, 0), (4.88, 3.71, 0.6)]
+                int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                rel material:binding = </World/puzz_scene/Looks/MDF> (
+                    bindMaterialAs = "strongerThanDescendants"
+                )
+                rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+                point3f[] points = [(-0.04, 3.68, 0), (4.88, 3.68, 0), (4.88, 3.71, 0), (-0.04, 3.71, 0), (-0.04, 3.68, 0.6), (4.88, 3.68, 0.6), (4.88, 3.71, 0.6), (-0.04, 3.71, 0.6)]
+                uniform token subdivisionScheme = "none"
+                uniform token[] xformOpOrder = []
+            }
+        }
+
+        def Scope "apriltags"
+        {
+            def Mesh "april_0" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_0/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.7071067811865476, 0.7071067811865475, 0, 0)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (1.27, 0, 0.17470852435569678)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_0/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_0/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_0/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 0
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        int inputs:tag_size = 10
+                        int inputs:tags_per_row = 24
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_1" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_1/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (-0.01850989765926687, -0.006170592427165246, 0.7070798567270165, 0.7068644733530208)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (3.07, 0, 0.19735089263380826)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_1/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_1/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_1/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 1
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_02" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_02/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.006170592427164983, 0.006170592427165323, -0.7070798567270167, -0.7070798567270159)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (4.27, 0, 0.21294724404627308)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_02/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_02/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_02/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 2
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_03" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_03/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (-0.4911976443595539, -0.49119764435955404, 0.5086500507968374, 0.5086500507968374)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (4.84, 0.54, 0.21294724404627882)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_03/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_03/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_03/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 3
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_04" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_04/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.5000000000000001, 0.5, -0.5, -0.49999999999999994)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (4.84, 1.86, 0.30268878999155246)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_04/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_04/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_04/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 4
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_05" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_05/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (-0.49999999999999983, 0.5000000000000001, -0.5, 0.5000000000000002)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (4.84, 3.39, 0.30268878999155246)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_05/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_05/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_05/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 5
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_06" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_06/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.7071067811865476, 0.7071067811865475, 0, 0)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (4.28, 3.66, 0.20269)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_06/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_06/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_06/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 6
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_08" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_08/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (-0.6427876096865394, -0.766044443118978, -8.626608320022359e-17, -7.547304326803712e-18)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (3.08, 3.66, 0.20269)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_08/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_08/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_08/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 8
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_09" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_09/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.7071067811865475, 0.7071067811865476, 8.659560562354932e-17, 1.232595164407831e-32)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (1.27, 3.66, 0.20269)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_09/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_09/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_09/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 9
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        int inputs:tag_size = 10
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_10" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_10/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.504344229281273, 0.5043442292812726, 0.4956176937828986, 0.4956176937828983)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (-2.9726663028261865e-16, 2.821137700751414, 0.20000000000000073)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_10/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_10/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_10/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 10
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_11" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_11/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.4999999999999999, 0.5, 0.5000000000000001, 0.5000000000000002)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (0, 2.02, 0.30268878999155246)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_11/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_11/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_11/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 11
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_12" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_12/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.4956176937828988, 0.5043442292812726, 0.4956176937828986, 0.5043442292812725)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (0, 0.75, 0.20269)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_12/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_12/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_12/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 12
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_13" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_13/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (6.123233995736766e-17, 0.7071067811865476, 4.329780281177466e-17, 0.7071067811865475)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (1.27, 1.24, 0.1)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_13/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_13/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_13/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:spacing = 1
+                        int inputs:tag_id = 13
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        int inputs:tag_size = 10
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_14" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_14/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.4956176937828988, 0.5043442292812726, -0.4956176937828986, -0.5043442292812725)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (2.35, 1.25, 0.2)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_14/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_14/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_14/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 14
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_15" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_15/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (0.5000000000000002, 0.4999999999999999, -0.4999999999999999, -0.4999999999999999)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (2.3737609932730614, 2.44, 0.20268999999999993)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_15/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_15/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_15/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 15
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+
+            def Mesh "april_16" (
+                apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                rel material:binding = </World/puzz_scene/apriltags/april_16/AprilTag> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                point3f[] points = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0)]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "faceVarying"
+                )
+                uniform token subdivisionScheme = "none"
+                quatd xformOp:orient = (-0.49999999999999983, 0.5000000000000001, -0.5, 0.5000000000000002)
+                double3 xformOp:scale = (0.14, 0.14, 0.1)
+                double3 xformOp:translate = (3.34, 1.96, 0.10269)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "AprilTag"
+                {
+                    token outputs:mdl:displacement.connect = </World/puzz_scene/apriltags/april_16/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:surface.connect = </World/puzz_scene/apriltags/april_16/AprilTag/Shader.outputs:out>
+                    token outputs:mdl:volume.connect = </World/puzz_scene/apriltags/april_16/AprilTag/Shader.outputs:out>
+
+                    def Shader "Shader"
+                    {
+                        uniform token info:implementationSource = "sourceAsset"
+                        uniform asset info:mdl:sourceAsset = @./materials/AprilTag/AprilTag.mdl@
+                        uniform token info:mdl:sourceAsset:subIdentifier = "AprilTag"
+                        int inputs:tag_id = 16
+                        custom asset inputs:tag_mosaic = @./materials/AprilTag/Textures/tag36h11.png@
+                        token outputs:out
+                    }
+                }
+            }
+        }
+
+        def Scope "Looks"
+        {
+            def Material "MDF"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/MDF/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/mdf_albedo.png@
+                    asset inputs:normalmap_texture = @./textures/mdf_normal.png@
+                    bool inputs:project_uvw = 1
+                    float inputs:reflection_roughness_constant = 0.78
+                    float2 inputs:texture_scale = (0.8, 0.8)
+                    bool inputs:world_or_object = 1
+                    token outputs:out
+                }
+            }
+
+            def Material "Box_01"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Box_01/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/boxes/box_01.png@
+                    float inputs:reflection_roughness_constant = 0.8
+                    float2 inputs:texture_scale = (1, 1)
+                    token outputs:out
+                }
+            }
+
+            def Material "Box_02"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Box_02/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/boxes/box_02.png@
+                    float inputs:reflection_roughness_constant = 0.8
+                    float2 inputs:texture_scale = (1, 1)
+                    token outputs:out
+                }
+            }
+
+            def Material "Box_03"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Box_03/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/boxes/box_03.png@
+                    float inputs:reflection_roughness_constant = 0.8
+                    float2 inputs:texture_scale = (1, 1)
+                    token outputs:out
+                }
+            }
+
+            def Material "Box_04"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Box_04/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/boxes/box_04.png@
+                    float inputs:reflection_roughness_constant = 0.8
+                    float2 inputs:texture_scale = (1, 1)
+                    token outputs:out
+                }
+            }
+
+            def Material "Box_05"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Box_05/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/boxes/box_05.png@
+                    float inputs:reflection_roughness_constant = 0.8
+                    float2 inputs:texture_scale = (1, 1)
+                    token outputs:out
+                }
+            }
+
+            def Material "Box_06"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Box_06/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/boxes/box_06.png@
+                    float inputs:reflection_roughness_constant = 0.8
+                    float2 inputs:texture_scale = (1, 1)
+                    token outputs:out
+                }
+            }
+
+            def Material "Box_07"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Box_07/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/boxes/box_07.png@
+                    float inputs:reflection_roughness_constant = 0.8
+                    float2 inputs:texture_scale = (1, 1)
+                    token outputs:out
+                }
+            }
+
+            def Material "Box_08"
+            {
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Box_08/Shader.outputs:out>
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    asset inputs:diffuse_texture = @./textures/boxes/box_08.png@
+                    float inputs:reflection_roughness_constant = 0.8
+                    float2 inputs:texture_scale = (1, 1)
+                    token outputs:out
+                }
+            }
+
+            def Material "Floor"
+            {
+                rel material:binding (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                token outputs:mdl:displacement.connect = </World/puzz_scene/Looks/Floor/Shader.outputs:out>
+                token outputs:mdl:surface.connect = </World/puzz_scene/Looks/Floor/Shader.outputs:out>
+                token outputs:mdl:volume.connect = </World/puzz_scene/Looks/Floor/Shader.outputs:out>
+                bool primvars:doNotCastShadows = 0
+
+                def Shader "Shader"
+                {
+                    uniform token info:implementationSource = "sourceAsset"
+                    uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                    uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                    float inputs:bump_factor = 1 (
+                        doc = "Strength of normal map"
+                    )
+                    float inputs:detail_bump_factor = 1 (
+                        doc = "Strength of the detail normal"
+                    )
+                    float2 inputs:detail_texture_scale = (0.2, 0.2) (
+                        doc = "Larger numbers increase the size of the detail texture"
+                    )
+                    asset inputs:diffuse_texture = @./textures/T_Concrete_Floor_D_Albedo.png@ (
+                        colorSpace = "sRGB"
+                    )
+                    bool inputs:enable_ORM_texture = 1 (
+                        doc = "The ORM texture will be used to extract the Occlusion, Roughness and Metallic textures from R,G,B channels"
+                    )
+                    float inputs:metallic_texture_influence = 1 (
+                        doc = "Blends between the constant value and the lookup of the metallic texture"
+                    )
+                    asset inputs:normalmap_texture = @./textures/T_Concrete_Floor_D_Normal.png@ (
+                        colorSpace = "raw"
+                    )
+                    asset inputs:ORM_texture = @./textures/T_Concrete_Floor_D_ORM.png@ (
+                        colorSpace = "raw"
+                        doc = "Texture that has Occlusion, Roughness and Metallic maps stored in their respective R, G and B channels"
+                    )
+                    float inputs:reflection_roughness_constant = 0.5 (
+                        doc = "Higher roughness values lead to more blurry reflections"
+                    )
+                    float inputs:reflection_roughness_texture_influence = 1 (
+                        doc = "Blends between the constant value and the lookup of the roughness texture"
+                    )
+                    float inputs:specular_level = 1 (
+                        doc = "The specular level (intensity) of the material"
+                    )
+                    float2 inputs:texture_scale = (0.4, 0.4) (
+                        doc = "Larger number increases size of texture."
+                    )
+                    token outputs:out
+                }
+            }
+        }
+
+        def Scope "pallets"
+        {
+            def Xform "pallet_02" (
+                apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/pallet.usda@
+            )
+            {
+                rel material:binding = </World/puzz_scene/pallets/pallet_02/OmniSurface> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                vector3f physics:angularVelocity = (5.6739874, -1.2008973, 0.01204668)
+                float physics:mass = 0.05
+                vector3f physics:velocity = (-0.00040451443, -0.011497414, 0.0041840835)
+                int physxRigidBody:solverPositionIterationCount = 16
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.99999976, 0.000106515276, -0.000012908851, 0.000681596)
+                double xformOp:rotateX:unitsResolve = 90
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (2.1497609615325928, 1.195934772491455, 0.07007944583892822)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+            }
+
+            def Xform "pallet_03" (
+                apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/pallet.usda@
+            )
+            {
+                rel material:binding = </World/puzz_scene/pallets/pallet_03/OmniSurface> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                vector3f physics:angularVelocity = (-0.1069838, 1.7014445, -0.6737331)
+                float physics:mass = 0.05
+                vector3f physics:velocity = (-0.0027117592, 0.008666859, 0.005572429)
+                int physxRigidBody:solverPositionIterationCount = 16
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.99999434, 0.00012705004, -0.000041217478, -0.0033690631)
+                double xformOp:rotateX:unitsResolve = 90
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (2.1736395359039307, 2.3890247344970703, 0.07007580995559692)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+            }
+
+            def Xform "stack_01"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 0
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.905001225564498, 2.4417747418989957, 0.2776602358511838)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Xform "pallet" (
+                    apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                    instanceable = true
+                    kind = "component"
+                    prepend references = @./assets/pallet.usda@
+                )
+                {
+                    rel material:binding = </World/puzz_scene/pallets/stack_01/pallet/OmniSurface> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    vector3f physics:angularVelocity = (-2.999461, -9.027407, 1.1777512)
+                    float physics:mass = 0.05
+                    vector3f physics:velocity = (0.00061130023, 0.011955201, 0.034961432)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    quatf xformOp:orient = (0.99999887, 0.0005767739, 0.0013862316, -0.0002108681)
+                    double xformOp:rotateX:unitsResolve = 90
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.060072366148233414, -0.050283804535865784, -0.003286615014076233)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+                }
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_03>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (-0.21863034, -0.097492844, 2.6993508)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.00012886504, -0.0027302885, 0.06608233)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.1), (0.060000002, -0.050313223, 0.1), (0.060000002, 0.050313223, 0.1), (-0.060000002, 0.050313223, 0.1)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.9999989, 0.0013027125, 0.0006169114, -0.00034131954)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.00001901635914691724, -0.00006355453660944477, 0.013237789273262024)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Mesh "box_02" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_04>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (7.3708677, -0.5733829, 3.746833)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.0006396868, -0.005254403, 0.07044141)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.1), (0.060000002, -0.050313223, 0.1), (0.060000002, 0.050313223, 0.1), (-0.060000002, 0.050313223, 0.1)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.9998566, 0.0014721258, 0.00069305976, -0.01685672)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0.0000850533542688936, -0.00030388045706786215, 0.11319611966609955)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "stack_02"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 0
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.919429537675698, 1.240653498141333, 0.07976799677568486)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Xform "pallet" (
+                    apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                    instanceable = true
+                    kind = "component"
+                    prepend references = @./assets/pallet.usda@
+                )
+                {
+                    rel material:binding = </World/puzz_scene/pallets/stack_02/pallet/OmniSurface> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    vector3f physics:angularVelocity = (-161.08592, 21.632965, 71.150665)
+                    float physics:mass = 0.05
+                    vector3f physics:velocity = (-0.044346057, 0.021375425, -0.019177027)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    quatf xformOp:orient = (0.9999891, 0.0037970387, 0.0007679181, -0.0026140618)
+                    double xformOp:rotateX:unitsResolve = 90
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.05803465470671654, -0.042130932211875916, -0.010045947507023811)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+                }
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_05>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (-352.93143, -37.933483, 27.520103)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.062727295, 0.1822305, -0.0047119735)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.1), (0.060000002, -0.050313223, 0.1), (0.060000002, 0.050313223, 0.1), (-0.060000002, 0.050313223, 0.1)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.9999188, 0.0072979806, 0.0009791327, -0.010400567)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0.0009841948049142957, 0.008400933817029, 0.0069896928034722805)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "stack_03"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 0
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.6223809600323191, 1.2472856384428865, 0.06498741075581743)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Xform "pallet" (
+                    apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                    instanceable = true
+                    kind = "component"
+                    prepend references = @./assets/pallet.usda@
+                )
+                {
+                    rel material:binding = </World/puzz_scene/pallets/stack_03/pallet/OmniSurface> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    vector3f physics:angularVelocity = (5.8822703, 144.6107, -4.665943)
+                    float physics:mass = 0.05
+                    vector3f physics:velocity = (0.043445647, -0.009771157, -0.13764429)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    quatf xformOp:orient = (0.9999995, -0.000042642183, -0.0009457017, -0.000042806092)
+                    double xformOp:rotateX:unitsResolve = 90
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.05852638557553291, -0.05017951503396034, 0.005200724117457867)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+                }
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_06>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (-22.207811, 45.87508, 0.31708667)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (0.07632654, 0.016441165, -0.099175185)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.07), (0.060000002, -0.050313223, 0.07), (0.060000002, 0.050313223, 0.07), (-0.060000002, 0.050313223, 0.07)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.99955213, -0.011907919, 0.027454536, 0.00016561664)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0.0028385042678564787, 0.0001874822482932359, 0.02838430181145668)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Mesh "box_02" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_07>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (-17.898087, 47.90915, 0.040929835)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (0.13647582, 0.043694556, -0.08155987)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.09), (0.060000002, -0.050313223, 0.09), (0.060000002, 0.050313223, 0.09), (-0.060000002, 0.050313223, 0.09)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.99931836, -0.010549511, 0.028193515, -0.021368105)
+                    float3 xformOp:scale = (1, 1, 0.5)
+                    double3 xformOp:translate = (0.005578768439590931, 0.0021950858645141125, 0.09932293742895126)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "stack_04"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 0
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.3827091586258071, 2.4286800728562565, 0.06241573112641554)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Xform "pallet" (
+                    apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                    instanceable = true
+                    kind = "component"
+                    prepend references = @./assets/pallet.usda@
+                )
+                {
+                    rel material:binding = </World/puzz_scene/pallets/stack_04/pallet/OmniSurface> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    vector3f physics:angularVelocity = (-28.39206, 49.276794, 5.404549)
+                    float physics:mass = 0.05
+                    vector3f physics:velocity = (0.012191838, -0.014409033, 0.010571737)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    quatf xformOp:orient = (0.999979, 0.0011777232, 0.0033013592, 0.0054469896)
+                    double xformOp:rotateX:unitsResolve = 90
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.051764264702796936, -0.048791300505399704, 0.007836009375751019)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+                }
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_08>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (119.1382, 105.395515, -2.3576493)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (0.016160686, 0.07355924, 0.084206715)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.07), (0.060000002, -0.050313223, 0.07), (0.060000002, 0.050313223, 0.07), (-0.060000002, 0.050313223, 0.07)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.9999808, -0.00016429073, 0.0059985765, 0.001555492)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0.0031187403947114944, 0.0017651213565841317, 0.02444322779774666)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "stack_05"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 99
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (3.27581663957015, 1.7267676706743504, 0.06978232212146322)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Xform "pallet" (
+                    apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                    instanceable = true
+                    kind = "component"
+                    prepend references = @./assets/pallet.usda@
+                )
+                {
+                    rel material:binding = </World/puzz_scene/pallets/stack_05/pallet/OmniSurface> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    vector3f physics:angularVelocity = (84.8584, 74.338104, 49.172016)
+                    float physics:mass = 0.05
+                    vector3f physics:velocity = (-0.03165796, 0.064239874, 0.12350896)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    quatf xformOp:orient = (0.9999808, 0.00083419227, 0.00041135566, -0.0061232364)
+                    double xformOp:rotateX:unitsResolve = 90
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.06266433745622635, -0.05066472291946411, 0.0002533068472985178)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+                }
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_01>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (52.157158, 64.051674, -85.32995)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.06849436, 0.064914085, 0.104795925)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.1), (0.060000002, -0.050313223, 0.1), (0.060000002, 0.050313223, 0.1), (-0.060000002, 0.050313223, 0.1)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.999967, 0.0043126876, -0.00006133742, -0.0068865116)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.0030154306441545486, -0.001158104627393186, 0.016569146886467934)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Mesh "box_02" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_02>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (97.740036, 106.82508, -27.673414)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.10453136, 0.14600816, 0.1357638)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.07), (0.060000002, -0.050313223, 0.07), (0.060000002, 0.050313223, 0.07), (-0.060000002, 0.050313223, 0.07)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.9995817, 0.0037348927, 0.00074988464, -0.02866911)
+                    float3 xformOp:scale = (1, 1, 0.5)
+                    double3 xformOp:translate = (-0.0020336902234703302, -0.001212937175296247, 0.1164373829960823)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "stack_06"
+            {
+                float xformOp:rotateX = 87
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 89
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (3.2757727174802342, 2.1937821428312407, 0.1395240688388831)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Xform "pallet" (
+                    apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                    instanceable = true
+                    kind = "component"
+                    prepend references = @./assets/pallet.usda@
+                )
+                {
+                    rel material:binding = </World/puzz_scene/pallets/stack_06/pallet/OmniSurface> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    vector3f physics:angularVelocity = (-3.9135234, 9.570523, -0.6328906)
+                    float physics:mass = 0.05
+                    vector3f physics:velocity = (0.0072636474, -0.004885091, -0.32275945)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    quatf xformOp:orient = (0.9999087, 0.010568412, -0.008369701, -0.00091673963)
+                    double xformOp:rotateX:unitsResolve = 90
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.06605058163404465, -0.050206996500492096, 0.0046020932495594025)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+                }
+            }
+
+            def Xform "stack_07"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 0
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.267345665576938, 1.1922822794433974, 0.2868548395093864)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Xform "pallet" (
+                    apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                    instanceable = true
+                    kind = "component"
+                    prepend references = @./assets/pallet.usda@
+                )
+                {
+                    rel material:binding = </World/puzz_scene/pallets/stack_07/pallet/OmniSurface> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    vector3f physics:angularVelocity = (0.06587684, 2.3527284, 0.021674024)
+                    float physics:mass = 0.05
+                    vector3f physics:velocity = (0.0018397465, 0.00054723583, 0.011307558)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    quatf xformOp:orient = (1, 0.000063964726, 0.00004141861, 0.0000076568585)
+                    double xformOp:rotateX:unitsResolve = 90
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-4.755287079660775e-7, -0.00002880902320612222, -0.01230133231729269)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+                }
+            }
+
+            def Xform "loose_box_01"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 97
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (3.280129748412463, 1.4206166999214622, 0.060202116908332534)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_01>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (1.4397295, 2.4835038, 1.0315901)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (0.010124245, -0.0053121257, 0.018867401)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.08), (0.060000002, -0.050313223, 0.08), (0.060000002, 0.050313223, 0.08), (-0.060000002, 0.050313223, 0.08)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.9999991, 0.00029168604, -0.000054389362, -0.0012833542)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.0017829753924161196, 0.0006645875400863588, 0.006910894997417927)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "loose_box_02"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = -20
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.9771841794150633, 2.431565821249255, 0.0746917035205394)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_02>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (-15.699804, 7.340535, -2.1369016)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.0060246764, 0.036368284, 0.02165735)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.07), (0.060000002, -0.050313223, 0.07), (0.060000002, 0.050313223, 0.07), (-0.060000002, 0.050313223, 0.07)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.9999999, -0.00028644898, 0.00030200148, 0.0002707271)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0.00006280479283304885, -0.0002705044753383845, -0.007547473534941673)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "pallet_01" (
+                apiSchemas = ["MaterialBindingAPI", "PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsMassAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/pallet.usda@
+            )
+            {
+                rel material:binding = </World/puzz_scene/pallets/pallet_1/OmniSurface> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                vector3f physics:angularVelocity = (1.1047857, 1.6332784, 0.12962794)
+                float physics:mass = 0.05
+                vector3f physics:velocity = (-0.0005503676, -0.0002922743, 0.009548757)
+                int physxRigidBody:solverPositionIterationCount = 16
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.9999998, 0.000057629248, 0.000038590504, -0.0005579615)
+                double xformOp:rotateX:unitsResolve = 90
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.3062119483947754, 1.1946351528167725, 0.07009109109640121)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:rotateX:unitsResolve"]
+            }
+
+            def Xform "loose_box_03"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = -14
+                float3 xformOp:scale = (1.5, 1.5, 2)
+                double3 xformOp:translate = (4.203296883714002, 2.9240432943948877, 0.027402848971150848)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_02>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (18.390995, -25.220942, -1.4788356)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.02242333, -0.021280818, -0.31914532)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.07), (0.060000002, -0.050313223, 0.07), (0.060000002, 0.050313223, 0.07), (-0.060000002, 0.050313223, 0.07)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.99997854, -0.0065335426, 0.0005247275, 0.0000544322)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-0.0061882357113063335, -0.0001001272103167139, -0.00789732951670885)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Mesh "box_02" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_02>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (18.390995, -25.220942, -1.4788356)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.02242333, -0.021280818, -0.31914532)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.07), (0.060000002, -0.050313223, 0.07), (0.060000002, 0.050313223, 0.07), (-0.060000002, 0.050313223, 0.07)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.99997854, -0.0065335426, 0.0005247275, 0.0000544322)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0.11749742180109024, -0.00010018737521022558, -0.00789732951670885)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "loose_box_04"
+            {
+                float xformOp:rotateX = 0
+                float xformOp:rotateY = 0
+                float xformOp:rotateZ = 97
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0.5607122880303554, 1.661026190673568, 0.02481149939454068)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+
+                def Mesh "box_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_01>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (0.07728287, -2.9991505, 0.52542084)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.0044778213, -0.0025242872, -0.32126546)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.08), (0.060000002, -0.050313223, 0.08), (0.060000002, 0.050313223, 0.08), (-0.060000002, 0.050313223, 0.08)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.999999, -0.00087646506, 0.0001290666, -0.0011391378)
+                    float3 xformOp:scale = (1.5, 1.5, 1)
+                    double3 xformOp:translate = (-0.00183251837734133, 0.0007883054204285145, -0.021414831280708313)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Mesh "box_02" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_01>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (0.07728287, -2.9991505, 0.52542084)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.0044778213, -0.0025242872, -0.32126546)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.08), (0.060000002, -0.050313223, 0.08), (0.060000002, 0.050313223, 0.08), (-0.060000002, 0.050313223, 0.08)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.999999, -0.00087646506, 0.0001290666, -0.0011391378)
+                    float3 xformOp:scale = (1.5, 1.5, 1)
+                    double3 xformOp:translate = (0.18291155993938446, -0.02189541608095169, -0.021414831280708313)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Mesh "box_03" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_01>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (0.07728287, -2.9991505, 0.52542084)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.0044778213, -0.0025242872, -0.32126546)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.08), (0.060000002, -0.050313223, 0.08), (0.060000002, 0.050313223, 0.08), (-0.060000002, 0.050313223, 0.08)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.999999, -0.00087646506, 0.0001290666, -0.0011391378)
+                    float3 xformOp:scale = (1.5, 1.5, 1)
+                    double3 xformOp:translate = (0.18291155993938446, -0.02189541608095169, 0.07485257089138031)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Mesh "box_04" (
+                    prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                )
+                {
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 3, 2, 1, 4, 5, 6, 7, 0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7]
+                    rel material:binding = </World/puzz_scene/Looks/Box_01>
+                    rel material:binding:physics = </World/puzz_scene/PhysicsMaterials/default> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    normal3f[] normals = [(0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                        interpolation = "faceVarying"
+                    )
+                    vector3f physics:angularVelocity = (0.07728287, -2.9991505, 0.52542084)
+                    uniform token physics:approximation = "convexHull"
+                    float physics:mass = 0.1
+                    vector3f physics:velocity = (-0.0044778213, -0.0025242872, -0.32126546)
+                    int physxRigidBody:solverPositionIterationCount = 16
+                    int physxRigidBody:solverVelocityIterationCount = 1
+                    point3f[] points = [(-0.060000002, -0.050313223, 0), (0.060000002, -0.050313223, 0), (0.060000002, 0.050313223, 0), (-0.060000002, 0.050313223, 0), (-0.060000002, -0.050313223, 0.08), (0.060000002, -0.050313223, 0.08), (0.060000002, 0.050313223, 0.08), (-0.060000002, 0.050313223, 0.08)]
+                    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)] (
+                        interpolation = "faceVarying"
+                    )
+                    uniform token subdivisionScheme = "none"
+                    quatf xformOp:orient = (0.999999, -0.00087646506, 0.0001290666, -0.0011391378)
+                    float3 xformOp:scale = (1.5, 1.5, 1)
+                    double3 xformOp:translate = (-0.005078410729765892, 0.0011868509463965893, 0.07485257089138031)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+        }
+
+        def Scope "racks"
+        {
+            def Xform "rack_01" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (-3.7611291, 0.12266005, 0.025472106)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.00032765124, 0.011363424, 0.009985239)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.70982903, 0.000073052346, -0.000077701676, 0.704374)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (2.0801196098327637, 2.440622091293335, -0.0000050514936447143555)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_02" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (7.0876083, -0.017519094, 0.25594792)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.00075004064, -0.021210399, 0.0038728134)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.7071312, 0.00008722479, -0.00009292818, 0.70708233)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (2.0681979656219482, 1.2460746765136719, -0.000006973743438720703)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_03" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (-0.023876878, 0.04968792, -0.0067149512)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.00024311981, 0.000025740126, 0.0077695525)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.70710623, 0.000026615176, -0.00002907915, 0.7071073)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.5033535957336426, 1.2433334589004517, -0.0000016987323760986328)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_04" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (0.4586867, 0.042765845, -0.099029124)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.00041844844, -0.0010493487, 0.007582316)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.7040266, -0.00003333247, 0.000035241814, 0.7101736)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.5202126502990723, 2.4302263259887695, 0.000003814697265625)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_05" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (0.32467255, 1.2476057, -0.2444358)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.0036291352, 0.0011130292, 0.0048420853)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.9999981, 0.000013836456, 0.0002683239, 0.0019457)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (3.281973123550415, 1.5782450437545776, 0.000013649463653564453)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_06" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (-0.018754408, -1.5264372, -0.009168657)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (-0.004563679, 0.000014770487, 0.006798885)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.9999971, -0.0000014897378, -0.000075038166, -0.0024163395)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (3.2820141315460205, 2.1377065181732178, -0.00000451505184173584)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_07" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (1.5517542, -0.011570294, -0.009482304)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.0000065778777, -0.0046393373, 0.0067833695)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.7071074, 0.000052362884, -0.000054084798, 0.7071061)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (2.6898300647735596, 3.587702512741089, -0.0000045299530029296875)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_08" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (1.5404223, -0.011391966, -0.009435802)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.0000064171986, -0.004603475, 0.0067894906)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.7071075, 0.00005266897, -0.00005447767, 0.70710605)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (2.0989279747009277, 3.587702512741089, -0.0000045746564865112305)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_09" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (1.5313848, -0.011364153, -0.009253869)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.0000062036643, -0.004576026, 0.0067952247)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.70710725, 0.000052253323, -0.00005404497, 0.7071063)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (1.9687856435775757, 0.07039131969213486, -0.0000045746564865112305)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "rack_10" (
+                apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+                instanceable = true
+                kind = "component"
+                prepend references = @./assets/rack.usda@
+            )
+            {
+                vector3f physics:angularVelocity = (1.5371745, -0.0113911005, -0.009326015)
+                float physics:mass = 0.3
+                vector3f physics:velocity = (0.0000063531133, -0.0045935363, 0.0067916154)
+                int physxRigidBody:solverPositionIterationCount = 8
+                int physxRigidBody:solverVelocityIterationCount = 1
+                quatf xformOp:orient = (0.70710737, 0.00005254672, -0.000054351185, 0.7071062)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (2.573279857635498, 0.0891595333814621, -0.000004500150680541992)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Scope "PhysicsMaterials"
+        {
+            def Material "default" (
+                prepend apiSchemas = ["PhysicsMaterialAPI"]
+            )
+            {
+                float physics:dynamicFriction = 0.4
+                float physics:restitution = 0.05
+                float physics:staticFriction = 0.5
+            }
+        }
+    }
+
+    def Mesh "Cube" (
+        active = false
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxConvexHullCollisionAPI", "PhysicsMeshCollisionAPI"]
+    )
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+        int[] faceVertexIndices = [0, 1, 3, 2, 4, 6, 7, 5, 6, 2, 3, 7, 4, 5, 1, 0, 4, 0, 2, 6, 5, 7, 3, 1]
+        normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0)] (
+            interpolation = "faceVarying"
+        )
+        uniform token physics:approximation = "convexHull"
+        bool physics:collisionEnabled = 1
+        bool physics:kinematicEnabled = 1
+        bool physics:rigidBodyEnabled = 1
+        point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5)]
+        texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1), (1, 0), (1, 1), (0, 1), (0, 0), (0, 1), (0, 0), (1, 0), (1, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (1, 0), (1, 1), (0, 1), (0, 0)] (
+            interpolation = "faceVarying"
+        )
+        uniform token subdivisionScheme = "none"
+        quatd xformOp:orient = (0.5511508904592095, -0.5070801197966572, -0.46552949939909577, -0.47157685825563544)
+        double3 xformOp:scale = (0.005, 0.01, 0.1)
+        double3 xformOp:translate = (1.4706372122009035, 2.077564878655553, 0.0745325611374858)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+    }
+}
+
+def Xform "Environment"
+{
+    quatd xformOp:orient = (1, 0, 0, 0)
+    double3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+}
+
+def PhysicsScene "PhysicsScene" (
+    apiSchemas = ["NewtonSceneAPI", "PhysxSceneAPI"]
+)
+{
+    vector3f physics:gravityDirection = (0, 0, -1)
+    float physics:gravityMagnitude = 9.81
+    uint physxScene:timeStepsPerSecond = 60
+}
+
+def "Render" (
+    hide_in_stage_window = true
+    no_delete = true
+)
+{
+    def "OmniverseKit"
+    {
+        def "HydraTextures" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            def RenderProduct "omni_kit_widget_viewport_ViewportTexture_0" (
+                prepend apiSchemas = ["OmniRtxSettingsCommonAdvancedAPI_1", "OmniRtxSettingsRtAdvancedAPI_1", "OmniRtxSettingsPtAdvancedAPI_1", "OmniRtxPostColorGradingAPI_1", "OmniRtxPostChromaticAberrationAPI_1", "OmniRtxPostBloomPhysicalAPI_1", "OmniRtxPostMatteObjectAPI_1", "OmniRtxPostCompositingAPI_1", "OmniRtxPostDofAPI_1", "OmniRtxPostMotionBlurAPI_1", "OmniRtxPostTvNoiseAPI_1", "OmniRtxPostTonemapIrayReinhardAPI_1", "OmniRtxPostDebugSettingsAPI_1", "OmniRtxDebugSettingsAPI_1"]
+                hide_in_stage_window = true
+                no_delete = true
+            )
+            {
+                rel camera = </OmniverseKit_Persp>
+                token omni:rtx:ambientOcclusion:denoiserMode = "none"
+                token omni:rtx:background:source:texture:textureMode = "repeatMirrored"
+                token omni:rtx:background:source:type = "domeLight"
+                bool omni:rtx:debug:view:pixelDebug:enableFixedTextPos = 1
+                token omni:rtx:directLighting:sampledLighting:denoisingTechnique = "None"
+                bool omni:rtx:dlss:frameGeneration = 0
+                float3 omni:rtx:domeLight:rotationAxis = (0, 0, 1)
+                bool omni:rtx:indirectDiffuse:denoiser:enabled = 0
+                bool omni:rtx:material:db:nonVisualMaterialCSV:enabled = 0
+                bool omni:rtx:material:db:syncLoads = 1
+                token omni:rtx:post:dlss:execMode = "performance"
+                bool omni:rtx:post:registeredCompositing:invertColorCorrection = 1
+                bool omni:rtx:post:registeredCompositing:invertToneMap = 1
+                bool omni:rtx:pt:adaptiveSampling:filterError = 0
+                uint omni:rtx:pt:adaptiveSampling:fixedSppIterations = 2
+                bool omni:rtx:pt:lightcache:cached:dontResolveConflicts = 1
+                int omni:rtx:pt:maxSamplesPerLaunch = 2073600
+                int omni:rtx:pt:mgpu:maxPixelsPerRegionExponent = 12
+                bool omni:rtx:reflections:denoiser:enabled = 0
+                token omni:rtx:rendermode = "RealTimePathTracing"
+                color3f omni:rtx:rt:ambientLight:color = (0.1, 0.1, 0.1)
+                bool omni:rtx:rt:demoire = 0
+                bool omni:rtx:rt:ecoMode:enabled
+                bool omni:rtx:rt:lightcache:spatialCache:dontResolveConflicts = 1
+                int omni:rtx:rt:sss:samples = 1
+                uint omni:rtx:rtpt:maxVolumeBounces = 15
+                float omni:rtx:rtpt:modulatingRoughnessThreshold = 0.08
+                bool omni:rtx:scene:hydra:materialSyncLoads = 1
+                bool omni:rtx:scene:hydra:mdlMaterialWarmup = 1
+                uint omni:rtx:viewTile:limit = 4294967295
+                rel orderedVars = </Render/Vars/LdrColor>
+                custom bool overrideClipRange = 0
+                uniform int2 resolution = (1280, 720)
+            }
+        }
+    }
+
+    def RenderSettings "OmniverseGlobalRenderSettings" (
+        prepend apiSchemas = ["OmniRtxSettingsGlobalRtAdvancedAPI_1", "OmniRtxSettingsGlobalPtAdvancedAPI_1"]
+        no_delete = true
+    )
+    {
+        rel products = </Render/OmniverseKit/HydraTextures/omni_kit_widget_viewport_ViewportTexture_0>
+    }
+
+    def "Vars"
+    {
+        def RenderVar "LdrColor" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            uniform string sourceName = "LdrColor"
+        }
+    }
+}
+
+over "OmniverseKit_Persp" (
+    prepend apiSchemas = ["OmniRtxCameraAutoExposureAPI_1", "OmniRtxCameraExposureAPI_1"]
+    customData = {
+        dictionary omni = {
+            dictionary kit = {
+                bool hide_in_stage_window = 1
+                bool no_delete = 1
+            }
+        }
+    }
+    hide_in_stage_window = true
+    kind = "component"
+    no_delete = true
+)
+{
+    float2 clippingRange = (0.01, 10000000)
+    float exposure:fStop = 5
+    float exposure:responsivity = 1.1026709
+    float exposure:time = 0.02
+    float focalLength = 18.147562
+    float focusDistance = 400
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -1.5026538216452978)
+    float3 xformOp:rotateXYZ = (71.53198, -2.3536105e-13, 35.70741)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (2.209537921802606, 1.220865273262335, 0.5580152151524432)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+
+over "OmniverseKit_Front" (
+    customData = {
+        dictionary omni = {
+            dictionary kit = {
+                bool hide_in_stage_window = 1
+                bool no_delete = 1
+            }
+        }
+    }
+    hide_in_stage_window = true
+    kind = "component"
+    no_delete = true
+)
+{
+    float2 clippingRange = (1, 10000000)
+    float horizontalAperture = 50
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -5)
+    token projection = "orthographic"
+    float verticalAperture = 50
+    float3 xformOp:rotateXYZ = (90, -1.2722219e-14, 90)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (5, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+
+over "OmniverseKit_Right" (
+    customData = {
+        dictionary omni = {
+            dictionary kit = {
+                bool hide_in_stage_window = 1
+                bool no_delete = 1
+            }
+        }
+    }
+    hide_in_stage_window = true
+    kind = "component"
+    no_delete = true
+)
+{
+    float2 clippingRange = (1, 10000000)
+    float horizontalAperture = 50
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -5)
+    token projection = "orthographic"
+    float verticalAperture = 50
+    float3 xformOp:rotateXYZ = (90, -1.41245e-30, 1.2722219e-14)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0, -5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+
+over "OmniverseKit_Top" (
+    customData = {
+        dictionary omni = {
+            dictionary kit = {
+                bool hide_in_stage_window = 1
+                bool no_delete = 1
+            }
+        }
+    }
+    hide_in_stage_window = true
+    kind = "component"
+    no_delete = true
+)
+{
+    float2 clippingRange = (1, 10000000)
+    float horizontalAperture = 50
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -5)
+    token projection = "orthographic"
+    float verticalAperture = 50
+    float3 xformOp:rotateXYZ = (-1.2722219e-14, -7.016709e-15, -90)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0, 0, 5)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+

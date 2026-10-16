@@ -37,5 +37,5 @@ ros2:
     clock: "clock"
 
 world:
- stage_path: "worlds/puzz_scene.usd"
+ stage_path: "worlds/track_world.usda"
  #stage_path: "worlds/gaussian_scene.usd"

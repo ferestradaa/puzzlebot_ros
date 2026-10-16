@@ -39,7 +39,6 @@ Set the path to your isaac sim instalation and edit $ISAAC_SIM_PATH
 ```
 cd isaac_sim/setup
 export ISAAC_SIM_PATH="$HOME/<path to your Isaac Sim 5.1 installation>/isaac-sim-standalone-5.1.0-linux-x86_64"
-
 ```
 Run the isaac sim launch script 
 
@@ -47,7 +46,6 @@ Run the isaac sim launch script
 cd isaac_sim/setup
 chmod +x ./launch_isaac.sh
 ./launch_isaac
-
 ```
 
 

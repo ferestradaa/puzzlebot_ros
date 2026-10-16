@@ -10,6 +10,7 @@ import omni.usd
 import omni.graph.core as og
 from pxr import UsdPhysics
 from pxr import PhysxSchema
+from .textures import apply_realistic_textures
 
 
 class Puzzlebot():
@@ -33,7 +34,14 @@ class Puzzlebot():
         self._twist = {"v": 0.0, "w": 0.0}
 
         self.ANGULAR_GAIN = 5.0
-    
+
+        self.MAST_MIN = -0.05  # matches the URDF lower limit of inner_mast_joint
+        self.MAST_MAX = 0.25   # matches the URDF upper limit
+        self._mast_target = 0.0
+        self._mast_idx = None
+        self.MAST_STIFFNESS = 1000.0
+        self.MAST_DAMPING = 40.0
+
     
     def import_urdf_to_usd(self, urdf_path: str, usd_output: str) -> str:
 
@@ -69,7 +77,8 @@ class Puzzlebot():
 
         print(f"[sim] URDF imported as {usd_output}  (prim root: {result})")
         return usd_output
-    
+
+        
 
     def fix_wheel_drives_live(self):
         stage = omni.usd.get_context().get_stage()
@@ -108,6 +117,44 @@ class Puzzlebot():
             physx_joint = PhysxSchema.PhysxJointAPI.Apply(prim)
             physx_joint.CreateJointFrictionAttr().Set(0.0)
             physx_joint.CreateMaxJointVelocityAttr().Set(1000.0)
+
+    def fix_mast_drive_live(self, stiffness=1000.0, damping=40.0, max_force=10.0):
+        """Position drive for the forklift mast. Target is metres of lift above
+        the retracted pose: 0 puts the forks at the outer_mast_link origin
+        (0.12 m ahead of / 0.04 m below chassis_link), 0.15 is full travel."""
+        stage = omni.usd.get_context().get_stage()
+        prim = stage.GetPrimAtPath(f"{self.robot_prim_path}/joints/inner_mast_joint")
+        if not prim.IsValid():
+            print("[sim] inner_mast_joint not found")
+            return
+        drive = UsdPhysics.DriveAPI.Apply(prim, "linear")
+        drive.GetTypeAttr().Set("force")
+        drive.GetStiffnessAttr().Set(stiffness)
+        drive.GetDampingAttr().Set(damping)
+        drive.GetMaxForceAttr().Set(max_force)
+        drive.GetTargetPositionAttr().Set(0.0)
+        drive.GetTargetVelocityAttr().Set(0.0)
+
+    def fix_fork_collision_live(self, links=("forks_link",)):
+        """Turn off collision on the visual mesh of the given links.
+
+        The URDF importer leaves PhysicsCollisionAPI on <link>/visuals as well as on
+        <link>/collisions. For the forks the visual mesh then cooks to a convex hull that
+        fills the gap between the two tines, so the fork cannot enter a pallet's slots and
+        pushes it instead. The real tine boxes live in <link>/collisions and are kept.
+        A link is only touched if it also has a <link>/collisions prim to fall back on."""
+        stage = omni.usd.get_context().get_stage()
+        for link in links:
+            visuals = stage.GetPrimAtPath(f"{self.robot_prim_path}/{link}/visuals")
+            collisions = stage.GetPrimAtPath(f"{self.robot_prim_path}/{link}/collisions")
+            if not visuals.IsValid() or not collisions.IsValid():
+                print(f"[sim] {link}: visuals/collisions not found, collision left as is")
+                continue
+            UsdPhysics.CollisionAPI.Apply(visuals).GetCollisionEnabledAttr().Set(False)
+            print(f"[sim] collision disabled on {visuals.GetPath()}")
+
+    def apply_textures(self):
+        apply_realistic_textures(self.robot_prim_path)
 
     def fix_caster_wheel(self):
         from pxr import UsdShade, UsdPhysics, PhysxSchema
@@ -268,6 +315,7 @@ class Puzzlebot():
             ("DiffDrive",         "isaacsim.ros2.bridge.ROS2SubscribeTwist"),
             ("CameraHelper",      "isaacsim.ros2.bridge.ROS2CameraHelper"),
             ("PublishClock",      "isaacsim.ros2.bridge.ROS2PublishClock"),
+            ("MastTarget",        "isaacsim.ros2.bridge.ROS2Subscriber"),
 
         ]
 
@@ -296,6 +344,10 @@ class Puzzlebot():
             # Clock
             ("PublishClock.inputs:topicName",            "clock"),
 
+            # Forklift height target (std_msgs/Float32)
+            ("MastTarget.inputs:topicName",              "forklift/height_target"),
+            ("MastTarget.inputs:messagePackage",         "std_msgs"),
+            ("MastTarget.inputs:messageName",            "Float32"),
 
         ]
         
@@ -308,6 +360,8 @@ class Puzzlebot():
             ("OnPlaybackTick.outputs:tick", "DiffDrive.inputs:execIn"),
             ("OnPlaybackTick.outputs:tick", "CameraHelper.inputs:execIn"),
             ("OnPlaybackTick.outputs:tick", "PublishClock.inputs:execIn"),
+            ("OnPlaybackTick.outputs:tick", "MastTarget.inputs:execIn"),
+            ("ROS2Context.outputs:context", "MastTarget.inputs:context"),
             # ComputeOdom exec chain
             ("ComputeOdom.outputs:execOut", "OdomPublisher.inputs:execIn"),
             # SimTime to timestamps
@@ -343,8 +397,42 @@ class Puzzlebot():
             print("[sim] ERROR: Action Graph ROS2 creation")
             return False
 
+        # dynamic output holding the received Float32 payload
+        og.Controller.create_attribute(
+            f"{self.graph_path}/MastTarget", "outputs:data", og.Type(og.BaseDataType.FLOAT))
+
         print("[sim] Action Graph ROS2 OK")
         return True
+
+    def update_mast(self, robot):
+        """Read /forklift/height_target, saturate to [MAST_MIN, MAST_MAX] and send it as a position
+        target to the prismatic joint through the articulation (USD edits don't reach PhysX once it runs)."""
+        try:
+            val = og.Controller.attribute(f"{self.graph_path}/MastTarget.outputs:data").get()
+            if val is not None:
+                self._mast_target = float(np.clip(val, self.MAST_MIN, self.MAST_MAX))
+        except Exception:
+            pass
+        if self._mast_idx is None:
+            self._mast_idx = robot.get_dof_index("inner_mast_joint")
+            # PhysX comes up with kp=0 for this DOF after articulation init, so set it explicitly
+            ctrl = robot.get_articulation_controller()
+            kps, kds = ctrl.get_gains()
+            kps, kds = np.array(kps, dtype=float), np.array(kds, dtype=float)
+            kps[self._mast_idx] = self.MAST_STIFFNESS
+            kds[self._mast_idx] = self.MAST_DAMPING
+            ctrl.set_gains(kps=kps, kds=kds)
+        robot.apply_action(ArticulationAction(
+            joint_positions=np.array([self._mast_target]),
+            joint_indices=np.array([self._mast_idx])))
+
+    def reset_mast(self):
+        self._mast_target = 0.0
+        self._mast_idx = None   # world.reset() wipes the PhysX gains, so force update_mast to set them again
+        try:
+            og.Controller.attribute(f"{self.graph_path}/MastTarget.outputs:data").set(0.0)
+        except Exception:
+            pass
     
 
 
