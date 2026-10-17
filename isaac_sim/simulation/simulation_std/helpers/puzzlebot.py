@@ -272,6 +272,20 @@ class Puzzlebot():
         )
         if ok and sensor is not None:
             self.lidar_sensor_path = str(sensor.GetPath())
+            # Example_Rotary_2D ships with nearRangeM=1.0 / farRangeM=200, so anything closer than 1 m
+            # (a rack beside the robot) comes out as -1 in /scan. Match the RPLIDAR S2E instead.
+            sensor_prim = stage.GetPrimAtPath(self.lidar_sensor_path)
+            applied = []
+            for a in sensor_prim.GetAttributes():
+                for suffix, val in (("nearRangeM", 0.05), ("farRangeM", 30.0)):
+                    if a.GetName().endswith(suffix):
+                        a.Set(val)
+                        applied.append(f"{a.GetName()}={val}")
+            if applied:
+                print(f"[sim] Lidar range set: {applied}")
+            else:
+                print("[sim] Lidar range attrs NOT found, near range stays at 1 m. Sensor attrs: "
+                      f"{[a.GetName() for a in sensor_prim.GetAttributes() if 'sensor' in a.GetName().lower()]}")
             print(f"[sim] Lidar created: {self.lidar_sensor_path}")
         else:
             print(f"[sim] Lidar NOT available")
