@@ -22,10 +22,12 @@ class ReactiveLayer(Node):
         self.declare_parameter('tip_offset', 0.2)
         self.declare_parameter('clearance', 0.15)
         self.declare_parameter('detect_dist', 0.6)
-        self.declare_parameter('react_dist', 0.35)
         self.declare_parameter('cone_half_angle', 0.35)
         self.declare_parameter('evasion_gain', 0.6)
         self.declare_parameter('w_max', 0.3)
+        # The robot (and the sim) turns ~5x what /cmd_vel asks for, same value as pure_pursuit_fork.
+        # pure pursuit already divides by it; the evasion turn rate is defined in real rad/s.
+        self.declare_parameter('w_plant_gain', 5.0)
         self.declare_parameter('base_frame', 'base_link')
         self.declare_parameter('corridor_half_width', 0.12)
         self.declare_parameter('corridor_min_x', 0.15)
@@ -35,10 +37,10 @@ class ReactiveLayer(Node):
         self.tip_offset = self.get_parameter('tip_offset').value
         self.clearance = self.get_parameter('clearance').value
         self.detect_dist = self.get_parameter('detect_dist').value
-        self.react_dist = self.get_parameter('react_dist').value
         self.cone_half_angle = self.get_parameter('cone_half_angle').value
         self.evasion_gain = self.get_parameter('evasion_gain').value
         self.w_max = self.get_parameter('w_max').value
+        self.w_plant_gain = self.get_parameter('w_plant_gain').value
         self.base_frame = self.get_parameter('base_frame').value
         self.corridor_half_width = self.get_parameter('corridor_half_width').value
         self.corridor_min_x = self.get_parameter('corridor_min_x').value
@@ -187,7 +189,7 @@ class ReactiveLayer(Node):
 
         dist = np.hypot(bx, by)
         bearing = np.arctan2(by, bx)
-        in_cone = (np.abs(bearing) <= self.cone_half_angle) & (dist < self.react_dist)
+        in_cone = (np.abs(bearing) <= self.cone_half_angle) & (dist < self.detect_dist)
         left_count = int(np.sum(in_cone & (by >= 0.0)))
         right_count = int(np.sum(in_cone & (by < 0.0)))
 
@@ -278,16 +280,19 @@ class ReactiveLayer(Node):
             return desired_v, desired_w
 
         if self.state == 'AVOID':
+            # Distances are forward distances from base_link. Between detect_dist and hard_stop the
+            # robot slows down and steers away progressively; at hard_stop it stops.
             if min_dist <= self.hard_stop:
                 return 0.0, 0.0
-            if min_dist >= self.react_dist:
+            if min_dist >= self.detect_dist:
                 return desired_v, desired_w
             scale = clamp((min_dist - self.hard_stop) /
-                          (self.react_dist - self.hard_stop), 0.0, 1.0)
+                          (self.detect_dist - self.hard_stop), 0.0, 1.0)
             prox = clamp(1.0 - scale, 0.0, 1.0)
             v_target = desired_v * scale
             w_evasion = self.evade_dir * clamp(self.evasion_gain * prox, 0.0, self.w_max)
-            w_target = prox * w_evasion + scale * desired_w
+            # evasion is in real rad/s, desired_w already comes compensated from pure pursuit
+            w_target = prox * w_evasion / self.w_plant_gain + scale * desired_w
             return v_target, clamp(w_target, -self.w_max, self.w_max)
 
         if self.state == 'ESCAPE_BACKUP':
