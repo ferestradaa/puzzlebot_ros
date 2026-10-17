@@ -56,6 +56,12 @@ def generate_launch_description():
         executable='reactive_controller',
     )
 
+
+    process_manager = Node(
+        package = 'puzzlebot_behavior', 
+        executable= 'process_manager', 
+    )
+
     return LaunchDescription([
         use_sim_arg,
         rviz_arg,
@@ -67,4 +73,5 @@ def generate_launch_description():
         navigation_launch,
         pure_pursuit,
         reactive_controller,
+        process_manager,
     ])
