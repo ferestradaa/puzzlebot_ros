@@ -273,11 +273,12 @@ class Puzzlebot():
         if ok and sensor is not None:
             self.lidar_sensor_path = str(sensor.GetPath())
             # Example_Rotary_2D ships with nearRangeM=1.0 / farRangeM=200, so anything closer than 1 m
-            # (a rack beside the robot) comes out as -1 in /scan. Match the RPLIDAR S2E instead.
+            # (a rack beside the robot) comes out as -1 in /scan. Far range matches the RPLIDAR S2E;
+            # near range is kept at 1 cm so anything touching the lidar housing still returns a hit.
             sensor_prim = stage.GetPrimAtPath(self.lidar_sensor_path)
             applied = []
             for a in sensor_prim.GetAttributes():
-                for suffix, val in (("nearRangeM", 0.05), ("farRangeM", 30.0)):
+                for suffix, val in (("nearRangeM", 0.01), ("farRangeM", 30.0)):
                     if a.GetName().endswith(suffix):
                         a.Set(val)
                         applied.append(f"{a.GetName()}={val}")
