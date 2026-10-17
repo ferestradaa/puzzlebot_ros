@@ -4,7 +4,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import SetParameter
+from launch_ros.actions import Node, SetParameter
 
 def generate_launch_description():
 
@@ -46,6 +46,16 @@ def generate_launch_description():
 
     
 
+    pure_pursuit = Node(
+        package='puzzlebot_inference',
+        executable='pure_pursuit_fork',
+    )
+
+    reactive_controller = Node(
+        package='puzzlebot_inference',
+        executable='reactive_controller',
+    )
+
     return LaunchDescription([
         use_sim_arg,
         rviz_arg,
@@ -54,5 +64,7 @@ def generate_launch_description():
         desc_launch,
         control_launch,
         vision_launch,
-        navigation_launch,  
+        navigation_launch,
+        pure_pursuit,
+        reactive_controller,
     ])
