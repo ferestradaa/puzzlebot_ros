@@ -29,7 +29,10 @@ public:
 
         pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>("qr_detection/pose", 10);
         data_pub_ = create_publisher<std_msgs::msg::String>("qr_detection/data", 10);
-        bbox_pub_ = create_publisher<vision_msgs::msg::Detection2DArray>("pallet_inference_centroid", 10);
+        // QR box lives on its own topic; /pallet_inference_centroid is reserved for the pallet
+        // detector that visual_servoing follows. Set to pallet_inference_centroid for QR docking.
+        const auto bbox_topic = declare_parameter<std::string>("bbox_topic", "qr_detection/bbox");
+        bbox_pub_ = create_publisher<vision_msgs::msg::Detection2DArray>(bbox_topic, 10);
 
         RCLCPP_INFO(get_logger(), "QR Detection Node ready");
     }
