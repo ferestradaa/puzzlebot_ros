@@ -12,7 +12,7 @@ public:
                  rclcpp::Node::SharedPtr node)
         : BT::StatefulActionNode(name, config), node_(node), current_height_(0.0f)
     {
-        publisher_ = node_->create_publisher<std_msgs::msg::Float32>("/forklift/setpoint", 10);
+        publisher_ = node_->create_publisher<std_msgs::msg::Float32>("/forklift/height_target", 10);
         subscriber_ = node_->create_subscription<std_msgs::msg::Float32>(
             "/forklift/height", 10,
             [this](const std_msgs::msg::Float32::SharedPtr msg) {
