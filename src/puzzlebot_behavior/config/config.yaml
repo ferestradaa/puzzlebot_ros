@@ -4,4 +4,3 @@ path_trees:
     debug_tree: trees/debug_tree.xml
     debug_docking: trees/docking_debug.xml
     main_qr: trees/main_qr.xml
-    voice_tree: trees/bt_command.xml
