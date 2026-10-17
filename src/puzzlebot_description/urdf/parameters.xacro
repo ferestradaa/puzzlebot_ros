@@ -47,7 +47,7 @@
   <xacro:property name="lidar_mass"   value="0.1"/>
   <xacro:property name="lidar_x"      value="0.03"/>
   <xacro:property name="lidar_y"      value="0.0"/>
-  <xacro:property name="lidar_z"      value="0.115"/>
+  <xacro:property name="lidar_z"      value="0.13"/>
   <!-- sized from the lidar head in the chassis mesh; expressed in the laser frame, which is yawed 180 deg -->
   <xacro:property name="lidar_radius" value="0.0355"/>
   <xacro:property name="lidar_length" value="0.044"/>
@@ -58,7 +58,8 @@
   <!-- outer mast: fixed to the chassis_link -->
   <xacro:property name="outer_mast_x" value="0.12"/>
   <xacro:property name="outer_mast_y" value="0.0"/>
-  <xacro:property name="outer_mast_z" value="-0.04"/>
+  <!-- mesh bottom sits 0.8 cm above the chassis mesh bottom (z -0.0491 in the chassis frame) -->
+  <xacro:property name="outer_mast_z" value="-0.0418"/>
   <xacro:property name="outer_mast_mass" value="0.1"/>
   <xacro:property name="outer_mast_visual_x" value="0.01"/>
   <xacro:property name="outer_mast_box" value="0.025 0.0621 0.1698"/>
@@ -69,15 +70,18 @@
   <xacro:property name="inner_mast_visual_z" value="0.023"/>
   <xacro:property name="inner_mast_box" value="0.012 0.0561 0.16"/>
   <xacro:property name="inner_mast_com" value="-0.0078 -0.0005 0.1125"/>
-  <xacro:property name="inner_lower" value="-0.04"/>
-  <xacro:property name="inner_upper" value="0.25"/>
+  <!-- inner mesh bottom also rests 0.8 cm above the chassis bottom; limits shifted by the same amount so
+       the world-frame travel of the stack is unchanged -->
+  <xacro:property name="inner_mast_z" value="-0.0318"/>
+  <xacro:property name="inner_lower" value="-0.006"/>
+  <xacro:property name="inner_upper" value="0.2836"/>
 
-  <!-- forks (carriage). 0.04 cancels the outer mast drop so the forks keep their height at rest -->
-  <xacro:property name="forks_z" value="0.04"/>
+  <!-- forks (carriage). 0.0736 cancels the outer and inner mast drops so the forks keep their height at rest -->
+  <xacro:property name="forks_z" value="0.0736"/>
   <xacro:property name="forks_mass" value="0.15"/>
   <xacro:property name="forks_com" value="0.0178 0.0097 0.0196"/>
-  <xacro:property name="forks_lower" value="-0.01"/>
-  <xacro:property name="forks_upper" value="0.10"/>
+  <xacro:property name="forks_lower" value="-0.044"/>
+  <xacro:property name="forks_upper" value="0.0664"/>
   <xacro:property name="back_origin"  value="0.0056 0.01255 0.025"/>
   <xacro:property name="back_size"    value="0.0112 0.1087 0.0417"/>
   <xacro:property name="tine_l_origin" value="0.0578 0.0231 0.002"/>

@@ -167,7 +167,7 @@
   <joint name="chassis_to_lidar" type="fixed">
     <parent link="chassis_link"/>
     <child link="laser"/>
-    <origin rpy="0 0 3.14159265358979" xyz="0.03 0.0 0.115"/>
+    <origin rpy="0 0 3.14159265358979" xyz="0.03 0.0 0.13"/>
   </joint>
   <!-- outer_mast  -->
 
@@ -197,7 +197,8 @@
   <joint name="outer_mast_joint" type="fixed">
     <parent link="chassis_link"/>
     <child link="outer_mast_link"/>
-    <origin rpy="0 0 0" xyz="0.12 0.0 -0.04"/>
+    <!-- mesh bottom (z 0.0007 in this frame) sits 0.8 cm above the chassis mesh bottom (z -0.0491 in the chassis frame) -->
+    <origin rpy="0 0 0" xyz="0.12 0.0 -0.0418"/>
   </joint>
 
   <!-- inner mast: smaller cross section so it nests inside the outer mast -->
@@ -224,10 +225,12 @@
   <joint name="inner_mast_joint" type="prismatic">
     <parent link="outer_mast_link"/>
     <child link="inner_mast_link"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <!-- inner mesh bottom (z 0.0325 in its frame) also rests 0.8 cm above the chassis bottom.
+         lower/upper are shifted by the same amount so the world-frame travel of the stack is unchanged:
+         it can still go down to just above the floor and up to the same height -->
+    <origin rpy="0 0 0" xyz="0 0 -0.0318"/>
     <axis xyz="0 0 1"/>
-    <!-- travel capped so the inner section keeps overlap inside the outer one -->
-    <limit effort="10" lower="-0.04" upper="0.25" velocity="0.05"/>
+    <limit effort="10" lower="-0.006" upper="0.2836" velocity="0.05"/>
     <dynamics damping="2.0" friction="0.5"/>
   </joint>
 
@@ -271,12 +274,14 @@
   <joint name="forks_joint" type="prismatic">
     <parent link="inner_mast_link"/>
     <child link="forks_link"/>
-    <!-- 0.04 cancels the outer mast drop so the forks keep their previous height -->
-    <origin rpy="0 0 0" xyz="0 0 0.04"/>
+    <!-- 0.0736 cancels the outer (-0.0418) and inner (-0.0318) mast drops so the forks, camera and
+         fork tip keep their previous height at rest -->
+    <origin rpy="0 0 0" xyz="0 0 0.0736"/>
     <axis xyz="0 0 1"/>
-    <!-- 0.10 keeps the carriage backplate (0.0417 tall) inside the inner mast length;
-         -0.01 lets the tines reach the floor (the inner mast box hits it first below -0.0435) -->
-    <limit effort="10" lower="-0.01" upper="0.10" velocity="0.05"/>
+    <!-- 0.0664 keeps the carriage backplate (0.0417 tall) inside the inner mast length (it sits 0.0336
+         higher on the mast than before); -0.044 lets the tines reach the floor now that the inner mast
+         box hits it below -0.006. Stack total is still [-0.05, 0.35] -->
+    <limit effort="10" lower="-0.044" upper="0.0664" velocity="0.05"/>
     <dynamics damping="2.0" friction="0.5"/>
   </joint>
 
