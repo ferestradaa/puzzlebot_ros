@@ -101,7 +101,7 @@ def load_robot(usd_path: str, robot_prim_path):
     if not prim.IsValid():
         raise RuntimeError(f"No valid prim: {robot_prim_path}")
     xform = UsdGeom.XformCommonAPI(prim)
-    xform.SetTranslate(Gf.Vec3d(1.5, 1.5, 0.0))
+    xform.SetTranslate(Gf.Vec3d(2.0, 2.0, 0.0))
 
 
 def main():
@@ -204,7 +204,7 @@ def main():
     world.reset()
 
     wheeled_robot.set_world_pose(position=np.array([4.0, 0.9, 0.0]))
-    RESPAWN_POS = np.array([1.0, 1.0, 0.0])
+    RESPAWN_POS = np.array([2.0, 2.0, 0.0])
 
     diff_controller = DifferentialController(
         name="diff_ctrl",
