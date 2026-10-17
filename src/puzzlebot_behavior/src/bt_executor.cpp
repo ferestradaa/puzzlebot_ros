@@ -16,6 +16,7 @@
 #include "go_to.hpp"
 #include "wait_for_pose.hpp"
 #include "process_manager.hpp"
+#include "controller_source.hpp"
 
 
 
@@ -99,6 +100,12 @@ class BTexecutor : public  rclcpp::Node{
                 "LaunchNode",
                 [this](const std::string& name, const BT::NodeConfig& conf) {
                     return std::make_unique<puzzlebot_bt::LaunchNodeAction>(name, conf, bt_node_);
+                });
+
+            factory_.registerBuilder<puzzlebot_bt::SetControllerSource>(
+                "SetControllerSource",
+                [this](const std::string& name, const BT::NodeConfig& conf) {
+                    return std::make_unique<puzzlebot_bt::SetControllerSource>(name, conf, bt_node_);
                 });
 
             factory_.registerBuilder<puzzlebot_bt::KillNodeAction>(
