@@ -25,7 +25,7 @@ class AprilTagDetector(Node):
         self.camera_matrix = None
         self.dist_coeffs = None
 
-        self.declare_parameter('tag_size', 0.1)
+        self.declare_parameter('tag_size', 0.11)
         self.tag_size = self.get_parameter('tag_size').value
 
         self.tf_buffer = tf2_ros.Buffer()
