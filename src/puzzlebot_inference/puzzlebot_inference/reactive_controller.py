@@ -51,7 +51,7 @@ class ReactiveLayer(Node):
 
         self.a_lin_up = 0.15
         self.a_lin_down = 0.6
-        self.a_ang = 0.8
+        self.a_ang = 2.0
         self.dt = 0.033
         self.dt_max = 0.1
 

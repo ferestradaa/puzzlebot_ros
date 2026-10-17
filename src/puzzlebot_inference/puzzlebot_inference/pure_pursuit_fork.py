@@ -25,8 +25,8 @@ class PurePursuit(Node):
         self.declare_parameter('w_max', 0.2)
         self.declare_parameter('a_lin', 0.15)
         self.declare_parameter('a_ang', 1.20)
-        self.declare_parameter('ld_min', 0.2)
-        self.declare_parameter('ld_max', 0.60)
+        self.declare_parameter('ld_min', 0.4)
+        self.declare_parameter('ld_max', 0.70)
         self.declare_parameter('ld_gain', 2.5)
         self.declare_parameter('goal_tol', 0.15)
         self.declare_parameter('pivot_angle', 1.2)
@@ -36,6 +36,10 @@ class PurePursuit(Node):
         self.declare_parameter('final_yaw_gain', 0.8)
         self.declare_parameter('map_frame', 'map')
         self.declare_parameter('rate', 20.0)
+        # The robot (and the sim, ANGULAR_GAIN) turns ~5x what /cmd_vel asks for, so the controller
+        # works in real rad/s and divides by this gain on output. Without it the loop runs at 5x gain
+        # and, with pose latency, limit-cycles between +-w_max.
+        self.declare_parameter('w_plant_gain', 5.0)
         self.v_max          = self.get_parameter('v_max').value
         self.w_max          = self.get_parameter('w_max').value
         self.a_lin          = self.get_parameter('a_lin').value
@@ -49,6 +53,7 @@ class PurePursuit(Node):
         self.align_band     = self.get_parameter('align_band').value
         self.final_yaw_tol  = self.get_parameter('final_yaw_tol').value
         self.final_yaw_gain = self.get_parameter('final_yaw_gain').value
+        self.w_plant_gain   = self.get_parameter('w_plant_gain').value
         self.map_frame      = self.get_parameter('map_frame').value
         rate = self.get_parameter('rate').value
         self.dt = 1.0 / rate
@@ -166,7 +171,7 @@ class PurePursuit(Node):
                 self._publish_reached()
                 self.get_logger().info('goal reached with final orientation')
                 return
-            w_target = clamp(self.final_yaw_gain * yaw_err, -self.w_max, self.w_max)
+            w_target = clamp(self.final_yaw_gain * yaw_err / self.w_plant_gain, -self.w_max, self.w_max)
 
             if abs(yaw_err) < 0.02:
                 w_target = 0.0
@@ -198,20 +203,13 @@ class PurePursuit(Node):
         alpha = math.atan2(y_r, x_r)
         dist  = math.hypot(x_r, y_r)
 
-        if abs(alpha) < self.align_band:
-            v_target = self.v_max
-            w_target = 0.0
-
-        elif abs(alpha) > self.pivot_angle:
+        if abs(alpha) > self.pivot_angle:
             v_target = 0.0
-            w_target = clamp(self.pivot_gain * alpha, -self.w_max, self.w_max)
-
+            w_target = clamp(self.pivot_gain * alpha / self.w_plant_gain, -self.w_max, self.w_max)
         else:
             curvature = 2.0 * math.sin(alpha) / max(dist, self.ld_min)
             v_target = self.v_max * max(0.3, math.cos(alpha))
-            w_raw = clamp(curvature * v_target, -self.w_max, self.w_max)
-            blend = clamp((abs(alpha) - self.align_band) / self.align_band, 0.0, 1.0)
-            w_target = blend * w_raw
+            w_target = clamp(curvature * v_target / self.w_plant_gain, -self.w_max, self.w_max)
 
         if self.reverse: 
             v_target = -v_target
