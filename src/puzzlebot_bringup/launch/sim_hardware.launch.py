@@ -18,7 +18,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     use_sim_arg      = DeclareLaunchArgument('use_sim',      default_value='true')  
-    rviz_arg         = DeclareLaunchArgument('rviz',         default_value='false')
+    rviz_arg         = DeclareLaunchArgument('rviz',         default_value='true')
     use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='true')  
 
 
