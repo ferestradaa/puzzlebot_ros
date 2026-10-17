@@ -7,6 +7,7 @@
 #include <thread>
 #include <atomic>
 #include <limits>
+#include <vector>
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "tf2_ros/buffer.h"
@@ -42,6 +43,10 @@ public:
     stall_time_         = declare_parameter<double>("stall_time", 4.0);
     planner_retries_    = declare_parameter<int>("planner_retries", 3);
     planner_retry_wait_ = declare_parameter<double>("planner_retry_wait", 1.0);
+    // limites de la busqueda del standoff frente al pallet (no es un valor fijo)
+    standoff_max_       = declare_parameter<double>("standoff_max", 0.8);
+    standoff_min_       = declare_parameter<double>("standoff_min", 0.3);
+    standoff_step_      = declare_parameter<double>("standoff_step", 0.1);
 
     load_zones();
 
@@ -128,16 +133,55 @@ private:
     return p;
   }
 
-  geometry_msgs::msg::PoseStamped resolve_goal(std::shared_ptr<const GoTo::Goal> goal) {
+  // Para un named zone hay un solo candidato. Para una pose (QR) se generan candidatos
+  // sobre la normal de la superficie, del standoff mas lejano al mas cercano.
+  std::vector<geometry_msgs::msg::PoseStamped> resolve_goal(
+    std::shared_ptr<const GoTo::Goal> goal)
+  {
     if (goal->goal_type == GoTo::Goal::NAMED_ZONE) {
       const auto & z = zones_.at(goal->zone_name);
-      return make_pose(z.x, z.y, z.yaw);
+      return {make_pose(z.x, z.y, z.yaw)};
     }
-    auto p = goal->target_pose;
-    double yaw = tf2::getYaw(p.pose.orientation);
-    p.pose.position.x -= 0.55 * std::cos(yaw);
-    p.pose.position.y -= 0.55 * std::sin(yaw);
-    return p;
+
+    const auto & qr = goal->target_pose;
+    const double qx = qr.pose.position.x;
+    const double qy = qr.pose.position.y;
+
+    // Normal de la superficie: eje z del marco del QR (solvePnP) rotado a map, proyectado en xy
+    tf2::Quaternion q;
+    tf2::fromMsg(qr.pose.orientation, q);
+    tf2::Vector3 n = tf2::quatRotate(q, tf2::Vector3(0, 0, 1));
+    double nx = n.x(), ny = n.y();
+
+    double rx, ry, ryaw;
+    const bool have_robot = get_robot_pose(rx, ry, ryaw);
+
+    double norm = std::hypot(nx, ny);
+    if (norm < 0.2 && have_robot) {
+      // QR visto casi de frente a la camara/vertical: la normal horizontal no es confiable,
+      // usar la direccion robot -> QR
+      nx = qx - rx;
+      ny = qy - ry;
+      norm = std::hypot(nx, ny);
+    }
+    if (norm < 1e-6) {
+      return {qr};
+    }
+    nx /= norm;
+    ny /= norm;
+
+    // El signo de la normal depende de la convencion del QR: forzarlo a apuntar del robot al QR
+    if (have_robot && (nx * (qx - rx) + ny * (qy - ry)) < 0.0) {
+      nx = -nx;
+      ny = -ny;
+    }
+
+    const double yaw = std::atan2(ny, nx);
+    std::vector<geometry_msgs::msg::PoseStamped> out;
+    for (double d = standoff_max_; d >= standoff_min_ - 1e-9; d -= standoff_step_) {
+      out.push_back(make_pose(qx - d * nx, qy - d * ny, yaw));
+    }
+    return out;
   }
 
   bool get_robot_pose(double & x, double & y, double & yaw) {
@@ -153,14 +197,15 @@ private:
     }
   }
 
-  bool call_planner(const geometry_msgs::msg::PoseStamped & target) {
+  bool call_planner(const geometry_msgs::msg::PoseStamped & target, int attempts = -1) {
+    if (attempts < 0) attempts = planner_retries_;
     auto req  = std::make_shared<PlanPath::Request>();
     req->goal = target;
 
-    for (int attempt = 0; attempt < planner_retries_; ++attempt) {
+    for (int attempt = 0; attempt < attempts; ++attempt) {
       auto future = planner_cli_->async_send_request(req);
       if (future.wait_for(5s) != std::future_status::ready) {
-        RCLCPP_WARN(get_logger(), "Planner timeout (attempt %d/%d)", attempt + 1, planner_retries_);
+        RCLCPP_WARN(get_logger(), "Planner timeout (attempt %d/%d)", attempt + 1, attempts);
       } else {
         auto resp = future.get();
         if (resp->success) {
@@ -168,16 +213,16 @@ private:
           return true;
         }
         RCLCPP_WARN(get_logger(), "Planner failed (attempt %d/%d): %s",
-                    attempt + 1, planner_retries_, resp->message.c_str());
+                    attempt + 1, attempts, resp->message.c_str());
       }
 
-      if (attempt + 1 < planner_retries_) {
+      if (attempt + 1 < attempts) {
         rclcpp::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds>(
           std::chrono::duration<double>(planner_retry_wait_)));
       }
     }
 
-    RCLCPP_ERROR(get_logger(), "Planner failed after %d attempts", planner_retries_);
+    RCLCPP_ERROR(get_logger(), "Planner failed after %d attempts", attempts);
     return false;
   }
 
@@ -187,10 +232,7 @@ private:
     last_replan_time_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     auto result = std::make_shared<GoTo::Result>();
-    auto target = resolve_goal(gh->get_goal());
-    double gx   = target.pose.position.x;
-    double gy   = target.pose.position.y;
-    double gyaw = tf2::getYaw(target.pose.orientation);
+    auto candidates = resolve_goal(gh->get_goal());
 
     if (!planner_cli_->wait_for_service(2s)) {
       result->success    = false;
@@ -199,12 +241,30 @@ private:
       return;
     }
 
-    if (!call_planner(target)) {
+    // Primer candidato con camino; el ultimo usa todos los reintentos
+    geometry_msgs::msg::PoseStamped target;
+    bool planned = false;
+    for (size_t i = 0; i < candidates.size() && !planned; ++i) {
+      const bool last = (i + 1 == candidates.size());
+      if (call_planner(candidates[i], last ? -1 : 1)) {
+        target  = candidates[i];
+        planned = true;
+        if (candidates.size() > 1) {
+          RCLCPP_INFO(get_logger(), "Standoff candidate %zu/%zu selected (%.2f, %.2f)",
+                      i + 1, candidates.size(),
+                      target.pose.position.x, target.pose.position.y);
+        }
+      }
+    }
+    if (!planned) {
       result->success    = false;
       result->error_code = GoTo::Result::PLANNER_FAIL;
       gh->abort(result);
       return;
     }
+    double gx   = target.pose.position.x;
+    double gy   = target.pose.position.y;
+    double gyaw = tf2::getYaw(target.pose.orientation);
 
     auto fb               = std::make_shared<GoTo::Feedback>();
     rclcpp::Rate rate(fb_rate_);
@@ -282,6 +342,7 @@ private:
   std::map<std::string, ZonePose> zones_;
   double pos_thr_, yaw_thr_, fb_rate_, timeout_, replan_cooldown_;
   double stall_distance_thr_, stall_time_, planner_retry_wait_;
+  double standoff_max_, standoff_min_, standoff_step_;
   int planner_retries_;
 
   std::shared_ptr<tf2_ros::Buffer>            tf_buffer_;
