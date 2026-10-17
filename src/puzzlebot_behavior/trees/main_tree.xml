@@ -1,4 +1,4 @@
-<root BTCPP_format="4">
+<root BTCPP_format="4" main_tree_to_execute="PuzzlebotTree">
   <BehaviorTree ID="PuzzlebotTree">
     <Sequence name="MainSequence">
       <CheckMapAvailable timeout_sec="10.0"/>
@@ -9,69 +9,59 @@
       <KeepRunningUntilFailure>
         <Sequence name="PickPlaceCycle">
 
-          <!-- start setting fork down to floor and running qr detection -->
-          <LaunchNode package="puzzlebot_vision" executable="qr_detection_node_test"/>
-          <MoveForklift target_height="30.0" timeout_s="15.0" tolerance_mm="3.0"/>
+          <!-- Fork heights (m). height_down is used while inspecting and docking; height_drop when releasing the
+               pallet at the destination; height_inspect and
+               height_center are the lift heights used once docking is done, depending on the zone
+               where the QR was found. -->
+          <SetBlackboard output_key="height_down"    value="-0.01"/>
+          <SetBlackboard output_key="height_drop"    value="-0.03"/>
+          <SetBlackboard output_key="height_inspect" value="0.05"/>
+          <SetBlackboard output_key="height_center"  value="0.03"/>
+          <SetBlackboard output_key="hight_carry"    value="0.08"/>
+
+          <!-- start setting fork down to floor (qr detection is always on from the vision launch) -->
+          <SetControllerSource source="pure_pursuit"/>
+          <MoveForklift target_height="{height_down}" timeout_s="15.0" tolerance_mm="3.0"/>
           <GoToAction zone="inspect"/>
 
-          <!-- Search for QR. Repeating until qr data found.
-               for now the fork height is set depending on the search zone -->
+          <!-- Search for the QR, trying each zone in order. Repeats until QR data is found. -->
           <RetryUntilSuccessful num_attempts="-1">
             <Fallback name="SearchQR">
-
-              <Sequence name="SearchInspect">
-                <GoToAction zone="inspect"/>
-                <MoveForklift target_height="58" timeout_s="15.0" tolerance_mm="3.0"/>
-                <Parallel success_count="1" failure_count="1">
-                  <Sequence>
-                    <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
-                    <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
-                    <AlwaysFailure/>
-                  </Sequence>
-                  <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
-                </Parallel>
-              </Sequence>
-
-              <Sequence name="SearchCenter">
-                <SetBlackboard output_key="height_inspect"      value="58.0"/>
-                <SetBlackboard output_key="height_center"       value="23.0"/>
-                <SetBlackboard output_key="hight_carry"         value="140.0"/>
-                <GoToAction zone="center"/>
-                <MoveForklift target_height="{height_center}" timeout_s="15.0" tolerance_mm="3.0"/>
-                <Parallel success_count="1" failure_count="1">
-                  <Sequence>
-                    <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="23.0"/>
-                    <AlwaysFailure/>
-                  </Sequence>
-                  <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
-                </Parallel>
-              </Sequence>
-
+              <SubTree ID="SearchInspectZone" zone="inspect" fork_height="{height_down}" lift_height="{height_inspect}"
+                       docking_lift="{docking_lift}" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+              <SubTree ID="SearchInspectZone" zone="inspect2" fork_height="{height_down}" lift_height="{height_inspect}"
+                       docking_lift="{docking_lift}" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+              <SubTree ID="SearchCenterZone" zone="center" fork_height="{height_down}" lift_height="{height_center}"
+                       docking_lift="{docking_lift}" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+              <SubTree ID="SearchCenterZone" zone="center2" fork_height="{height_down}" lift_height="{height_center}"
+                       docking_lift="{docking_lift}" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
             </Fallback>
           </RetryUntilSuccessful>
-
-
-          <KillNode executable="qr_detection_node_test"/>
 
 
           <!-- loading engine and moving to pallet aprox pose at the same timme
                NOrmalyy tensor RT takes about 20 sec to load so start moving to target and inference at the same time
               parallel finishes when both nodes have finished. -->
 
+          <SetControllerSource source="pure_pursuit"/>
           <Parallel success_count="2" failure_count="1">
-            <LaunchNode package="puzzlebot_vision" executable="inference_engine_streaming"
+            <LaunchNode package="puzzlebot_inference" executable="pallet_detection_gpu"
                         ready_topic="/pallet_detector/ready" ready_timeout_sec="30.0"/>
             <GoToAction target_pose="{qr_pose}"/>
           </Parallel>
 
           <Fallback name="RunAndCleanup">
             <Sequence name="DockingSequence">
-            <MoveForklift target_height="20.0" timeout_s="15.0" tolerance_mm="6.0"/>
+            <MoveForklift target_height="{height_down}" timeout_s="15.0" tolerance_mm="6.0"/>
 
               <RetryUntilSuccessful num_attempts="-1">
                 <Fallback name="VisualServoingWithRecovery">
-                  <VisualServoingAction target_area="20000.0"/>
+                  <Sequence>
+                    <SetControllerSource source="visual_servoing"/>
+                    <VisualServoingAction target_area="20000.0"/>
+                  </Sequence>
                   <Sequence name="VSBackupRecovery">
+                    <SetControllerSource source="drive_raw"/>
                     <DriveRawAction linear_x="-0.02" angular_z="0.0" duration_sec="8.0"/>
                     <DriveRawAction linear_x="0.0"   angular_z="0.0" duration_sec="1.0"/>
                     <AlwaysFailure/>
@@ -80,28 +70,79 @@
               </RetryUntilSuccessful>
 
 
-              <MoveForklift target_height="{height_inspect}" timeout_s="15.0" tolerance_mm="6.0"/>
+              <MoveForklift target_height="{docking_lift}" timeout_s="15.0" tolerance_mm="6.0"/>
+              <SetControllerSource source="drive_raw"/>
               <DriveRawAction linear_x="0.02" angular_z="0.0" duration_sec="15.0"/>
               <DriveRawAction linear_x="0.0" angular_z="0.0" duration_sec="3.0"/>
               <MoveForklift target_height="{hight_carry}" timeout_s="15.0" tolerance_mm="6.0"/>
               <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
               <DriveRawAction linear_x="0.0" angular_z="0.0" duration_sec="2.0"/>
               <DriveRawAction linear_x="0.0" angular_z="0.08" duration_sec="6.0"/>
+              <MoveForklift target_height="{height_down}" timeout_s="15.0" tolerance_mm="6.0"/>
             </Sequence>
             <AlwaysSuccess/>
           </Fallback>
 
           <!-- kill inference after finishing docking -->
-          <KillNode executable="inference_engine_streaming"/>
+          <KillNode executable="pallet_detection_gpu"/>
 
           <!-- go to qr data solved pose and comeback-->
+          <SetControllerSource source="pure_pursuit"/>
           <GoToAction zone="{qr_data}"/>
-          <MoveForklift target_height="0.0" timeout_s="15.0" tolerance_mm="3.0"/>
+
+          <!-- drop the pallet: lower the fork, back out and turn (same exit as after the pick) -->
+          <MoveForklift target_height="{height_drop}" timeout_s="15.0" tolerance_mm="3.0"/>
+          <SetControllerSource source="drive_raw"/>
+          <DriveRawAction linear_x="-0.03" angular_z="0.0" duration_sec="8.0"/>
+          <DriveRawAction linear_x="0.0" angular_z="0.0" duration_sec="2.0"/>
+          <DriveRawAction linear_x="0.0" angular_z="0.08" duration_sec="6.0"/>
+
+          <SetControllerSource source="pure_pursuit"/>
           <GoToAction zone="inspect"/>
 
         </Sequence>
       </KeepRunningUntilFailure>
 
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Go to a zone and sweep left/right looking for the QR. Succeeds when QR pose and data arrive,
+       fails when the sweep ends without a QR. The fork stays at fork_height while searching;
+       lift_height is the height to use after docking when the QR is found in this zone
+       (returned through docking_lift). -->
+  <BehaviorTree ID="SearchInspectZone">
+    <Sequence>
+      <SetControllerSource source="pure_pursuit"/>
+      <GoToAction zone="{zone}"/>
+      <MoveForklift target_height="{fork_height}" timeout_s="15.0" tolerance_mm="3.0"/>
+      <Parallel success_count="1" failure_count="1">
+        <Sequence>
+          <SetControllerSource source="drive_raw"/>
+          <DriveRawAction linear_x="0.0" angular_z="0.02" duration_sec="10.0"/>
+          <DriveRawAction linear_x="0.0" angular_z="-0.02" duration_sec="10.0"/>
+          <AlwaysFailure/>
+        </Sequence>
+        <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+      </Parallel>
+      <Script code="docking_lift := lift_height"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Same as above with the low fork and a single sweep direction -->
+  <BehaviorTree ID="SearchCenterZone">
+    <Sequence>
+      <SetControllerSource source="pure_pursuit"/>
+      <GoToAction zone="{zone}"/>
+      <MoveForklift target_height="{fork_height}" timeout_s="15.0" tolerance_mm="3.0"/>
+      <Parallel success_count="1" failure_count="1">
+        <Sequence>
+          <SetControllerSource source="drive_raw"/>
+          <DriveRawAction linear_x="0.0" angular_z="-0.03" duration_sec="23.0"/>
+          <AlwaysFailure/>
+        </Sequence>
+        <WaitForQRPoseAction timeout_sec="999" qr_pose="{qr_pose}" qr_data="{qr_data}"/>
+      </Parallel>
+      <Script code="docking_lift := lift_height"/>
     </Sequence>
   </BehaviorTree>
 </root>
