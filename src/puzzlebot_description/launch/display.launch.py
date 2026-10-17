@@ -51,7 +51,7 @@ def generate_launch_description():
             executable='rviz2',
             name='rviz2',
             output='screen',
-            arguments=['-d', os.path.join(pkg_share, 'rviz', 'display.rviz')],
+            arguments=['-d', os.path.join(pkg_share, 'rviz', 'puzzlebot_display.rviz')],
             condition=IfCondition(rviz)
         )
         
